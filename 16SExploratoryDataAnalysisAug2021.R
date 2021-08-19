@@ -1,5 +1,6 @@
 # Exploratory Data Analysis
 # Aug 17, 2021
+### DID NOT DECIDE TO DROP ANY SINGLETONS OR DOUBLETONS FOR NOW 
 
 library("phyloseq")
 library("ggplot2")      # graphics
@@ -8,6 +9,7 @@ library("dplyr")        # filter and reformat data frames
 library("tibble")       # Needed for converting column to row names
 library("tidyr")
 library("mctoolsr")
+library("vegan")
 
 setwd("/Users/clairewinfrey/Desktop/CU_Research/SoilEdgeEffectsResearch/Bioinformatics")
 list.files()
@@ -248,13 +250,131 @@ all_Taxa <- taxa_names(SRS_16S.ps) #get all tax names in original, uncleaned dat
 ASVstoKeep <- all_Taxa[!(all_Taxa %in% bad_ASVs)]
 length(ASVstoKeep) #36,175, matches what we created above!
 noeuksorNAs_ps <- prune_taxa(ASVstoKeep, SRS_16S.ps) #new phyloseq object with just the stuff we want!
-  
+
+# TAKING A LOOK AT THE DATA
+# How are number of reads distributed across the samples?
+otu_table(noeuksorNAs_ps)
+seqspersample <- colSums(otu_table(noeuksorNAs_ps))
+SeqNumberPlot <-barplot(seqspersample, main="Total Sequences Per Sample", ylab= "Number of Sequences", xlab= "Sample Number")
+
+# Just controls:
+seqsperctrl <- seqspersample[244:length(seqspersample)]
+SeqNumberPlotCtrls <- barplot(seqsperctrl, main="Total Sequences Per Sample", ylab= "Number of Sequences", xlab= "Sample Number", cex.names=0.27)
+
+# Controls with easier axis names
+simple <- c("ExtB1", "ExtB2", "ExtB3", "ExtW1", "ExtW10", "ExtW11", "ExtW12",
+"ExtW13", "ExtW14", "ExtW15", "ExtW16", "ExtW17", "ExtW18", "ExtW19",
+"ExtW2", "ExtW20", "ExtW21","ExtW22", "ExtW3","ExtW4",
+"ExtW5","ExtW6","ExtW7","ExtW8", "ExtW9", "PCRNTC")
+seqsperctrl_simple <- setNames(seqsperctrl, simple)
+
+SeqNumberPlotCtrlsSimple <- barplot(seqsperctrl_simple, main="Total Sequences Per Sample",
+                                    ylab= "Number of Sequences", xlab= "Sample Number", cex.names=0.4)
+
+# Let's rarefy:
+# What is the minimum for the non-control samples?
+min(seqspersample[1:243]) #1224
+max(seqspersample[1:243]) #157870
+mean(seqspersample[1:243]) # 26960
+# Plot this:
+seqsPerExSamp <- seqspersample[1:243]
+SeqNumberPlotExSamp <- barplot(seqsPerExSamp, main="Total Sequences Per Sample",
+                                    ylab= "Number of Sequences", xlab= "Sample Number", cex.names=0.4)
+
+sort(seqsPerExSamp) #take a look in order from least to greatest
+
+# We'll rarefy at 15038, which only costs us 7 samples (plus all but two of the controls)
+# The random rarefaction is made without replacement so that the variance of rarefied
+# communities is rather related to rarefaction proportion than to the size of the sample.
+set.seed(19)
+rarefied.ps <- rarefy_even_depth(noeuksorNAs_ps, sample.size = 15038, replace=FALSE, trimOTUs=TRUE)
+
+# Rarefaction curve:
+samp.col = c(rep("blue", 243), rep("grey", 26))
+
+rare.plot <- rarecurve(t(otu_table(noeuksorNAs_ps)), step = 3000, cex = 0.5, col = samp.col, labe?taxl = FALSE, xlab = "Number of Sequences", ylab = "Number of ASVs")
+
+# How many are left?
+colSums(otu_table(rarefied.ps)) #All have 15038, and there are 238 samples left. 
+
+##################################################
+# TAKING A LOOK AT DATA
+##################################################
+
+# Phylum level (adopted from my code at:
+# https://github.com/clairecwinfrey/PhanBioMS_scripts/blob/master/R_scripts/figures/taxonomic_barplots.R)
+# TURN ASVs INTO PHYLUM LEVEL
+rarefied.phylum.glom <-  tax_glom(rarefied.ps, taxrank = "Phylum") 
+tax_table(rarefied.phylum.glom) # good, this is only phyla (42 different phyla!)
+
+# TRANSFORM SAMPLE COUNTS ON JUST GLOMMED SAMPLES (UNLIKE WHAT WE DID AT FIRST)
+relabun.phyla.0 <- transform_sample_counts(rarefied.phylum.glom, function(x) x / sum(x) )
+rownames(otu_table(relabun.phyla.0)) #weirdly, this is ASV_.... Is this right? 
+# I think that the ASVs are just representative from each phylum
+
+# MERGE SAMPLES so that we only have combined abundances for site and different kinds of controls
+relabun.phyla.1 <- merge_samples(relabun.phyla.0, group = "EU")
+sample_data(relabun.phyla.1) #shows that we still have samples from each EU, biocrust, and extcontrol (water)
+
+# CONVERT TO PROPORTIONS AGAIN B/C TOTAL ABUNDANCE OF EACH SITE WILL EQUAL NUMBER OF SPECIES THAT WERE MERGED
+relabun.phyla.2 <- transform_sample_counts(relabun.phyla.1, function(x) x / sum(x))
+sample_data(relabun.phyla.2)
+
+# NOW GET ONLY TAXA THAT COMPRISE AT LEAST 1% OF THE ABUNDANCE 
+relabun.phyla.df <-psmelt(relabun.phyla.2)
+dim(relabun.phyla.df) #
+sum(relabun.phyla.df[,3]) 
+colnames(relabun.phyla.df) 
+relabun.phylatop99 <- relabun.phyla.df
+relabun.phylatop99.5 <- relabun.phyla.df
+
+relabun.phylatop99$Phylum[relabun.phylatop99$Abundance < 0.01] <- "< 1% abund."
+relabun.phylatop99.5$Phylum[relabun.phylatop99.5$Abundance < 0.005] <- "< .5% abund."
+
+top_99p_phyla <- unique(relabun.phylatop99$Phylum)
+top_99p_phyla
+
+top_99.5p_phyla <- unique(relabun.phylatop99.5$Phylum)
+top_99.5p_phyla
+
+# Surprised that Gemmatimonadetes not above >1%! But Gemmatimonadetes in top 16 and
+# comprises at least 0.5% of the total abundance
+
+# Phyla that comprise top 99.5 % phyla
+quartz()
+phylumPlot99.5percent <- ggplot(data=relabun.phylatop99.5, aes(x=Sample, y=Abundance, fill=Phylum)) + theme(axis.title.y = element_text(size = 18, face = "bold")) + theme(axis.title.x = element_blank()) + theme(axis.text.x = element_text(colour = "black", size = 14, face = "bold"))
+phylumPlot99.5percent + geom_bar(aes(), stat="identity", position="fill") +
+ theme(legend.position="bottom") +
+  guides(fill=guide_legend(nrow=4)) + theme(legend.text = element_text(colour="black", size = 10))  + theme(legend.title = element_blank())
+
+# Phyla that comprise top 99% phyla
+quartz()
+phylumPlot.99percent <- ggplot(data=relabun.phylatop99, aes(x=Sample, y=Abundance, fill=Phylum)) + theme(axis.title.y = element_text(size = 18, face = "bold")) + theme(axis.title.x = element_blank()) + theme(axis.text.x = element_text(colour = "black", size = 14, face = "bold"))
+phylumPlot.99percent + geom_bar(aes(), stat="identity", position="fill") +
+  theme(legend.position="bottom") +
+  guides(fill=guide_legend(nrow=4)) + theme(legend.text = element_text(colour="black", size = 10))  + theme(legend.title = element_blank())
+
+## Below is junk from earlier script... keep for easier manipulation later!
+# scale_fill_manual(values = c("#4575b4", "#d73027", "#fc8d59", "#fee090", "#91bfdb", "grey"), 
+               #   name= "Phylum", breaks= c("D_1__Firmicutes", "D_1__Proteobacteria", "D_1__Bacteroidetes", "D_1__Actinobacteria", "D_1__Fusobacteria", "< 1% abund."), 
+                #  labels =c("Firmicutes", "Proteobacteria", "Bacteroidetes", "Actinobacteria", "Fusobacteria", "< 1% abund.")) +
+
+# Get exact abundances of each phyla (top 99.5%):
+colnames(relabun.phylatop99.5)
+relabun.phylatop99.5[,2] #This is EU... now "Sample" because of the glomming!
+
+top_99.5p_phyla <- relabun.phylatop99.5 %>%
+  group_by(Sample, Phylum) %>%
+  summarize(Mean = mean(Abundance)) %>%
+  arrange(-Mean) %>%
+  View()
 
 
 
-### DID NOT DECIDE TO DROP ANY SINGLE OR DOUBLETONS FOR NOW 
+
+
 # Filter out blanks and such for now
-SRS_16S_soilonly <- SRS_16S.ps %>%
-  subset_samples(Type == "soil")
+# SRS_16S_soilonly <- SRS_16S.ps %>%
+#  subset_samples(Type == "soil")
 
-SRS_16S_soilonly 
+# SRS_16S_soilonly 
