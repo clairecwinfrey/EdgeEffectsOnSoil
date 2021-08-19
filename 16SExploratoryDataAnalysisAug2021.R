@@ -255,11 +255,12 @@ noeuksorNAs_ps <- prune_taxa(ASVstoKeep, SRS_16S.ps) #new phyloseq object with j
 # How are number of reads distributed across the samples?
 otu_table(noeuksorNAs_ps)
 seqspersample <- colSums(otu_table(noeuksorNAs_ps))
-SeqNumberPlot <-barplot(seqspersample, main="Total Sequences Per Sample", ylab= "Number of Sequences", xlab= "Sample Number")
+SeqNumberPlot <-barplot(seqspersample, main="All: Total Sequences Per Sample", ylab= "Number of Sequences", xlab= "Sample Number")
 
 # Just controls:
 seqsperctrl <- seqspersample[244:length(seqspersample)]
 SeqNumberPlotCtrls <- barplot(seqsperctrl, main="Total Sequences Per Sample", ylab= "Number of Sequences", xlab= "Sample Number", cex.names=0.27)
+SeqNumberPlotCtrls
 
 # Controls with easier axis names
 simple <- c("ExtB1", "ExtB2", "ExtB3", "ExtW1", "ExtW10", "ExtW11", "ExtW12",
@@ -268,17 +269,29 @@ simple <- c("ExtB1", "ExtB2", "ExtB3", "ExtW1", "ExtW10", "ExtW11", "ExtW12",
 "ExtW5","ExtW6","ExtW7","ExtW8", "ExtW9", "PCRNTC")
 seqsperctrl_simple <- setNames(seqsperctrl, simple)
 
-SeqNumberPlotCtrlsSimple <- barplot(seqsperctrl_simple, main="Total Sequences Per Sample",
-                                    ylab= "Number of Sequences", xlab= "Sample Number", cex.names=0.4)
+quartz()
+barplot(seqsperctrl_simple, main="Controls: Total Sequences Per Sample",
+                                    ylab= "Number of Sequences", xlab= "Sample Number", cex.names=0.35)
 
 # Let's rarefy:
 # What is the minimum for the non-control samples?
 min(seqspersample[1:243]) #1224
 max(seqspersample[1:243]) #157870
 mean(seqspersample[1:243]) # 26960
+
+min(seqspersample) #77
+max(seqspersample) #157870
+mean(seqspersample) # 24645.93
+sd(seqspersample)
+
+min(seqspersample[244:length(seqspersample)]) #77
+max(seqspersample[244:length(seqspersample)]) #157870
+mean(seqspersample[244:length(seqspersample)]) # 3015.692
+sd(seqspersample[244:length(seqspersample)])
+
 # Plot this:
 seqsPerExSamp <- seqspersample[1:243]
-SeqNumberPlotExSamp <- barplot(seqsPerExSamp, main="Total Sequences Per Sample",
+SeqNumberPlotExSamp <- barplot(seqsPerExSamp, main="Soils: Total Sequences Per Sample",
                                     ylab= "Number of Sequences", xlab= "Sample Number", cex.names=0.4)
 
 sort(seqsPerExSamp) #take a look in order from least to greatest
@@ -292,7 +305,8 @@ rarefied.ps <- rarefy_even_depth(noeuksorNAs_ps, sample.size = 15038, replace=FA
 # Rarefaction curve:
 samp.col = c(rep("blue", 243), rep("grey", 26))
 
-rare.plot <- rarecurve(t(otu_table(noeuksorNAs_ps)), step = 3000, cex = 0.5, col = samp.col, labe?taxl = FALSE, xlab = "Number of Sequences", ylab = "Number of ASVs")
+rare.plot <- rarecurve(t(otu_table(noeuksorNAs_ps)), step = 3000, cex = 0.5, col = samp.col, label = FALSE, xlab = "Number of Sequences", ylab = "Number of ASVs")
+rarecurve(t(otu_table(noeuksorNAs_ps)), step = 3000, cex = 0.5, col = samp.col, label = FALSE, xlab = "Number of Sequences", ylab = "Number of ASVs")
 
 # How many are left?
 colSums(otu_table(rarefied.ps)) #All have 15038, and there are 238 samples left. 
@@ -340,19 +354,19 @@ top_99.5p_phyla
 # Surprised that Gemmatimonadetes not above >1%! But Gemmatimonadetes in top 16 and
 # comprises at least 0.5% of the total abundance
 
-# Phyla that comprise top 99.5 % phyla
+# Phyla comprising at least 0.5% of total abundance
 quartz()
-phylumPlot99.5percent <- ggplot(data=relabun.phylatop99.5, aes(x=Sample, y=Abundance, fill=Phylum)) + theme(axis.title.y = element_text(size = 18, face = "bold")) + theme(axis.title.x = element_blank()) + theme(axis.text.x = element_text(colour = "black", size = 14, face = "bold"))
+phylumPlot99.5percent <- ggplot(data=relabun.phylatop99.5, aes(x=Sample, y=Abundance, fill=Phylum)) + theme(axis.title.y = element_text(size = 14, face = "bold")) + theme(axis.title.x = element_blank()) + theme(axis.text.x = element_text(colour = "black", size = 12, face = "bold"))
 phylumPlot99.5percent + geom_bar(aes(), stat="identity", position="fill") +
  theme(legend.position="bottom") +
-  guides(fill=guide_legend(nrow=4)) + theme(legend.text = element_text(colour="black", size = 10))  + theme(legend.title = element_blank())
+  guides(fill=guide_legend(nrow=4)) + theme(legend.text = element_text(colour="black", size = 10))  + ggtitle("Phyla comprising at least 0.5% of total abundance")
 
-# Phyla that comprise top 99% phyla
+# "Phyla comprising at least 1% of total abundance"
 quartz()
-phylumPlot.99percent <- ggplot(data=relabun.phylatop99, aes(x=Sample, y=Abundance, fill=Phylum)) + theme(axis.title.y = element_text(size = 18, face = "bold")) + theme(axis.title.x = element_blank()) + theme(axis.text.x = element_text(colour = "black", size = 14, face = "bold"))
+phylumPlot.99percent <- ggplot(data=relabun.phylatop99, aes(x=Sample, y=Abundance, fill=Phylum)) + theme(axis.title.y = element_text(size = 14, face = "bold")) + theme(axis.title.x = element_blank()) + theme(axis.text.x = element_text(colour = "black", size = 12, face = "bold"))
 phylumPlot.99percent + geom_bar(aes(), stat="identity", position="fill") +
   theme(legend.position="bottom") +
-  guides(fill=guide_legend(nrow=4)) + theme(legend.text = element_text(colour="black", size = 10))  + theme(legend.title = element_blank())
+  guides(fill=guide_legend(nrow=4)) + theme(legend.text = element_text(colour="black", size = 10))  + ggtitle("Phyla comprising at least 1% of total abundance")
 
 ## Below is junk from earlier script... keep for easier manipulation later!
 # scale_fill_manual(values = c("#4575b4", "#d73027", "#fc8d59", "#fee090", "#91bfdb", "grey"), 
@@ -369,10 +383,86 @@ top_99.5p_phyla <- relabun.phylatop99.5 %>%
   arrange(-Mean) %>%
   View()
 
+############################################
+# TOP CLASSES:
+#############################################
+
+# (adopted from my code at:
+   # https://github.com/clairecwinfrey/PhanBioMS_scripts/blob/master/R_scripts/figures/taxonomic_barplots.R)
+   # TURN ASVs INTO PHYLUM LEVEL
+rarefied.class.glom <-  tax_glom(rarefied.ps, taxrank = "Class") 
+tax_table(rarefied.class.glom) # good, this is only phyla (42 different phyla!)
+ 
+ # TRANSFORM SAMPLE COUNTS ON JUST GLOMMED SAMPLES (UNLIKE WHAT WE DID AT FIRST)
+relabun.class.0 <- transform_sample_counts(rarefied.class.glom, function(x) x / sum(x) )
+rownames(otu_table(relabun.class.0)) #weirdly, this is ASV_.... Is this right? 
+ # I think that the ASVs are just representative from each phylum
+ 
+ # MERGE SAMPLES so that we only have combined abundances for site and different kinds of controls
+relabun.class.1 <- merge_samples(relabun.class.0, group = "EU")
+sample_data(relabun.class.1) #shows that we still have samples from each EU, biocrust, and extcontrol (water)
+ 
+ # CONVERT TO PROPORTIONS AGAIN B/C TOTAL ABUNDANCE OF EACH SITE WILL EQUAL NUMBER OF SPECIES THAT WERE MERGED
+relabun.class.2 <- transform_sample_counts(relabun.class.1, function(x) x / sum(x))
+sample_data(relabun.class.2)
+ 
+ # NOW GET ONLY TAXA THAT COMPRISE AT LEAST 1% OF THE ABUNDANCE 
+relabun.class.df <-psmelt(relabun.class.2)
+dim(relabun.class.df) #
+sum(relabun.class.df[,3]) 
+colnames(relabun.class.df) 
+relabun.classtop99 <- relabun.class.df
+relabun.classtop95 <- relabun.class.df
+
+relabun.classtop99$Class[relabun.classtop99$Abundance < 0.01] <- "< 1% abund."
+relabun.classtop95$Class[relabun.classtop95$Abundance < 0.05] <- "< 5% abund."
+
+top_99p_class <- unique(relabun.classtop99$Class)
+top_99p_class
+
+top_95p_class <- unique(relabun.classtop95$Class)
+top_95p_class
+
+# Phyla comprising at least 5% of total abundance
+quartz()
+classPlot.95pt <- ggplot(data=relabun.classtop95, aes(x=Sample, y=Abundance, fill=Class)) + theme(axis.title.y = element_text(size = 14, face = "bold")) + theme(axis.title.x = element_blank()) + theme(axis.text.x = element_text(colour = "black", size = 12, face = "bold"))
+classPlot.95pt + geom_bar(aes(), stat="identity", position="fill") +
+  theme(legend.position="bottom") +
+  guides(fill=guide_legend(nrow=4)) + theme(legend.text = element_text(colour="black", size = 5.5))  + ggtitle("Classes comprising at least 5% of total abundance")
 
 
 
+# Ignore the lines below... not currently using them
+# Bray-Curtis dissimilarities based on square-root transformed data
+# Code from mctoolsR
+#braydist <- vegan::vegdist(t(otu_table(rarefied.ps)), method = "bray")
+#summary(braydist)
+# bray.mat <- as.matrix(braydist)
+# View(bray.mat) looks as expected
+# Plot ordination:
 
+# ord <- calc_ordination(braydist, 'nmds')
+
+# Using a phyloseq tool for convenience!
+# Bray-Curtis dissimilarities based on square-root transformed data
+set.seed(19)
+ord <- ordinate(rarefied.ps, method = "NMDS", distance = "bray", trymax = 100)
+
+# With no black outline around points
+quartz()
+rarefiedBrayNMDS <- phyloseq::plot_ordination(rarefied.ps, ord, type= "samples", color= "EU")
+rarefiedBrayNMDS + geom_polygon(aes(fill=EU)) + geom_point(size=3) + ggtitle("NMDS based on Bray-Curtis Dissimilarities")
+
+# With black outline around points:
+quartz()
+rarefiedBrayNMDSoutlined <-rarefiedBrayNMDS + geom_polygon(aes(fill=EU)) + geom_point(aes(fill=EU),color="black",pch=21, size=3) + ggtitle("NMDS based on Bray-Curtis Dissimilarities")
+rarefiedBrayNMDSoutlined
+
+# With transect included as shape:
+# This plot is not very informative!
+quartz()
+rarefiedBrayNMDStran <- rrarefiedBrayNMDS <- phyloseq::plot_ordination(rarefied.ps, ord, type= "samples", color= "EU", shape= "Transect")
+rarefiedBrayNMDStran + geom_polygon(aes(fill=EU)) + geom_point(size=3) + ggtitle("NMDS based on Bray-Curtis Dissimilarities")
 # Filter out blanks and such for now
 # SRS_16S_soilonly <- SRS_16S.ps %>%
 #  subset_samples(Type == "soil")
