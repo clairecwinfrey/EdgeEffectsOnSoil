@@ -7,13 +7,14 @@ library("readxl")       # necessary to import the data from Excel file
 library("dplyr")        # filter and reformat data frames
 library("tibble")       # Needed for converting column to row names
 library("tidyr")
+library("mctoolsr")
 
 setwd("/Users/clairewinfrey/Desktop/CU_Research/SoilEdgeEffectsResearch/Bioinformatics")
 list.files()
-seqtab_wTax_mctoolsr <- read.table("seqtab_wTax_mctoolsr.txt", header=T)
+seqtab_wTax_mctoolsr <- read.table("seqtab_wTax_mctoolsr.txt")
 str(seqtab_wTax_mctoolsr)
 head(seqtab_wTax_mctoolsr)
-View(seqtab_wTax_mctoolsr)
+#View(seqtab_wTax_mctoolsr)
 colnames(seqtab_wTax_mctoolsr)
 rownames(seqtab_wTax_mctoolsr)
 
@@ -25,33 +26,33 @@ tax_final.txt <- read.table("tax_final.txt")
 str(tax_final.txt)
 #View(tax_final.txt)
 
-
-library("mctoolsr")
 ### USING A HYBRID APPROACH OF http://leffj.github.io/mctools
-# Going off of Matt's suggestion-- first column ASV ID, then headers sample ID and last column taxonomy all together
-
-
+# Matt's suggestion: first column ASV ID, then headers sample ID and last column taxonomy all together
 
 #### LOAD FILES IN FOR PHYLOSEQ #####
 # 1. OTU table: ASVs/OTUs as rows, samples as columns. This is "seqtab"
 otu_mat <- seqtab
-seqtab$X
+seqtab$X #X is the ASV names
 otu_mat <- otu_mat %>%
   tibble::column_to_rownames("X") #make it so that "X"(which is column with ASV names is the rownames columnn!)
 colnames(otu_mat)
+rownames(otu_mat)
 #View(otu_mat)
 
 # 2. OTU taxonomy
 # This is basically the same as the first and last columns of seqtab_wTax_mctoolsr
 # So none of the guts that are essentially the ASV table
 dim(seqtab_wTax_mctoolsr)
-colnames(seqtab_wTax_mctoolsr)
+colnames(seqtab_wTax_mctoolsr) #samples
 head(seqtab_wTax_mctoolsr$V1) #THE ASV names!
 head(seqtab_wTax_mctoolsr$V271) #the taxonomy!
 step1 <- cbind(seqtab_wTax_mctoolsr$V1, seqtab_wTax_mctoolsr$V271)
+head(step1)
+colnames(step1) <- step1[1,] #make ASV_ID and taxonomy the column names
+head(step1)
+dim(step1)
+step1 <- step1[-1,] #get rid of first row which is same as column names
 str(step1)
-colnames(step1) <- step1[1,]
-step1 <- step1[-1,]
 #View(step1)
 # as.data.frame(step1) #This didn't work so I foreced it below
 
@@ -67,7 +68,7 @@ all.equal(tax_sep$`#ASV_ID`, tax_sep$Species) #Yep
 # tax_final.txt shows that no species in this data set... A choice made in bioinformatics script?
 colnames(tax_sep)
 tax_sep$Species <- NA
-View(tax_sep)
+#View(tax_sep)
 
 # IDEM for tax sep
 tax_mat <- tax_sep %>%
@@ -197,16 +198,57 @@ taxtable_outta_ps <- function(physeq){ #input is a phyloseq object
 
 # Get taxonomy table out of phyloseq:
 SRS_taxTable <- taxtable_outta_ps(SRS_16S.ps)
-View(SRS_taxTable)
+#View(SRS_taxTable)
 
-
+# These lines below are technically not needed, since I found a way to do it with phyloseq
+# tax_noeuksorNAs is no longer used, but serves as a good check to make sure that phyloseq
+# is doing what I want it to. 
 # Remove chloroplasts, mitochondria, and all eukaryotes:
-SRS_taxTable_noeuks <- SRS_taxTable %>% 
+tax_noeuksorNAs <- SRS_taxTable %>% 
   filter(Order != "Chloroplast") %>% 
   filter(Family != "Mitochondria") %>% 
-  filter(Kingdom != "Eukaryota")
-# View(SRS_taxTable_noeuks) 36,665 rows is exactly what we expect after the removal of all of these taxa!
+  filter(Kingdom != "Eukaryota") %>% 
+  filter(Kingdom != "NA") # Remove ASVs where kingdom is unknown ("NA" in first column) 
+# View(tax_noeuksorNAs) 
+# We filtered out a total of 2080 taxa. (36175 - 38255)
 
+# We now have to trim the OTU table, because it still has the taxa in it that were filtered out
+# above. It currently has 38255 taxa, whereas tax_noeuksorNAs has 38255 taxa. We'll want it this 
+# way so that we re-make the phyloseq object and then rarefy correctly. Could have done this all in
+# same step as above, but oh well!
+
+# Find ASVs where the order is Chloroplast
+chloros <- SRS_taxTable %>% 
+  filter(Order == "Chloroplast")
+dim(chloros) #149 chloroplast ASVs
+chloro_names <- rownames(chloros)
+# Find ASVs where the family is Mitochondria
+mitos <- SRS_taxTable %>% 
+  filter(Family == "Mitochondria")
+dim(mitos) #959 mitochondria ASVs
+mito_names <- rownames(mitos)
+# Find ASVs where kingdom is Eukaryota
+kingdomEuks <- SRS_taxTable %>% 
+  filter(Kingdom == "Eukaryota")
+dim(kingdomEuks) #482
+euks_names <- rownames(kingdomEuks)
+# Find ASVs where kingdom is NAS
+kingdomNAs <- SRS_taxTable %>% 
+  filter(Kingdom == "NA")
+dim(kingdomNAs) #490
+kNAs_names <- rownames(kingdomNAs)
+
+149 + 959 + 482 + 490 #this matches how many we removed above 
+bad_ASVs <- c(chloro_names, mito_names, euks_names, kNAs_names)
+length(bad_ASVs) == 149 + 959 + 482 + 490
+
+# Inspiration for using phyloseq here (Joey711's code: https://github.com/joey711/phyloseq/issues/652
+# Remove the ASVs listed above:
+all_Taxa <- taxa_names(SRS_16S.ps) #get all tax names in original, uncleaned dataset
+ASVstoKeep <- all_Taxa[!(all_Taxa %in% bad_ASVs)]
+length(ASVstoKeep) #36,175, matches what we created above!
+noeuksorNAs_ps <- prune_taxa(ASVstoKeep, SRS_16S.ps) #new phyloseq object with just the stuff we want!
+  
 
 
 
