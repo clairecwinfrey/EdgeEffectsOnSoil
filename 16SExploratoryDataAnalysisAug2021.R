@@ -28,9 +28,6 @@ tax_final.txt <- read.table("tax_final.txt")
 str(tax_final.txt)
 #View(tax_final.txt)
 
-### USING A HYBRID APPROACH OF http://leffj.github.io/mctools
-# Matt's suggestion: first column ASV ID, then headers sample ID and last column taxonomy all together
-
 #### LOAD FILES IN FOR PHYLOSEQ #####
 # 1. OTU table: ASVs/OTUs as rows, samples as columns. This is "seqtab"
 otu_mat <- seqtab
@@ -210,9 +207,11 @@ tax_noeuksorNAs <- SRS_taxTable %>%
   filter(Order != "Chloroplast") %>% 
   filter(Family != "Mitochondria") %>% 
   filter(Kingdom != "Eukaryota") %>% 
-  filter(Kingdom != "NA") # Remove ASVs where kingdom is unknown ("NA" in first column) 
+  filter(Kingdom != "NA") %>% #Remove ASVs where kingdom is unknown ("NA" in first column) 
+  filter(Phylum != "NA") #Remove ASVs where phylum is unknown ("NA" in first column) 
 # View(tax_noeuksorNAs) 
-# We filtered out a total of 2080 taxa. (36175 - 38255)
+dim(SRS_taxTable)[1] - dim(tax_noeuksorNAs)[1]
+# We filtered out a total of 3255 taxa.
 
 # We now have to trim the OTU table, because it still has the taxa in it that were filtered out
 # above. It currently has 38255 taxa, whereas tax_noeuksorNAs has 38255 taxa. We'll want it this 
@@ -239,10 +238,15 @@ kingdomNAs <- SRS_taxTable %>%
   filter(Kingdom == "NA")
 dim(kingdomNAs) #490
 kNAs_names <- rownames(kingdomNAs)
+# Find ASVs where phylum is NAS
+PhylumNAs <- SRS_taxTable %>% 
+  filter(Phylum == "NA")
+dim(PhylumNAs) #2147
+pNAs_names <- rownames(PhylumNAs)
 
-149 + 959 + 482 + 490 #this matches how many we removed above 
-bad_ASVs <- c(chloro_names, mito_names, euks_names, kNAs_names)
-length(bad_ASVs) == 149 + 959 + 482 + 490
+149 + 959 + 482 + 490 + 2147 #4227, this is more than what we removed above because some kingdom that were NAs had NA phyla too
+bad_ASVs <- c(chloro_names, mito_names, euks_names, kNAs_names, pNAs_names)
+length(bad_ASVs) == 149 + 959 + 482 + 490 + 2147 
 
 # Inspiration for using phyloseq here (Joey711's code: https://github.com/joey711/phyloseq/issues/652
 # Remove the ASVs listed above:
@@ -277,7 +281,7 @@ barplot(seqsperctrl_simple, main="Controls: Total Sequences Per Sample",
 # What is the minimum for the non-control samples?
 min(seqspersample[1:243]) #1224
 max(seqspersample[1:243]) #157870
-mean(seqspersample[1:243]) # 26960
+mean(seqspersample[1:243]) # 26730.58
 
 min(seqspersample) #77
 max(seqspersample) #157870
@@ -295,12 +299,16 @@ SeqNumberPlotExSamp <- barplot(seqsPerExSamp, main="Soils: Total Sequences Per S
                                     ylab= "Number of Sequences", xlab= "Sample Number", cex.names=0.4)
 
 sort(seqsPerExSamp) #take a look in order from least to greatest
+sort(seqspersample) #take a look in order from least to greatest (all samples and controls)
 
-# We'll rarefy at 15038, which only costs us 7 samples (plus all but two of the controls)
-# The random rarefaction is made without replacement so that the variance of rarefied
-# communities is rather related to rarefaction proportion than to the size of the sample.
+# We'll rarefy at 14973, which only costs us 7 samples (plus all but two of the controls)
+# The "random rarefaction is made without replacement so that the variance of rarefied
+# communities is rather related to rarefaction proportion than to the size of the sample". (quoted bit from 
+# vegan's manual page)
+
 set.seed(19)
-rarefied.ps <- rarefy_even_depth(noeuksorNAs_ps, sample.size = 15038, replace=FALSE, trimOTUs=TRUE)
+rarefied.ps <- rarefy_even_depth(noeuksorNAs_ps, sample.size = 14973, replace=FALSE, trimOTUs=TRUE)
+# 1121OTUs were removed because they are no longer present in any sample after random subsampling
 
 # Rarefaction curve:
 samp.col = c(rep("blue", 243), rep("grey", 26))
@@ -309,7 +317,11 @@ rare.plot <- rarecurve(t(otu_table(noeuksorNAs_ps)), step = 3000, cex = 0.5, col
 rarecurve(t(otu_table(noeuksorNAs_ps)), step = 3000, cex = 0.5, col = samp.col, label = FALSE, xlab = "Number of Sequences", ylab = "Number of ASVs")
 
 # How many are left?
-colSums(otu_table(rarefied.ps)) #All have 15038, and there are 238 samples left. 
+colSums(otu_table(rarefied.ps)) #All have 14973
+length(colSums(otu_table(rarefied.ps))) #238 samples left (2 less than when I rarefied w/o removing phylum= NA)
+# Which samples are these:
+sampleNames <- names(colSums(otu_table(rarefied.ps)))
+sampleNames
 
 ##################################################
 # TAKING A LOOK AT DATA
@@ -391,12 +403,12 @@ top_99.5p_phyla <- relabun.phylatop99.5 %>%
    # https://github.com/clairecwinfrey/PhanBioMS_scripts/blob/master/R_scripts/figures/taxonomic_barplots.R)
    # TURN ASVs INTO PHYLUM LEVEL
 rarefied.class.glom <-  tax_glom(rarefied.ps, taxrank = "Class") 
-tax_table(rarefied.class.glom) # good, this is only phyla (42 different phyla!)
- 
+tax_table(rarefied.class.glom) # good, this is only class (42 different phyla!)
+length(unique(tax_table(rarefied.class.glom))) #854 classes... although some NAs in there too
+
  # TRANSFORM SAMPLE COUNTS ON JUST GLOMMED SAMPLES (UNLIKE WHAT WE DID AT FIRST)
 relabun.class.0 <- transform_sample_counts(rarefied.class.glom, function(x) x / sum(x) )
-rownames(otu_table(relabun.class.0)) #weirdly, this is ASV_.... Is this right? 
- # I think that the ASVs are just representative from each phylum
+rownames(otu_table(relabun.class.0)) # I think that the ASVs are just representative from each class
  
  # MERGE SAMPLES so that we only have combined abundances for site and different kinds of controls
 relabun.class.1 <- merge_samples(relabun.class.0, group = "EU")
@@ -463,8 +475,7 @@ rarefiedBrayNMDSoutlined
 quartz()
 rarefiedBrayNMDStran <- rrarefiedBrayNMDS <- phyloseq::plot_ordination(rarefied.ps, ord, type= "samples", color= "EU", shape= "Transect")
 rarefiedBrayNMDStran + geom_polygon(aes(fill=EU)) + geom_point(size=3) + ggtitle("NMDS based on Bray-Curtis Dissimilarities")
-# Filter out blanks and such for now
-# SRS_16S_soilonly <- SRS_16S.ps %>%
-#  subset_samples(Type == "soil")
 
-# SRS_16S_soilonly 
+# Now, remove biocrust and controls from ordination:
+
+
