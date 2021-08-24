@@ -1,7 +1,17 @@
 # Exploratory Data Analysis
 # Aug 17, 2021
-### DID NOT DECIDE TO DROP ANY SINGLETONS OR DOUBLETONS FOR NOW 
 
+# This script is to take a first look at 16S MiSeq data from the samples that I
+# took in May 2021 to examine an edge effect across forest and savanna boun-
+# daries at the Savannah River Site. Here, I look at sequence counts, rarefy,
+# examine top classes and phyla, and look at ordinations. I repeat the ordinations
+# and examination of top classes and phyla before and after removing rare species
+# (here those that showed up LESS THAN 50 times across whole dataset).
+# Then, I move forward with the rarefied, rare-removed data set and do preliminary
+# investigations into why outlier samples might be outliers, how savannas/patches
+# differ from forests, etc.
+
+# Read in libraries
 library("phyloseq")
 library("ggplot2")      # graphics
 library("readxl")       # necessary to import the data from Excel file
@@ -323,9 +333,12 @@ length(colSums(otu_table(rarefied.ps))) #238 samples left (2 less than when I ra
 sampleNames <- names(colSums(otu_table(rarefied.ps)))
 sampleNames
 
-##################################################
-# TAKING A LOOK AT DATA
-##################################################
+####################################################################
+# The following lines through about line 513 is all done BEFORE removing rare taxa)
+
+#####################
+# TOP PHYLA
+#####################
 
 # Phylum level (adopted from my code at:
 # https://github.com/clairecwinfrey/PhanBioMS_scripts/blob/master/R_scripts/figures/taxonomic_barplots.R)
@@ -392,12 +405,12 @@ relabun.phylatop99.5[,2] #This is EU... now "Sample" because of the glomming!
 top_99.5p_phyla <- relabun.phylatop99.5 %>%
   group_by(Sample, Phylum) %>%
   summarize(Mean = mean(Abundance)) %>%
-  arrange(-Mean) %>%
-  View()
+  arrange(-Mean) 
+# View()
 
-############################################
+#####################
 # TOP CLASSES:
-#############################################
+#####################
 
 # (adopted from my code at:
    # https://github.com/clairecwinfrey/PhanBioMS_scripts/blob/master/R_scripts/figures/taxonomic_barplots.R)
@@ -443,7 +456,6 @@ classPlot.95pt + geom_bar(aes(), stat="identity", position="fill") +
   guides(fill=guide_legend(nrow=4)) + theme(legend.text = element_text(colour="black", size = 5.5))  + ggtitle("Classes comprising at least 5% of total abundance")
 
 
-
 # Ignore the lines below... not currently using them
 # Bray-Curtis dissimilarities based on square-root transformed data
 # Code from mctoolsR
@@ -477,5 +489,77 @@ rarefiedBrayNMDStran <- rrarefiedBrayNMDS <- phyloseq::plot_ordination(rarefied.
 rarefiedBrayNMDStran + geom_polygon(aes(fill=EU)) + geom_point(size=3) + ggtitle("NMDS based on Bray-Curtis Dissimilarities")
 
 # Now, remove biocrust and controls from ordination:
+justsoils.ps <- subset_samples(rarefied.ps, Type != "BioCrust" & Type != "ExtContWater")
+unique(sample_data(justsoils.ps)[,27]) #only soils
+sample_names(justsoils.ps) #another check to show that we have only soils!
 
+# Ordination plot of just soils:
+set.seed(19)
+ordSoils <- ordinate(justsoils.ps, method = "NMDS", distance = "bray", trymax = 100)
+quartz()
+soilsrarefiedBrayNMDS <- phyloseq::plot_ordination(justsoils.ps, ordSoils, type= "samples", color= "EU")
+soilsrarefiedBrayNMDS + geom_polygon(aes(fill=EU)) + geom_point(size=3) + ggtitle("NMDS based on Bray-Curtis Dissimilarities")
+
+# Add in labels to figure out what weird samples are
+quartz()
+soilsrarefiedBrayNMDS <- phyloseq::plot_ordination(justsoils.ps, ordSoils, type= "samples", color= "EU", label = "Sample.ID")
+soilsrarefiedBrayNMDS + geom_polygon(aes(fill=EU)) + geom_point(size=3) + ggtitle("NMDS based on Bray-Curtis Dissimilarities")
+
+# Visible outliers: (going clockwise from the top left on the ordination plot above):
+# 53ND_B_20, 10C_L_10, 53ND_R_40, 53SD_R_10, 52D_R_10, 52D_L_100, (Maybe!) 52D_R_90, 53ND_L_80
+outliers <- c("53ND_B_20", " 10C_L_10", "53ND_R_40", "53SD_R_10", "52D_L_100", "52D_R_90", "53ND_L_80")
+
+###########################################################################
+# REMOVE "RARE" TAXA AND THEN RE-RUN 1) sequences per sample, 
+# 2) top phyla, 3) top classes, 4) ordinations
+# Questions when comparing pre and post removal of rare taxa:
+# 1) Do top phyla or classes change, or outliers, after this removal? If so, this is
+# evidence of these shifts being driven by rare taxa:
+
+# Use function to get ASV table out of phyloseq so that we can view it better
+ASVs_outta_ps <- function(physeq){ #input is a phyloseq object
+  ASVTable <- otu_table(physeq)
+  return(as.data.frame(ASVTable))
+}
+
+rare_ASVtab <- ASVs_outta_ps(rarefied.ps) 
+# Add column for abundance of ASVs across all (pre-rarefied) samples
+rare_ASVtab$Abundance <- rowSums(rare_ASVtab)
+
+# Most are rare! 
+plot(rare_ASVtab$Abundance)
+length(which(rare_ASVtab$Abundance <= 50)) #23,775 ASVs have 50 or fewer occurrences across the rarefied data set 
+length(which(rare_ASVtab$Abundance <= 35)) #20,744 ASVs have 30 or fewer occurrences across the rarefied data set
+length(which(rare_ASVtab$Abundance <= 10)) #9,818 ASVs have 10 or fewer occurrences across the rarefied data set
+
+length(which(rare_ASVtab$Abundance >= 50)) #10,257 ASVs have 50 or more occurrences across the rarefied data set 
+
+# We'll get rid of the ASVs that do not occur AT LEAST 50 times across our dataset:
+keptASVsindex <- which(rare_ASVtab$Abundance >= 50) #gives row numbers to keep in the dataset 
+max(keptASVsindex) # last row to keep is 15719 (but not all before are kept probably b/c of rarfying)
+rare_ASVtab$Abundance[15719] #has exactly fifty 
+
+ASVsTrimmed <- rare_ASVtab[keptASVsindex,] #keep only rows of the index, and all columns (i.e. all samples)
+dim(ASVsTrimmed) #10257 ASVs across 239 samples, as expected 
+plot(ASVsTrimmed$Abundance) # tail is still long, because most ASVs are still rare
+# relative to the most abundant ASVs
+
+length(which(ASVsTrimmed$Abundance == 50)) # 153 ASVs were right at cut off!
+range(ASVsTrimmed$Abundance) #50 75046
+length(which(ASVsTrimmed$Abundance >= 1000)) #only 517 ASVs appear more than 1000 times
+# across the data set, which is in average of about 4 times per sample!
+
+# How many ASVs occur in every sample?
+# Said another way: how many rows (i.e. ASVs) occur >= 1 time across all columns (i.e. samples)
+# Or: are there any rows that contain no zeros?
+# Inspiration from this post: https://stackoverflow.com/questions/9977686/how-to-remove-rows-with-any-zero-value
+
+# Let's you find rows that contain zeros and then filter them out
+rownames(ASVsTrimmed[!(apply(ASVsTrimmed, 1, function(y) any(y == 0))),])
+# "ASV_1"  "ASV_3"  "ASV_4"  "ASV_12" "ASV_17" are found in every sample 
+# This corresponds to rows:
+ASVsinAllindex <- c(1, 3, 4, 10, 15)
+rownames(ASVsTrimmed)[ASVsinAllindex] # yes, this matches above
+# What are these ASVs?
+rarefied_taxa[ASVsinAllindex,]
 
