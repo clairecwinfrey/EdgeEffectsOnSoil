@@ -549,6 +549,14 @@ range(ASVsTrimmed$Abundance) #50 75046
 length(which(ASVsTrimmed$Abundance >= 1000)) #only 517 ASVs appear more than 1000 times
 # across the data set, which is in average of about 4 times per sample!
 
+# Get TAXONOMIC TABLE that matches the ASV table above using function we defined earlier
+rare_taxTab <- taxtable_outta_ps(rarefied.ps) 
+# (first check that the ASVs (i.e. rownames) are in the same order for the two data frames so that we can use the 
+# same index)
+unique(rownames(rare_taxTab) == rownames(rare_ASVtab)) # all are the same, son we're good to move to the next step 
+taxTrimmed <- rare_taxTab[keptASVsindex,] #keep only rows of the index made above for tax appearing at least 50 times
+unique(rownames(taxTrimmed) == rownames(ASVsTrimmed)) #ALl true so this is the same!
+
 # How many ASVs occur in every sample?
 # Said another way: how many rows (i.e. ASVs) occur >= 1 time across all columns (i.e. samples)
 # Or: are there any rows that contain no zeros?
@@ -562,4 +570,14 @@ ASVsinAllindex <- c(1, 3, 4, 10, 15)
 rownames(ASVsTrimmed)[ASVsinAllindex] # yes, this matches above
 # What are these ASVs?
 rarefied_taxa[ASVsinAllindex,]
+rowMeans(ASVsTrimmed)[ASVsinAllindex]
 
+# Merge trimmed ASV tables and taxonomy tables to get something that is formatted like
+# "seqtab_wTax_mctoolsr"
+seqtab_wTax_trimmed <- cbind.data.frame(ASVsTrimmed, taxTrimmed)
+seqtab_wTax_trimmed[,239]
+
+# Make Excel files of this!
+write.csv(ASVsTrimmed[,-239], "SRSMay2021_16S_cleanedASVtable.csv")
+write.csv(taxTrimmed, "SRSMay2021_16S_cleanedTaxTable.csv") 
+write.csv(seqtab_wTax_trimmed[,-239], "SRSMay2021_16S_seqtab_wtax_trimmed.csv")
