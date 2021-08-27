@@ -11,6 +11,11 @@
 # investigations into why outlier samples might be outliers, how savannas/patches
 # differ from forests, etc.
 
+# Files saved in this script: rarefied.ps, relabun.phylatop99.5, relabun.phylatop99, top_99.5p_phyla, 
+# relabun.classtop95, ord, ordSoils, ASVsTrimmed, taxTrimmed.
+# file = "EDA16SAug2021"
+load("EDA16SAug2021")
+
 # Read in libraries
 library("phyloseq")
 library("ggplot2")      # graphics
@@ -578,6 +583,153 @@ seqtab_wTax_trimmed <- cbind.data.frame(ASVsTrimmed, taxTrimmed)
 seqtab_wTax_trimmed[,239]
 
 # Make Excel files of this!
-write.csv(ASVsTrimmed[,-239], "SRSMay2021_16S_cleanedASVtable.csv")
-write.csv(taxTrimmed, "SRSMay2021_16S_cleanedTaxTable.csv") 
-write.csv(seqtab_wTax_trimmed[,-239], "SRSMay2021_16S_seqtab_wtax_trimmed.csv")
+#write.csv(ASVsTrimmed[,-239], "SRSMay2021_16S_cleanedASVtable.csv")
+#write.csv(taxTrimmed, "SRSMay2021_16S_cleanedTaxTable.csv") 
+#write.csv(seqtab_wTax_trimmed[,-239], "SRSMay2021_16S_seqtab_wtax_trimmed.csv")
+
+############ RE-DO ANALYSES WITH DATASET WHERE THE RARE TAXA HAVE BEEN REMOVED
+#### NEED TO REMAKE THESE INTO PHYLOSEQ OBJECTS FIRST (READ THROUGH THIS TOO)
+
+# Remake phyloseq object 
+class(taxTrimmed)
+dim(ASVsTrimmed)
+View(ASVsTrimmed)
+
+otu_mat <- as.matrix(ASVsTrimmed[,-239]) #remove "Abundance" column that is at the end
+tax_mat <- as.matrix(taxTrimmed)
+#View(otu_mat)
+#View(tax_mat)
+
+# Transform to phyloseq objects
+OTU = otu_table(otu_mat, taxa_are_rows = TRUE)
+TAX = tax_table(tax_mat)
+samples = sample_data(samples_df)
+TrimmedSRS_16S.ps <- phyloseq(OTU, TAX, samples)
+TrimmedSRS_16S.ps
+colnames(otu_table(TrimmedSRS_16S.ps))
+
+#####################
+# trimmedTop PHYLA
+#####################
+
+# Phylum level (adopted from my code at:
+# https://github.com/clairecwinfrey/PhanBioMS_scripts/blob/master/R_scripts/figures/taxonomic_bartrimmedPlots.R)
+# TURN ASVs INTO PHYLUM LEVEL
+rarefiedTrimmed.phylum.glom <-  tax_glom(TrimmedSRS_16S.ps, taxrank = "Phylum") 
+tax_table(rarefiedTrimmed.phylum.glom) # good, this is only phyla (42 different phyla!)
+
+# TRANSFORM SAMPLE COUNTS ON JUST GLOMMED SAMPLES (UNLIKE WHAT WE DID AT FIRST)
+relabunTrimmed.phyla.0 <- transform_sample_counts(rarefiedTrimmed.phylum.glom, function(x) x / sum(x) )
+rownames(otu_table(relabunTrimmed.phyla.0)) #weirdly, this is ASV_.... Is this right? 
+# I think that the ASVs are just representative from each phylum
+
+# MERGE SAMPLES so that we only have combined abundances for site and different kinds of controls
+relabunTrimmed.phyla.1 <- merge_samples(relabunTrimmed.phyla.0, group = "EU")
+sample_data(relabunTrimmed.phyla.1) #shows that we still have samples from each EU, biocrust, and extcontrol (water)
+
+# CONVERT TO PROPORTIONS AGAIN B/C TOTAL ABUNDANCE OF EACH SITE WILL EQUAL NUMBER OF SPECIES THAT WERE MERGED
+relabunTrimmed.phyla.2 <- transform_sample_counts(relabunTrimmed.phyla.1, function(x) x / sum(x))
+sample_data(relabunTrimmed.phyla.2)
+
+# NOW GET ONLY TAXA THAT COMPRISE AT LEAST 1% OF THE ABUNDANCE 
+relabunTrimmed.phyla.df <-psmelt(relabunTrimmed.phyla.2)
+dim(relabunTrimmed.phyla.df) #
+sum(relabunTrimmed.phyla.df[,3]) 
+colnames(relabunTrimmed.phyla.df) 
+relabunTrimmed.phylatrimmedTop99 <- relabunTrimmed.phyla.df
+relabunTrimmed.phylatrimmedTop99.5 <- relabunTrimmed.phyla.df
+
+relabunTrimmed.phylatrimmedTop99$Phylum[relabunTrimmed.phylatrimmedTop99$Abundance < 0.01] <- "< 1% abund."
+relabunTrimmed.phylatrimmedTop99.5$Phylum[relabunTrimmed.phylatrimmedTop99.5$Abundance < 0.005] <- "< .5% abund."
+
+trimmedTop_99p_phyla <- unique(relabunTrimmed.phylatrimmedTop99$Phylum)
+trimmedTop_99p_phyla
+
+trimmedTop_99.5p_phyla <- unique(relabunTrimmed.phylatrimmedTop99.5$Phylum)
+trimmedTop_99.5p_phyla
+
+# Surprised that Gemmatimonadetes not above >1%! But Gemmatimonadetes in trimmedTop 16 and
+# comprises at least 0.5% of the total abundance
+
+# Phyla comprising at least 0.5% of total abundance
+quartz()
+phylumtrimmedPlot99.5percent <- ggplot(data=relabunTrimmed.phylatrimmedTop99.5, aes(x=Sample, y=Abundance, fill=Phylum)) + theme(axis.title.y = element_text(size = 14, face = "bold")) + theme(axis.title.x = element_blank()) + theme(axis.text.x = element_text(colour = "black", size = 12, face = "bold"))
+phylumtrimmedPlot99.5percent + geom_bar(aes(), stat="identity", position="fill") +
+  theme(legend.position="bottom") +
+  guides(fill=guide_legend(nrow=4)) + theme(legend.text = element_text(colour="black", size = 10))  + ggtitle("Phyla comprising at least 0.5% of total abundance")
+
+# "Phyla comprising at least 1% of total abundance"
+quartz()
+phylumtrimmedPlot.99percent <- ggplot(data=relabunTrimmed.phylatrimmedTop99, aes(x=Sample, y=Abundance, fill=Phylum)) + theme(axis.title.y = element_text(size = 14, face = "bold")) + theme(axis.title.x = element_blank()) + theme(axis.text.x = element_text(colour = "black", size = 12, face = "bold"))
+phylumtrimmedPlot.99percent + geom_bar(aes(), stat="identity", position="fill") +
+  theme(legend.position="bottom") +
+  guides(fill=guide_legend(nrow=4)) + theme(legend.text = element_text(colour="black", size = 10))  + ggtitle("Phyla comprising at least 1% of total abundance")
+
+## Below is junk from earlier script... keep for easier manipulation later!
+# scale_fill_manual(values = c("#4575b4", "#d73027", "#fc8d59", "#fee090", "#91bfdb", "grey"), 
+#   name= "Phylum", breaks= c("D_1__Firmicutes", "D_1__Proteobacteria", "D_1__Bacteroidetes", "D_1__Actinobacteria", "D_1__Fusobacteria", "< 1% abund."), 
+#  labels =c("Firmicutes", "Proteobacteria", "Bacteroidetes", "Actinobacteria", "Fusobacteria", "< 1% abund.")) +
+
+# Get exact abundances of each phyla (trimmedTop 99.5%):
+colnames(relabunTrimmed.phylatrimmedTop99.5)
+relabunTrimmed.phylatrimmedTop99.5[,2] #This is EU... now "Sample" because of the glomming!
+
+trimmedTop_99.5p_phyla <- relabunTrimmed.phylatrimmedTop99.5 %>%
+  group_by(Sample, Phylum) %>%
+  summarize(Mean = mean(Abundance)) %>%
+  arrange(-Mean) 
+# View()
+
+#####################
+# trimmedTop CLASSES:
+#####################
+
+# (adopted from my code at:
+# https://github.com/clairecwinfrey/PhanBioMS_scripts/blob/master/R_scripts/figures/taxonomic_bartrimmedPlots.R)
+# TURN ASVs INTO PHYLUM LEVEL
+rarefiedTrimmed.class.glom <-  tax_glom(TrimmedSRS_16S.ps, taxrank = "Class") 
+tax_table(rarefiedTrimmed.class.glom) # good, this is only class (42 different phyla!)
+length(unique(tax_table(rarefiedTrimmed.class.glom))) #854 classes... although some NAs in there too
+
+# TRANSFORM SAMPLE COUNTS ON JUST GLOMMED SAMPLES (UNLIKE WHAT WE DID AT FIRST)
+relabunTrimmed.class.0 <- transform_sample_counts(rarefiedTrimmed.class.glom, function(x) x / sum(x) )
+rownames(otu_table(relabunTrimmed.class.0)) # I think that the ASVs are just representative from each class
+
+# MERGE SAMPLES so that we only have combined abundances for site and different kinds of controls
+relabunTrimmed.class.1 <- merge_samples(relabunTrimmed.class.0, group = "EU")
+sample_data(relabunTrimmed.class.1) #shows that we still have samples from each EU, biocrust, and extcontrol (water)
+
+# CONVERT TO PROPORTIONS AGAIN B/C TOTAL ABUNDANCE OF EACH SITE WILL EQUAL NUMBER OF SPECIES THAT WERE MERGED
+relabunTrimmed.class.2 <- transform_sample_counts(relabunTrimmed.class.1, function(x) x / sum(x))
+sample_data(relabunTrimmed.class.2)
+
+# NOW GET ONLY TAXA THAT COMPRISE AT LEAST 1% OF THE ABUNDANCE 
+relabunTrimmed.class.df <-psmelt(relabunTrimmed.class.2)
+dim(relabunTrimmed.class.df) #
+sum(relabunTrimmed.class.df[,3]) 
+colnames(relabunTrimmed.class.df) 
+relabunTrimmed.classtrimmedTop99 <- relabunTrimmed.class.df
+relabunTrimmed.classtrimmedTop95 <- relabunTrimmed.class.df
+
+relabunTrimmed.classtrimmedTop99$Class[relabunTrimmed.classtrimmedTop99$Abundance < 0.01] <- "< 1% abund."
+relabunTrimmed.classtrimmedTop95$Class[relabunTrimmed.classtrimmedTop95$Abundance < 0.05] <- "< 5% abund."
+
+trimmedTop_99p_class <- unique(relabunTrimmed.classtrimmedTop99$Class)
+trimmedTop_99p_class
+
+trimmedTop_95p_class <- unique(relabunTrimmed.classtrimmedTop95$Class)
+trimmedTop_95p_class
+
+# Phyla comprising at least 5% of total abundance
+quartz()
+classtrimmedPlot.95pt <- ggplot(data=relabunTrimmed.classtrimmedTop95, aes(x=Sample, y=Abundance, fill=Class)) + theme(axis.title.y = element_text(size = 14, face = "bold")) + theme(axis.title.x = element_blank()) + theme(axis.text.x = element_text(colour = "black", size = 12, face = "bold"))
+classtrimmedPlot.95pt + geom_bar(aes(), stat="identity", position="fill") +
+  theme(legend.position="bottom") +
+  guides(fill=guide_legend(nrow=4)) + theme(legend.text = element_text(colour="black", size = 5.5))  + ggtitle("Classes comprising at least 5% of total abundance")
+
+
+##################################
+# SAVE ALL OF THESE FOR EASY ACCESS
+##################################
+
+save(rarefied.ps, relabun.phylatop99.5, relabun.phylatop99, top_99.5p_phyla, relabun.classtop95, ord, ordSoils, ASVsTrimmed, taxTrimmed, file = "EDA16SAug2021")
