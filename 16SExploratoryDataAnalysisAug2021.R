@@ -727,9 +727,52 @@ classtrimmedPlot.95pt + geom_bar(aes(), stat="identity", position="fill") +
   theme(legend.position="bottom") +
   guides(fill=guide_legend(nrow=4)) + theme(legend.text = element_text(colour="black", size = 5.5))  + ggtitle("Classes comprising at least 5% of total abundance")
 
+# Remove biocrust and controls before ordination:
+trimedJustsoils.ps <- subset_samples(TrimmedSRS_16S.ps, Type != "BioCrust" & Type != "ExtContWater")
+unique(sample_data(trimedJustsoils.ps)[,27]) #only soils
+sample_names(trimedJustsoils.ps) #another check to show that we have only soils!
+
+# Plot ordination
+# Bray-Curtis dissimilarities based on square-root transformed data
+set.seed(19)
+trimOrd <- ordinate(trimedJustsoils.ps, method = "NMDS", distance = "bray", trymax = 100) 
+
+# With no black outline around points
+quartz()
+trimmedBrayNMDS <- phyloseq::plot_ordination(trimedJustsoils.ps, trimOrd, type= "samples", color= "EU")
+trimmedBrayNMDS + geom_polygon(aes(fill=EU)) + geom_point(size=3) + ggtitle("NMDS based on Bray-Curtis Dissimilarities (Trimmed)")
+
+# Add in labels to figure out what weird samples are
+quartz()
+labeledTrimmedBrayNMDS <- phyloseq::plot_ordination(trimedJustsoils.ps, ordSoils, type= "samples", color= "EU", label = "Sample.ID")
+labeledTrimmedBrayNMDS + geom_polygon(aes(fill=EU)) + geom_point(size=3) + ggtitle("NMDS based on Bray-Curtis Dissimilarities")
+
+# Visible outliers: (going clockwise from the top left on the ordination plot above):
+# 53ND_B_20, 10C_L_10, 53ND_R_40, 53SD_R_10, 52D_R_10, 52D_L_100, (Maybe!) 52D_R_90, 53ND_L_80
+outliersTrimmed <- c("53ND_B_20", " 10C_L_10", "53ND_R_40", "53SD_R_10", "52D_R_10", "52D_L_100", "53ND_L_80")
+
+# Do these outliers look weird?
+
+
+#################
+# Ordination of forest versus patch
+#################
+
+# First, we need to add a column for forest versus patch into sample data
+
+
+quartz()
+HabitatdBrayNMDS <- phyloseq::plot_ordination(trimmedJustsoils.ps, ordSoils, type= "samples", color= "", label = "Sample.ID")
+HabitatBrayNMDS + geom_polygon(aes(fill=EU)) + geom_point(size=3) + ggtitle("NMDS based on Bray-Curtis Dissimilarities")
+
+
+
+
+
+
 
 ##################################
 # SAVE ALL OF THESE FOR EASY ACCESS
 ##################################
 
-save(rarefied.ps, relabun.phylatop99.5, relabun.phylatop99, top_99.5p_phyla, relabun.classtop95, ord, ordSoils, ASVsTrimmed, taxTrimmed, file = "EDA16SAug2021")
+save(rarefied.ps, relabun.phylatop99.5, relabun.phylatop99, top_99.5p_phyla, relabun.classtop95, ord, ordSoils, ASVsTrimmed, taxTrimmed, trimedJustsoils.ps, trimOrd, outliersTrimmed, file = "EDA16SAug2021")
