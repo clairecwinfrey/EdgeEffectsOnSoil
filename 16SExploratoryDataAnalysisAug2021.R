@@ -762,7 +762,7 @@ labeledTrimmedBrayNMDS + geom_polygon(aes(fill=EU)) + geom_point(size=3) + ggtit
 
 
 ##################################################################################
-# III. EXPLORATION OF "OUTLIER" TAXA
+# III. EXPLORATION OF "OUTLIER" TAXA-- taxonomic barcharts, differential abundance analysis
 ##################################################################################
 
 # Visible outliers: (going clockwise from the top left on the ordination plot "labeledTrimmedBrayNMDS" above):
@@ -901,6 +901,77 @@ grid.arrange(outliers.phylumPlot.95pt, justsoils.phylaPlot.95percent, nrow=1)
 
 # 11  was sample 53ND_L_80, it was in Plate 1, well B1
 
+#################
+# Differential abundance analysis of outliers versus total data
+#################
+# Paper for DESeq2 : Love, M.I., Huber, W. & Anders, S. Moderated estimation of fold change and dispersion for RNA-seq data with DESeq2. 
+# Genome Biol 15, 550 (2014). https://doi.org/10.1186/s13059-014-0550-8
+# This section works off example here: https://joey711.github.io/phyloseq-extensions/DESeq2.html
+
+# First need to add a new metadata variable to trimmedJustsoils.ps so that we can compare
+# outliers and rest of data
+sample_data(trimmedJustsoils.ps)$Outlier <- rep("not_outlier", nrow(sample_data(trimmedJustsoils.ps)))
+sample_data(trimmedJustsoils.ps)$Outlier[c(3, 12, 25, 37, 60, 221, 233)] <- "outlier"
+sort(sample_data(trimmedJustsoils.ps)$Sample.ID[c(3, 12, 25, 37, 60, 221, 233)]) == sort(outliersTrimmed) #names are correct
+
+outlierDeseq1 <- phyloseq_to_deseq2(trimmedJustsoils.ps, ~ Outlier)
+# Note: uses default Benjamini-Hochberg correction 
+outlierDeseqtested <- DESeq(outlierDeseq1, test="Wald", fitType = "parametric")
+
+outlierDeSeq_res <- results(outlierDeseqtested, cooksCutoff = FALSE)
+alpha <- 0.01 #note that this is less sensitive than 0.001 used for forests versus soils 
+outlierSigtab <- outlierDeSeq_res[which(outlierDeSeq_res$padj < alpha), ]
+outlierSigtab <- cbind(as(outlierSigtab, "data.frame"), as(tax_table(trimmedJustsoils.ps)[rownames(outlierSigtab), ], "matrix"))
+head(outlierSigtab)
+dim(outlierSigtab) 
+#View(outlierSigtab)
+
+# make new phyloseq object where samples are averaged together (ASV counts are summed) across Habitat type (here just forest and patch)
+outlier.ps <- merge_samples(trimmedJustsoils.ps, "Outlier")
+
+outlierASVs <- ASVs_outta_ps(outlier.ps)
+outlierASVs <- t(outlierASVs) # make ASVs rows and outlier versus no outlier columns
+
+# Merge dataframes so that abundance in outlier and non outlier is present, then rename columns 
+outlierSigtab <- left_join(rownames_to_column(outlierSigtab), rownames_to_column(as.data.frame(outlierASVs)), by="rowname")
+colnames(outlierSigtab)[15] <- "notOutlierAbundance"
+colnames(outlierSigtab)[16] <- "outlierAbundance"
+# Add in mean abundance in each category
+outlierSigtab$meanPercentNotOutlier <- outlierSigtab[15]/sum(outlierASVs[,1])*100 #this is divided by total number of counts in the forest samples (after rarefying)
+outlierSigtab$meanPercentOutlier <- outlierSigtab[16]/sum(outlierASVs[,2])*100 #this is divided by total number of counts in the patch samples (after rarefying)
+View(outlierSigtab)
+
+# Plot 
+quartz()
+theme_set(theme_bw())
+scale_fill_discrete <- function(palname = "Set1", ...) {
+  scale_fill_brewer(palette = palname, ...)
+}
+# Phylum order
+x = tapply(outlierSigtab$log2FoldChange, outlierSigtab$Phylum, function(x) max(x))
+x = sort(x, TRUE)
+outlierSigtab$Phylum = factor(as.character(outlierSigtab$Phylum), levels=names(x))
+# Genus order
+x = tapply(outlierSigtab$log2FoldChange, outlierSigtab$Genus, function(x) max(x))
+x = sort(x, TRUE)
+outlierSigtab$Genus = factor(as.character(outlierSigtab$Genus), levels=names(x))
+
+# point size does not vary
+quartz()
+ggplot(outlierSigtab, aes(x=Genus, y=log2FoldChange, color=Phylum)) + geom_point(size=6) + 
+  theme(axis.text.x = element_text(angle = -90, hjust = 0, vjust=0.5)) + ggtitle("Log2Fold Change between Outliers and non-outliers") + ylab("Log2FoldChange (Relative to Outliers)")
+
+# point size varies based on baseMean (i.e. average of the normalized count values, dividing by size factors, taken over all samples)
+quartz()
+ggplot(outlierSigtab, aes(x=Genus, y=log2FoldChange, color=Phylum)) + geom_point(aes(size = baseMean)) + 
+  theme(axis.text.x = element_text(angle = -90, hjust = 0, vjust=0.5)) + ggtitle("Log2Fold Change between Outliers and non-outliers") + ylab("Log2FoldChange (Relative to Outliers)")
+
+# The fact that there are similar phyla and genera that are both higher and lower across these two groups suggests that these outliers might not
+# be so weird. The tail of taxa (near the right hand side of the plot) is unsurprising; this just says that there are wuite a few taxa that
+# are in all the rest of the samples but are not found in the outliers (which is far fewer samples)
+
+
+
 ##################################################################################
 # IV. COMPARING FOREST AND PATCHES WITH ORDINATIONS AND DIFFERENTIAL ABUNDANCE ANALYSIS
 ##################################################################################
@@ -917,11 +988,8 @@ HabitatBrayNMDS + geom_polygon(aes(fill=Habitat)) + geom_point(size=3) + ggtitle
 # Cool, you can see that the forest and the patch separate out, with edge somewhat in between!
 
 #################
-# Differential abundance analysis
+# Differential abundance analysis on forest v. patch
 #################
-# Paper for DESeq2 : Love, M.I., Huber, W. & Anders, S. Moderated estimation of fold change and dispersion for RNA-seq data with DESeq2. 
-# Genome Biol 15, 550 (2014). https://doi.org/10.1186/s13059-014-0550-8
-# This section works off example here: https://joey711.github.io/phyloseq-extensions/DESeq2.html
 sample_data(trimmedJustsoils.ps)$Habitat
 # Remove edge for now, since I'm not sure how it fits into the dichotomy of forest v soil and it'll complicate
 # differential abundance analysis 
