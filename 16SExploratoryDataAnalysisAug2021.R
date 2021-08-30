@@ -29,8 +29,7 @@ library("tidyr")
 library("mctoolsr")
 library("vegan")
 library("gridExtra")    # allows you to make multiple plots on the same page 
-
-setwd("/Users/clairewinfrey/Desktop/CU_Research/SoilEdgeEffectsResearch/Bioinformatics")
+library("DESeq2") #for differential abundance analysis
 
 ##################################################################################
 # I. SET-UP, DATA CLEANING, RAREFACTION, AND FIRST TAXONOMIC & ORDINATION PLOTS
@@ -915,8 +914,84 @@ grid.arrange(outliers.phylumPlot.95pt, justsoils.phylaPlot.95percent, nrow=1)
 quartz()
 HabitatBrayNMDS <- phyloseq::plot_ordination(trimmedJustsoils.ps, trimOrd, type= "samples", color= "Habitat", label = "Sample.ID")
 HabitatBrayNMDS + geom_polygon(aes(fill=Habitat)) + geom_point(size=3) + ggtitle("NMDS based on Bray-Curtis Dissimilarities")
+# Cool, you can see that the forest and the patch separate out, with edge somewhat in between!
 
-######
+#################
+# Differential abundance analysis
+#################
+# Paper for DESeq2 : Love, M.I., Huber, W. & Anders, S. Moderated estimation of fold change and dispersion for RNA-seq data with DESeq2. 
+# Genome Biol 15, 550 (2014). https://doi.org/10.1186/s13059-014-0550-8
+# This section works off example here: https://joey711.github.io/phyloseq-extensions/DESeq2.html
+sample_data(trimmedJustsoils.ps)$Habitat
+# Remove edge for now, since I'm not sure how it fits into the dichotomy of forest v soil and it'll complicate
+# differential abundance analysis 
+soil_noedge.ps <- subset_samples(trimmedJustsoils.ps, Habitat != "edge")
+colnames(sample_data(soil_noedge.ps))
+
+# Note, if error with "Rcpp" package version here, but version is okay, re-install Rcpp
+# and then restart R.
+soilDeseq1 <- phyloseq_to_deseq2(soil_noedge.ps, ~ Habitat)
+# Note: uses default Benjamini-Hochberg correction 
+soilDeseqtested <- DESeq(soilDeseq1, test="Wald", fitType = "parametric")
+
+# Good explanation of resuts is here: https://support.illumina.com/help/BS_App_RNASeq_DE_OLH_1000000071939/Content/Source/Informatics/Apps/DESeq2ResultFile_swBS.htm#:~:text=baseMean%E2%80%94The%20average%20of%20the,factors%2C%20taken%20over%20all%20samples.&text=log2FoldChange%E2%80%93The%20effect%20size%20estimate,the%20comparison%20and%20control%20groups.
+DeSeq_res <- results(soilDeseqtested, cooksCutoff = FALSE)
+alpha <- 0.001
+sigtab <- DeSeq_res[which(DeSeq_res$padj < alpha), ]
+sigtab <- cbind(as(sigtab, "data.frame"), as(tax_table(soil_noedge.ps)[rownames(sigtab), ], "matrix"))
+head(sigtab)
+dim(sigtab) #1,846 ASVs out of the 10,257 that we had, had a p value less than 0.001, forests and meadows are super different!
+
+# BaseMean is the The average of the normalized count values, dividing by size factors, taken over all samples
+
+# Add in abundance for forest or patch
+# How many forest and patch samples?
+# Forest Samples
+length(which(sample_data(soil_noedge.ps)$Habitat=="forest")) #116
+# Patch Samples
+length(which(sample_data(soil_noedge.ps)$Habitat=="patch")) #94
+
+# make new phyloseq object where samples are averaged together (ASV counts are summed) across Habitat type (here just forest and patch)
+habitat.ps <- merge_samples(soil_noedge.ps, "Habitat")
+
+habitatASVs <- ASVs_outta_ps(habitat.ps)
+habitatASVs <- t(habitatASVs)
+dim(habitatASVs)
+
+# Merge dataframes so that abundance in forest and patch is present, then rename columns 
+sigtab <- left_join(rownames_to_column(sigtab), rownames_to_column(as.data.frame(habitatASVs)), by="rowname")
+colnames(sigtab)[15] <- "forestAbundance"
+colnames(sigtab)[16] <- "patchAbundance"
+# Add in mean abundance in each category
+sigtab$meanPercentForest <- sigtab[15]/sum(habitatASVs[,1])*100 #this is divided by total number of counts in the forest samples (after rarefying)
+sigtab$meanPercentPatch <- sigtab[16]/sum(habitatASVs[,2])*100 #this is divided by total number of counts in the patch samples (after rarefying)
+View(sigtab)
+
+
+# Plot 
+quartz()
+theme_set(theme_bw())
+scale_fill_discrete <- function(palname = "Set1", ...) {
+  scale_fill_brewer(palette = palname, ...)
+}
+# Phylum order
+x = tapply(sigtab$log2FoldChange, sigtab$Phylum, function(x) max(x))
+x = sort(x, TRUE)
+sigtab$Phylum = factor(as.character(sigtab$Phylum), levels=names(x))
+# Genus order
+x = tapply(sigtab$log2FoldChange, sigtab$Genus, function(x) max(x))
+x = sort(x, TRUE)
+sigtab$Genus = factor(as.character(sigtab$Genus), levels=names(x))
+
+# point size does not vary
+quartz()
+ggplot(sigtab, aes(x=Genus, y=log2FoldChange, color=Phylum)) + geom_point(size=6) + 
+  theme(axis.text.x = element_text(angle = -90, hjust = 0, vjust=0.5)) + ggtitle("Log2Fold Change between Forest and Patch Soils") + ylab("Log2FoldChange (Relative to Patch)")
+
+# point size varies based on baseMean (i.e. average of the normalized count values, dividing by size factors, taken over all samples)
+quartz()
+ggplot(sigtab, aes(x=Genus, y=log2FoldChange, color=Phylum)) + geom_point(aes(size = baseMean)) + 
+  theme(axis.text.x = element_text(angle = -90, hjust = 0, vjust=0.5)) + ggtitle("Log2Fold Change between Forest and Patch Soils") + ylab("Log2FoldChange (Relative to Patch)")
 
 
 #######################
