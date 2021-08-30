@@ -14,7 +14,10 @@
 # Files saved in this script: rarefied.ps, relabun.phylatop99.5, relabun.phylatop99, top_99.5p_phyla, 
 # relabun.classtop95, ord, ordSoils, ASVsTrimmed, taxTrimmed.
 # file = "EDA16SAug2021"
-load("EDA16SAug2021")
+
+setwd("/Users/clairewinfrey/Desktop/CU_Research/SoilEdgeEffectsResearch/Bioinformatics")
+
+# load("EDA16SAug2021")
 
 # Read in libraries
 library("phyloseq")
@@ -25,8 +28,14 @@ library("tibble")       # Needed for converting column to row names
 library("tidyr")
 library("mctoolsr")
 library("vegan")
+library("gridExtra")    # allows you to make multiple plots on the same page 
 
 setwd("/Users/clairewinfrey/Desktop/CU_Research/SoilEdgeEffectsResearch/Bioinformatics")
+
+##################################################################################
+# I. SET-UP, DATA CLEANING, RAREFACTION, AND FIRST TAXONOMIC & ORDINATION PLOTS
+##################################################################################
+
 list.files()
 seqtab_wTax_mctoolsr <- read.table("seqtab_wTax_mctoolsr.txt")
 str(seqtab_wTax_mctoolsr)
@@ -267,7 +276,7 @@ length(bad_ASVs) == 149 + 959 + 482 + 490 + 2147
 # Remove the ASVs listed above:
 all_Taxa <- taxa_names(SRS_16S.ps) #get all tax names in original, uncleaned dataset
 ASVstoKeep <- all_Taxa[!(all_Taxa %in% bad_ASVs)]
-length(ASVstoKeep) #36,175, matches what we created above!
+length(ASVstoKeep) #35000
 noeuksorNAs_ps <- prune_taxa(ASVstoKeep, SRS_16S.ps) #new phyloseq object with just the stuff we want!
 
 # TAKING A LOOK AT THE DATA
@@ -295,13 +304,13 @@ barplot(seqsperctrl_simple, main="Controls: Total Sequences Per Sample",
 # Let's rarefy:
 # What is the minimum for the non-control samples?
 min(seqspersample[1:243]) #1224
-max(seqspersample[1:243]) #157870
+max(seqspersample[1:243]) #157741
 mean(seqspersample[1:243]) # 26730.58
 
 min(seqspersample) #77
-max(seqspersample) #157870
-mean(seqspersample) # 24645.93
-sd(seqspersample)
+max(seqspersample) #157741
+mean(seqspersample) # 24435.77
+sd(seqspersample) #13421.05
 
 min(seqspersample[244:length(seqspersample)]) #77
 max(seqspersample[244:length(seqspersample)]) #157870
@@ -309,6 +318,7 @@ mean(seqspersample[244:length(seqspersample)]) # 3015.692
 sd(seqspersample[244:length(seqspersample)])
 
 # Plot this:
+quartz()
 seqsPerExSamp <- seqspersample[1:243]
 SeqNumberPlotExSamp <- barplot(seqsPerExSamp, main="Soils: Total Sequences Per Sample",
                                     ylab= "Number of Sequences", xlab= "Sample Number", cex.names=0.4)
@@ -349,7 +359,8 @@ sampleNames
 # https://github.com/clairecwinfrey/PhanBioMS_scripts/blob/master/R_scripts/figures/taxonomic_barplots.R)
 # TURN ASVs INTO PHYLUM LEVEL
 rarefied.phylum.glom <-  tax_glom(rarefied.ps, taxrank = "Phylum") 
-tax_table(rarefied.phylum.glom) # good, this is only phyla (42 different phyla!)
+tax_table(rarefied.phylum.glom) # 
+length(unique(tax_table(rarefied.phylum.glom))) #280
 
 # TRANSFORM SAMPLE COUNTS ON JUST GLOMMED SAMPLES (UNLIKE WHAT WE DID AT FIRST)
 relabun.phyla.0 <- transform_sample_counts(rarefied.phylum.glom, function(x) x / sum(x) )
@@ -419,7 +430,7 @@ top_99.5p_phyla <- relabun.phylatop99.5 %>%
 
 # (adopted from my code at:
    # https://github.com/clairecwinfrey/PhanBioMS_scripts/blob/master/R_scripts/figures/taxonomic_barplots.R)
-   # TURN ASVs INTO PHYLUM LEVEL
+   # TURN ASVs INTO class LEVEL
 rarefied.class.glom <-  tax_glom(rarefied.ps, taxrank = "Class") 
 tax_table(rarefied.class.glom) # good, this is only class (42 different phyla!)
 length(unique(tax_table(rarefied.class.glom))) #854 classes... although some NAs in there too
@@ -514,6 +525,10 @@ soilsrarefiedBrayNMDS + geom_polygon(aes(fill=EU)) + geom_point(size=3) + ggtitl
 # 53ND_B_20, 10C_L_10, 53ND_R_40, 53SD_R_10, 52D_R_10, 52D_L_100, (Maybe!) 52D_R_90, 53ND_L_80
 outliers <- c("53ND_B_20", " 10C_L_10", "53ND_R_40", "53SD_R_10", "52D_L_100", "52D_R_90", "53ND_L_80")
 
+##################################################################################
+# II. REMOVAL OF "RARE" TAXA, NEW TAXONOMIC PLOTS AND ORDINATIONS
+##################################################################################
+
 ###########################################################################
 # REMOVE "RARE" TAXA AND THEN RE-RUN 1) sequences per sample, 
 # 2) top phyla, 3) top classes, 4) ordinations
@@ -532,6 +547,7 @@ rare_ASVtab <- ASVs_outta_ps(rarefied.ps)
 rare_ASVtab$Abundance <- rowSums(rare_ASVtab)
 
 # Most are rare! 
+quartz()
 plot(rare_ASVtab$Abundance)
 length(which(rare_ASVtab$Abundance <= 50)) #23,775 ASVs have 50 or fewer occurrences across the rarefied data set 
 length(which(rare_ASVtab$Abundance <= 35)) #20,744 ASVs have 30 or fewer occurrences across the rarefied data set
@@ -593,7 +609,7 @@ seqtab_wTax_trimmed[,239]
 # Remake phyloseq object 
 class(taxTrimmed)
 dim(ASVsTrimmed)
-View(ASVsTrimmed)
+#View(ASVsTrimmed)
 
 otu_mat <- as.matrix(ASVsTrimmed[,-239]) #remove "Abundance" column that is at the end
 tax_mat <- as.matrix(taxTrimmed)
@@ -638,9 +654,11 @@ sum(relabunTrimmed.phyla.df[,3])
 colnames(relabunTrimmed.phyla.df) 
 relabunTrimmed.phylatrimmedTop99 <- relabunTrimmed.phyla.df
 relabunTrimmed.phylatrimmedTop99.5 <- relabunTrimmed.phyla.df
+relabunTrimmed.phylatrimmedTop95 <- relabunTrimmed.phyla.df
 
 relabunTrimmed.phylatrimmedTop99$Phylum[relabunTrimmed.phylatrimmedTop99$Abundance < 0.01] <- "< 1% abund."
 relabunTrimmed.phylatrimmedTop99.5$Phylum[relabunTrimmed.phylatrimmedTop99.5$Abundance < 0.005] <- "< .5% abund."
+relabunTrimmed.phylatrimmedTop95$Phylum[relabunTrimmed.phylatrimmedTop95$Abundance < 0.05] <- "< 5% abund."
 
 trimmedTop_99p_phyla <- unique(relabunTrimmed.phylatrimmedTop99$Phylum)
 trimmedTop_99p_phyla
@@ -661,14 +679,10 @@ phylumtrimmedPlot99.5percent + geom_bar(aes(), stat="identity", position="fill")
 # "Phyla comprising at least 1% of total abundance"
 quartz()
 phylumtrimmedPlot.99percent <- ggplot(data=relabunTrimmed.phylatrimmedTop99, aes(x=Sample, y=Abundance, fill=Phylum)) + theme(axis.title.y = element_text(size = 14, face = "bold")) + theme(axis.title.x = element_blank()) + theme(axis.text.x = element_text(colour = "black", size = 12, face = "bold"))
-phylumtrimmedPlot.99percent + geom_bar(aes(), stat="identity", position="fill") +
+phylumtrimmedPlot.99percent <- phylumtrimmedPlot.99percent + geom_bar(aes(), stat="identity", position="fill") +
   theme(legend.position="bottom") +
   guides(fill=guide_legend(nrow=4)) + theme(legend.text = element_text(colour="black", size = 10))  + ggtitle("Phyla comprising at least 1% of total abundance")
-
-## Below is junk from earlier script... keep for easier manipulation later!
-# scale_fill_manual(values = c("#4575b4", "#d73027", "#fc8d59", "#fee090", "#91bfdb", "grey"), 
-#   name= "Phylum", breaks= c("D_1__Firmicutes", "D_1__Proteobacteria", "D_1__Bacteroidetes", "D_1__Actinobacteria", "D_1__Fusobacteria", "< 1% abund."), 
-#  labels =c("Firmicutes", "Proteobacteria", "Bacteroidetes", "Actinobacteria", "Fusobacteria", "< 1% abund.")) +
+phylumtrimmedPlot.99percent
 
 # Get exact abundances of each phyla (trimmedTop 99.5%):
 colnames(relabunTrimmed.phylatrimmedTop99.5)
@@ -728,51 +742,203 @@ classtrimmedPlot.95pt + geom_bar(aes(), stat="identity", position="fill") +
   guides(fill=guide_legend(nrow=4)) + theme(legend.text = element_text(colour="black", size = 5.5))  + ggtitle("Classes comprising at least 5% of total abundance")
 
 # Remove biocrust and controls before ordination:
-trimedJustsoils.ps <- subset_samples(TrimmedSRS_16S.ps, Type != "BioCrust" & Type != "ExtContWater")
-unique(sample_data(trimedJustsoils.ps)[,27]) #only soils
-sample_names(trimedJustsoils.ps) #another check to show that we have only soils!
+trimmedJustsoils.ps <- subset_samples(TrimmedSRS_16S.ps, Type != "BioCrust" & Type != "ExtContWater")
+unique(sample_data(trimmedJustsoils.ps)[,27]) #only soils
+sample_names(trimmedJustsoils.ps) #another check to show that we have only soils!
 
 # Plot ordination
 # Bray-Curtis dissimilarities based on square-root transformed data
 set.seed(19)
-trimOrd <- ordinate(trimedJustsoils.ps, method = "NMDS", distance = "bray", trymax = 100) 
+trimOrd <- ordinate(trimmedJustsoils.ps, method = "NMDS", distance = "bray", trymax = 100) 
 
 # With no black outline around points
 quartz()
-trimmedBrayNMDS <- phyloseq::plot_ordination(trimedJustsoils.ps, trimOrd, type= "samples", color= "EU")
+trimmedBrayNMDS <- phyloseq::plot_ordination(trimmedJustsoils.ps, trimOrd, type= "samples", color= "EU")
 trimmedBrayNMDS + geom_polygon(aes(fill=EU)) + geom_point(size=3) + ggtitle("NMDS based on Bray-Curtis Dissimilarities (Trimmed)")
 
 # Add in labels to figure out what weird samples are
 quartz()
-labeledTrimmedBrayNMDS <- phyloseq::plot_ordination(trimedJustsoils.ps, ordSoils, type= "samples", color= "EU", label = "Sample.ID")
+labeledTrimmedBrayNMDS <- phyloseq::plot_ordination(trimmedJustsoils.ps, ordSoils, type= "samples", color= "EU", label = "Sample.ID")
 labeledTrimmedBrayNMDS + geom_polygon(aes(fill=EU)) + geom_point(size=3) + ggtitle("NMDS based on Bray-Curtis Dissimilarities")
 
-# Visible outliers: (going clockwise from the top left on the ordination plot above):
+
+##################################################################################
+# III. EXPLORATION OF "OUTLIER" TAXA
+##################################################################################
+
+# Visible outliers: (going clockwise from the top left on the ordination plot "labeledTrimmedBrayNMDS" above):
 # 53ND_B_20, 10C_L_10, 53ND_R_40, 53SD_R_10, 52D_R_10, 52D_L_100, (Maybe!) 52D_R_90, 53ND_L_80
-outliersTrimmed <- c("53ND_B_20", " 10C_L_10", "53ND_R_40", "53SD_R_10", "52D_R_10", "52D_L_100", "53ND_L_80")
+outliersTrimmed <- c("53ND_B_20", "10C_L_10", "53ND_R_40", "53SD_R_10", "52D_R_10", "52D_L_100", "53ND_L_80")
+outliersTrimmed <- sort(outliersTrimmed) #sorted this because next lines of code will automatically sort
+outliersTrimmed
 
 # Do these outliers look weird?
+# Get the rows for the outliers in sample_df
+#View(samples_df)]
+# Code below looks for the row numbers corresponding to each one of hte outlier samples. It automatically sorts the data
+outlier_index <- which(samples_df$Sample.ID=="53ND_B_20" | samples_df$Sample.ID=="10C_L_10" | samples_df$Sample.ID=="53ND_R_40"
+      | samples_df$Sample.ID=="53SD_R_10" | samples_df$Sample.ID=="52D_R_10" | samples_df$Sample.ID=="52D_L_100"
+      | samples_df$Sample.ID=="53ND_L_80")
+outlier_index 
+samples_df[outlier_index,1]==outliersTrimmed # Names using outlier_index match the outliers defined above!
+outlierSampNumb <- rownames(samples_df[outlier_index,]) # now these are the actual names used in bioinformatics and in my plate schemes.
+# They differ from outlier_index because the row numbers are not the same as the row names.
+# Can use "outlierSampNumb" with phyloseq's "prune_samples" function
 
+# Just looking at ASVs
+# Now, that we have the numbers corresponding to each sample, we can isolate the ASVs
+outlierSamples <- get_taxa(trimmedJustsoils.ps, outlierSampNumb)
+colnames(outlierSamples) == outlierSampNumb #Nice, this worked
+str(outlierSamples)
+
+# ALTERNATIVELY, CAN JUST USE PRUNE_SAMPLES IN PHYLOSEQ
+sample_names(trimmedJustsoils.ps) #sample names are the numbers that we used in the PCR plate organization!
+outlierSampNumb
+# Also, these are the same as those in outlier_index
+outliers.ps <- prune_samples(outlierSampNumb, trimmedJustsoils.ps)
+sort(sample_data(outliers.ps)$Sample.ID) == sort(outliersTrimmed) #these are equal to the outliers we defined above!
+
+outliersTax <- taxtable_outta_ps(outliers.ps)
+outliersASVs <- ASVs_outta_ps(outliers.ps)
+# View(outliersTax)
+
+# Do the ASVs and the community abundances look weird for the outliers?
+# Make an mctoolsr like table to view if we want!
+
+outliersASVtax <- cbind.data.frame(outliersASVs, outliersTax)
+#View(outliersASVtax)
+
+# outliersASVtax2 <- merge(outliersASVs, outliersTax, by="row.names",all.x=TRUE) # this would have worked as well, 
+# but then the rownames would have been a new column, not still a rowname!
+outliersASVtax$Abundance <- rowSums(outliersASVtax[,1:7]) #What is the abundance of each ASV across all 7 samples? 
+# Interestingly, the mycobacterium taxon that is the third most abundant across all samples has moved down a lot!
+
+# What do the top phyla and classes look like?
+
+# Top Phyla
+# TURN ASVs INTO PHYLUM LEVEL
+outliers.phylum.glom <-  tax_glom(outliers.ps, taxrank = "Phylum") 
+tax_table(outliers.phylum.glom) # only phyla
+length(unique(tax_table(outliers.phylum.glom))) #231 phyla, which is less than the 280 found across the whole rarefied dataset
+sample_data(outliers.phylum.glom)
+
+# TRANSFORM SAMPLE COUNTS ON JUST GLOMMED SAMPLES (UNLIKE WHAT WE DID AT FIRST)
+outliers.phylum.0 <- transform_sample_counts(outliers.phylum.glom, function(x) x / sum(x) )
+rownames(otu_table(outliers.phylum.0)) # I think that the ASVs are just representative from each class
+sample_data(outliers.phylum.0)
+
+# NOW GET ONLY TAXA THAT COMPRISE AT LEAST 1% OF THE ABUNDANCE 
+outliers.phylum.df <-psmelt(outliers.phylum.0)
+dim(outliers.phylum.df ) # 231 for the number of phyla
+sum(outliers.phylum.df[,3]) #nice this is 7, the number of samples!
+colnames(outliers.phylum.df) 
+outliers.phylumTop99 <- outliers.phylum.df
+outliers.phylumTop95 <- outliers.phylum.df
+
+outliers.phylumTop99$Phylum[outliers.phylumTop99$Abundance < 0.01] <- "< 1% abund."
+outliers.phylumTop95$Phylum[outliers.phylumTop95$Abundance < 0.05] <- "< 5% abund."
+
+outliers.phylumTop_99p <- unique(outliers.phylumTop99$Phylum)
+outliers.phylumTop_99p #"Acidobacteria" ,"Proteobacteria","Verrucomicrobia","Chloroflexi" ,"Planctomycetes","Actinobacteria","Firmicutes","Bacteroidetes","WPS-2", "Cyanobacteria", "Armatimonadetes", Rokubacteria" 
+
+outliers.phylumTop_95p <- unique(outliers.phylumTop95$Phylum)
+outliers.phylumTop_95p #"Acidobacteria"   "Proteobacteria"  "Verrucomicrobia" "Chloroflexi"     "Planctomycetes"  "Actinobacteria"  "Firmicutes"      "Bacteroidetes"
+
+# Phyla comprising at least 5% of total abundance
+quartz()
+outliers.phylumPlot.95pt <- ggplot(data=outliers.phylumTop95, aes(x=Sample, y=Abundance, fill=Phylum)) + theme(axis.title.y = element_text(size = 14, face = "bold")) + theme(axis.title.x = element_blank()) + theme(axis.text.x = element_text(colour = "black", size = 12, face = "bold"))
+outliers.phylumPlot.95pt <- outliers.phylumPlot.95pt + geom_bar(aes(), stat="identity", position="fill") +
+  scale_fill_manual(values = c("#999999", "#f781bf", "#a65628", "#ffff33", "#ff7f00", "#984ea3", "#4daf4a", "#377eb8", "#e41a1c")) +
+  theme(legend.position="bottom") +
+  guides(fill=guide_legend(nrow=4)) + theme(legend.text = element_text(colour="black", size = 5.5))  + ggtitle("Outliers: Phyla comprising at least 5% of total abundance")
+outliers.phylumPlot.95pt
+
+# Compare this with soils aggregated by site/EU (trimmed, so aftr removing rare taxa):
+# First, get the top phyla of just soil
+
+# TURN ASVs INTO PHYLUM LEVEL
+justsoilsphylum.glom <-  tax_glom(trimmedJustsoils.ps, taxrank = "Phylum") 
+tax_table(justsoilsphylum.glom)
+
+# TRANSFORM SAMPLE COUNTS ON JUST GLOMMED SAMPLES (UNLIKE WHAT WE DID AT FIRST)
+justsoils.phyla.0 <- transform_sample_counts(justsoilsphylum.glom, function(x) x / sum(x) )
+rownames(otu_table(justsoils.phyla.0))
+
+# MERGE SAMPLES so that we only have combined abundances for site and different kinds of controls
+justsoils.phyla.1 <- merge_samples(justsoils.phyla.0, group = "EU")
+sample_data(justsoils.phyla.1) 
+
+# CONVERT TO PROPORTIONS AGAIN B/C TOTAL ABUNDANCE OF EACH SITE WILL EQUAL NUMBER OF SPECIES THAT WERE MERGED
+justsoils.phyla.2 <- transform_sample_counts(justsoils.phyla.1, function(x) x / sum(x))
+sample_data(justsoils.phyla.2)
+
+# NOW GET ONLY TAXA THAT COMPRISE AT LEAST 1% OF THE ABUNDANCE 
+justsoils.phyla.df <-psmelt(justsoils.phyla.2)
+dim(justsoils.phyla.df) 
+justsoils.phyla.Top95 <- justsoils.phyla.df
+justsoils.phyla.Top99 <- justsoils.phyla.df
+
+justsoils.phyla.Top95$Phylum[justsoils.phyla.Top95$Abundance < 0.05] <- "< 5% abund."
+justsoils.phyla.Top99$Phylum[justsoils.phyla.Top99$Abundance < 0.01] <- "< 1% abund."
+
+# Plot 
+# Phyla comprising at least 1% of total abundance 
+# Colors are different for easier comparison with outliers in next section
+quartz()
+justsoils.phylaPlot.95percent <- ggplot(data=justsoils.phyla.Top95, aes(x=Sample, y=Abundance, fill=Phylum)) + theme(axis.title.y = element_text(size = 14, face = "bold")) + theme(axis.title.x = element_blank()) + theme(axis.text.x = element_text(colour = "black", size = 12, face = "bold"))
+justsoils.phylaPlot.95percent <- justsoils.phylaPlot.95percent + geom_bar(aes(), stat="identity", position="fill") + 
+  scale_fill_manual(values = c("#999999", "#f781bf", "#a65628", "#ff7f00", "#4daf4a", "#377eb8", "#e41a1c")) +
+  theme(legend.position="bottom") +
+  guides(fill=guide_legend(nrow=4)) + theme(legend.text = element_text(colour="black", size = 10))  + ggtitle("Rarefied Soils: Phyla comprising at least 5% of total abundance")
+justsoils.phylaPlot.95percent 
+
+quartz()
+grid.arrange(outliers.phylumPlot.95pt, justsoils.phylaPlot.95percent, nrow=1)
+# You can see here that overall the outliers look pretty similar to the regular soil samples, with the exception of 
+# Sample 11, which has a lot of Bacteroides and Firmicutes. 
+# # Looking at 11 in the mctoolsR like file (View(outliersASVtax)), you can see that some of the top taxa are very different (with the
+# exception of the Bradyrhizobium and another ASV in the same family).
+# It's top ASV is in Firmicutes, and other Firmicutes are high on the list too
+
+# 11  was sample 53ND_L_80, it was in Plate 1, well B1
+
+##################################################################################
+# IV. COMPARING FOREST AND PATCHES WITH ORDINATIONS AND DIFFERENTIAL ABUNDANCE ANALYSIS
+##################################################################################
 
 #################
 # Ordination of forest versus patch
 #################
 
-# First, we need to add a column for forest versus patch into sample data
-
+# Added "habitat" column to metadata in Excel, re-ran whole script
 
 quartz()
-HabitatdBrayNMDS <- phyloseq::plot_ordination(trimmedJustsoils.ps, ordSoils, type= "samples", color= "", label = "Sample.ID")
-HabitatBrayNMDS + geom_polygon(aes(fill=EU)) + geom_point(size=3) + ggtitle("NMDS based on Bray-Curtis Dissimilarities")
+HabitatBrayNMDS <- phyloseq::plot_ordination(trimmedJustsoils.ps, trimOrd, type= "samples", color= "Habitat", label = "Sample.ID")
+HabitatBrayNMDS + geom_polygon(aes(fill=Habitat)) + geom_point(size=3) + ggtitle("NMDS based on Bray-Curtis Dissimilarities")
+
+######
 
 
+#######################
+# Variation Partitioning
+#######################
 
+psotu2veg <- function(physeq) {
+  OTU <- otu_table(physeq)
+  if (taxa_are_rows(OTU)) {
+    OTU <- t(OTU)
+  }
+  return(as(OTU, "matrix"))
+}
 
+ASVtab <- psotu2veg(trimmedJustsoils.ps)
+View(ASVtab)
 
+ASVbrayDist <- vegdist(ASVtab, method = "bray")
 
 
 ##################################
 # SAVE ALL OF THESE FOR EASY ACCESS
 ##################################
 
-save(rarefied.ps, relabun.phylatop99.5, relabun.phylatop99, top_99.5p_phyla, relabun.classtop95, ord, ordSoils, ASVsTrimmed, taxTrimmed, trimedJustsoils.ps, trimOrd, outliersTrimmed, file = "EDA16SAug2021")
+save(rarefied.ps, samples_df, relabun.phylatop99.5, relabun.phylatop99, top_99.5p_phyla, relabun.classtop95, ord, ordSoils, ASVsTrimmed, taxTrimmed, trimmedJustsoils.ps, trimOrd, outliersTrimmed, outliersASVtax, file = "EDA16SAug2021")
