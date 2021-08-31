@@ -955,7 +955,7 @@ outlierSigtab$Phylum = factor(as.character(outlierSigtab$Phylum), levels=names(x
 x = tapply(outlierSigtab$log2FoldChange, outlierSigtab$Genus, function(x) max(x))
 x = sort(x, TRUE)
 outlierSigtab$Genus = factor(as.character(outlierSigtab$Genus), levels=names(x))
-
+63+
 # point size does not vary
 quartz()
 ggplot(outlierSigtab, aes(x=Genus, y=log2FoldChange, color=Phylum)) + geom_point(size=6) + 
@@ -1054,17 +1054,32 @@ sigtab$Genus = factor(as.character(sigtab$Genus), levels=names(x))
 # point size does not vary
 quartz()
 ggplot(sigtab, aes(x=Genus, y=log2FoldChange, color=Phylum)) + geom_point(size=6) + 
-  theme(axis.text.x = element_text(angle = -90, hjust = 0, vjust=0.5)) + ggtitle("Log2Fold Change between Forest and Patch Soils") + ylab("Log2FoldChange (Relative to Patch)")
+  theme(axis.text.x = element_text(angle = -90, hjust = 0, vjust=0.5)) + ggtitle("Log2Fold Change between Forest and Patch Soils-Genera") + ylab("Log2FoldChange (Relative to Patch)")
 
 # point size varies based on baseMean (i.e. average of the normalized count values, dividing by size factors, taken over all samples)
 quartz()
 ggplot(sigtab, aes(x=Genus, y=log2FoldChange, color=Phylum)) + geom_point(aes(size = baseMean)) + 
-  theme(axis.text.x = element_text(angle = -90, hjust = 0, vjust=0.5)) + ggtitle("Log2Fold Change between Forest and Patch Soils") + ylab("Log2FoldChange (Relative to Patch)")
+  theme(axis.text.x = element_text(angle = -90, hjust = 0, vjust=0.5)) + ggtitle("Log2Fold Change between Forest and Patch Soils-Genera") + ylab("Log2FoldChange (Relative to Patch)")
 
+# Family instead
+# Family order
+# Family order
+x2 = tapply(sigtab$log2FoldChange, sigtab$Phylum, function(x2) max(x2))
+x2 = sort(x2, TRUE)
+sigtab$Phylum = factor(as.character(sigtab$Phylum), levels=names(x2))
+# Family order
+x2 = tapply(sigtab$log2FoldChange, sigtab$Family, function(x2) max(x2))
+x2 = sort(x2, TRUE)
+sigtab$Family = factor(as.character(sigtab$Family), levels=names(x2))
 
-#######################
-# Variation Partitioning
-#######################
+# point size varies based on baseMean (i.e. average of the normalized count values, dividing by size factors, taken over all samples)
+quartz()
+ggplot(sigtab, aes(x=Family, y=log2FoldChange, color=Phylum)) + geom_point(aes(size = baseMean)) + 
+  theme(axis.text.x = element_text(angle = -90, hjust = 0, vjust=0.5)) + ggtitle("Log2Fold Change between Forest and Patch Soils-Families") + ylab("Log2FoldChange (Relative to Patch)")
+
+########################
+# Does the Bray-Curtis distance b/w samples tend to increase with distance?
+########################
 
 psotu2veg <- function(physeq) {
   OTU <- otu_table(physeq)
@@ -1075,9 +1090,81 @@ psotu2veg <- function(physeq) {
 }
 
 ASVtab <- psotu2veg(trimmedJustsoils.ps)
-View(ASVtab)
+#View(ASVtab)
 
 ASVbrayDist <- vegdist(ASVtab, method = "bray")
+ASVBrayDist.mat <- as.matrix(ASVbrayDist)
+diag(ASVBrayDist.mat) <- NA
+ASVBrayDist.mat[lower.tri(ASVBrayDist.mat)] <- NA #because symmetrical 
+
+# Make data frame for indexing matrix
+rownames(ASVBrayDist.mat) == rownames(sample_data(trimmedJustsoils.ps))
+# Since the thing above is true, we can get meter and replace the columns and rownames in the BC dist mat with it!
+samps <- colnames(ASVBrayDist.mat)
+meter <- sample_data(trimmedJustsoils.ps)$Meter
+index.df <- data.frame(samps, meter)
+
+# Get row and column numbers of different meters
+m10 <- which(index.df$meter == 10)
+m20 <- which(index.df$meter == 20)
+m30<- which(index.df$meter == 30)
+m40 <- which(index.df$meter == 40)
+m50 <- which(index.df$meter == 50)
+m60 <- which(index.df$meter == 60)
+m70 <- which(index.df$meter == 70)
+m80<- which(index.df$meter == 80)
+m90 <- which(index.df$meter == 90)
+m100 <- which(index.df$meter == 100)
+
+# Distances between patch at 10m and each point along transect
+m10_comp20 <- ASVBrayDist.mat[m10, m20]
+m10_comp30 <- ASVBrayDist.mat[m10, m30]
+m10_comp40 <- ASVBrayDist.mat[m10, m40]
+m10_comp50 <- ASVBrayDist.mat[m10, m50]
+m10_comp60 <- ASVBrayDist.mat[m10, m60]
+m10_comp70 <- ASVBrayDist.mat[m10, m70]
+m10_comp80 <- ASVBrayDist.mat[m10, m80]
+m10_comp90 <- ASVBrayDist.mat[m10, m90]
+m10_comp100 <- ASVBrayDist.mat[m10, m100]
+
+# Distances between forest at 100m and each point along transect
+m100_comp90 <- ASVBrayDist.mat[m100, m90]
+m100_comp80 <- ASVBrayDist.mat[m100, m80]
+m100_comp70 <- ASVBrayDist.mat[m100, m70]
+m100_comp60 <- ASVBrayDist.mat[m100, m60]
+m100_comp50 <- ASVBrayDist.mat[m100, m50]
+m100_comp40 <- ASVBrayDist.mat[m100, m40]
+m100_comp30 <- ASVBrayDist.mat[m100, m30]
+m100_comp20 <- ASVBrayDist.mat[m100, m20]
+m100_comp10 <- ASVBrayDist.mat[m100, m10]
+
+######## MAKE BOXPLOTS ######## 
+bold_a <- expression(bold("Dissimilarity Relative to 10m (patch)"))
+bold_b <- expression(bold("Dissimilarity Relative to 100m (forest)"))
+quartz()
+par(mfrow=c(2,1))
+patch_box <- boxplot(list(m10_comp20, m10_comp30, m10_comp40,
+                          m10_comp50, m10_comp60, m10_comp70,
+                          m10_comp80, m10_comp90, m10_comp100),
+                    ylab = "Bray-Curtis Dissimilarity",
+                    names = c("20m", "30m", "40m", "50m",
+                              "60m", "70m", "80m", "90m", "100m"), cex.axis = 0.8,
+                    cex.lab = 1,
+                    ylim=c(0.0, 1.0))
+mtext(text=bold_a, side=3, adj = -0.065, line = 2)
+forest_box <- boxplot(list(m100_comp10, m100_comp20, m100_comp30, m100_comp40,
+                        m100_comp50, m100_comp60, m100_comp70,
+                        m100_comp80, m100_comp90), 
+                   ylab = "Bray-Curtis Dissimilarity",
+                   names = c("10m", "20m", "30m", "40m", "50m",
+                             "60m", "70m", "80m", "90m"), cex.axis = 0.8,
+                   cex.lab = 1,
+                   ylim=c(0.0, 1.0))
+mtext(text=bold_b, side=3, adj = -0.065, line = 2)
+
+#######################
+# Variation Partitioning
+#######################
 
 
 ##################################
