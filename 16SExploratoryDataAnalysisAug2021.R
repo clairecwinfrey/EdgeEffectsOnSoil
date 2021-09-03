@@ -589,8 +589,12 @@ rownames(ASVsTrimmed[!(apply(ASVsTrimmed, 1, function(y) any(y == 0))),])
 ASVsinAllindex <- c(1, 3, 4, 10, 15)
 rownames(ASVsTrimmed)[ASVsinAllindex] # yes, this matches above
 # What are these ASVs?
-rarefied_taxa[ASVsinAllindex,]
+rare_taxTab[ASVsinAllindex,]
 rowMeans(ASVsTrimmed)[ASVsinAllindex]
+
+coreASVs <- cbind.data.frame(rare_taxTab[ASVsinAllindex,], rowMeans(ASVsTrimmed)[ASVsinAllindex])
+colnames(coreASVs)[8] <- "meanAbundancePerSample"
+View(coreASVs)
 
 # Merge trimmed ASV tables and taxonomy tables to get something that is formatted like
 # "seqtab_wTax_mctoolsr"
@@ -767,9 +771,12 @@ labeledTrimmedBrayNMDS + geom_polygon(aes(fill=EU)) + geom_point(size=3) + ggtit
 
 # Visible outliers: (going clockwise from the top left on the ordination plot "labeledTrimmedBrayNMDS" above):
 # 53ND_B_20, 10C_L_10, 53ND_R_40, 53SD_R_10, 52D_R_10, 52D_L_100, (Maybe!) 52D_R_90, 53ND_L_80
-outliersTrimmed <- c("53ND_B_20", "10C_L_10", "53ND_R_40", "53SD_R_10", "52D_R_10", "52D_L_100", "53ND_L_80")
+# 10C_R_60 is the one with a ton of samples!
+outliersTrimmed <- c("53ND_B_20", "10C_L_10", "53ND_R_40", "53SD_R_10", "52D_R_10", "52D_L_100", "53ND_L_80", "10C_R_60")
 outliersTrimmed <- sort(outliersTrimmed) #sorted this because next lines of code will automatically sort
 outliersTrimmed
+
+# 10C_R_60 is the one with a ton of samples!
 
 # Do these outliers look weird?
 # Get the rows for the outliers in sample_df
@@ -777,7 +784,7 @@ outliersTrimmed
 # Code below looks for the row numbers corresponding to each one of hte outlier samples. It automatically sorts the data
 outlier_index <- which(samples_df$Sample.ID=="53ND_B_20" | samples_df$Sample.ID=="10C_L_10" | samples_df$Sample.ID=="53ND_R_40"
       | samples_df$Sample.ID=="53SD_R_10" | samples_df$Sample.ID=="52D_R_10" | samples_df$Sample.ID=="52D_L_100"
-      | samples_df$Sample.ID=="53ND_L_80")
+      | samples_df$Sample.ID=="53ND_L_80" | samples_df$Sample.ID=="10C_R_60")
 outlier_index 
 samples_df[outlier_index,1]==outliersTrimmed # Names using outlier_index match the outliers defined above!
 outlierSampNumb <- rownames(samples_df[outlier_index,]) # now these are the actual names used in bioinformatics and in my plate schemes.
@@ -849,7 +856,7 @@ outliers.phylumPlot.95pt <- ggplot(data=outliers.phylumTop95, aes(x=Sample, y=Ab
 outliers.phylumPlot.95pt <- outliers.phylumPlot.95pt + geom_bar(aes(), stat="identity", position="fill") +
   scale_fill_manual(values = c("#999999", "#f781bf", "#a65628", "#ffff33", "#ff7f00", "#984ea3", "#4daf4a", "#377eb8", "#e41a1c")) +
   theme(legend.position="bottom") +
-  guides(fill=guide_legend(nrow=4)) + theme(legend.text = element_text(colour="black", size = 5.5))  + ggtitle("Outliers: Phyla comprising at least 5% of total abundance")
+  guides(fill=guide_legend(nrow=4)) + theme(legend.text = element_text(colour="black", size = 6))  + ggtitle("Outliers: Phyla at least 5% of total abundance")
 outliers.phylumPlot.95pt
 
 # Compare this with soils aggregated by site/EU (trimmed, so aftr removing rare taxa):
@@ -888,7 +895,7 @@ justsoils.phylaPlot.95percent <- ggplot(data=justsoils.phyla.Top95, aes(x=Sample
 justsoils.phylaPlot.95percent <- justsoils.phylaPlot.95percent + geom_bar(aes(), stat="identity", position="fill") + 
   scale_fill_manual(values = c("#999999", "#f781bf", "#a65628", "#ff7f00", "#4daf4a", "#377eb8", "#e41a1c")) +
   theme(legend.position="bottom") +
-  guides(fill=guide_legend(nrow=4)) + theme(legend.text = element_text(colour="black", size = 10))  + ggtitle("Rarefied Soils: Phyla comprising at least 5% of total abundance")
+  guides(fill=guide_legend(nrow=4)) + theme(legend.text = element_text(colour="black", size = 6))  + ggtitle("Rarefied Soils: Phyla at least 5% of total abundance")
 justsoils.phylaPlot.95percent 
 
 quartz()
@@ -982,9 +989,11 @@ ggplot(outlierSigtab, aes(x=Genus, y=log2FoldChange, color=Phylum)) + geom_point
 
 # Added "habitat" column to metadata in Excel, re-ran whole script
 
+# WHY is this messed up now?? Check old version in GitHUb
 quartz()
-HabitatBrayNMDS <- phyloseq::plot_ordination(trimmedJustsoils.ps, trimOrd, type= "samples", color= "Habitat", label = "Sample.ID")
-HabitatBrayNMDS + geom_polygon(aes(fill=Habitat)) + geom_point(size=3) + ggtitle("NMDS based on Bray-Curtis Dissimilarities")
+HabitatBrayNMDS <- phyloseq::plot_ordination(trimmedJustsoils.ps, trimOrd, type= "samples", color= "Habitat")
+HabitatBrayNMDS <- HabitatBrayNMDS + geom_polygon(aes(fill=Habitat)) + geom_point(size=3) + ggtitle("NMDS based on Bray-Curtis Dissimilarities")
+HabitatBrayNMDS 
 # Cool, you can see that the forest and the patch separate out, with edge somewhat in between!
 
 #################
@@ -1142,7 +1151,7 @@ m100_comp10 <- ASVBrayDist.mat[m100, m10]
 bold_a <- expression(bold("Dissimilarity Relative to 10m (patch)"))
 bold_b <- expression(bold("Dissimilarity Relative to 100m (forest)"))
 quartz()
-par(mfrow=c(2,1))
+par(mfrow=c(1,2))
 patch_box <- boxplot(list(m10_comp20, m10_comp30, m10_comp40,
                           m10_comp50, m10_comp60, m10_comp70,
                           m10_comp80, m10_comp90, m10_comp100),
