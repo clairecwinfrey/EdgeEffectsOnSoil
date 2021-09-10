@@ -3,9 +3,24 @@
 
 ########################
 
-# Load in objects made in 16SExploratoryDataAnalysisAugust2021
+# Set working directory
+setwd("~/Desktop/CU_Research/SoilEdgeEffectsResearch/Bioinformatics")
 
-# Prune samples to separate by EU and check to make sure eaach looks right
+# # Read in libraries
+library("phyloseq")
+library("ggplot2")      # graphics
+library("readxl")       # necessary to import the data from Excel file
+library("dplyr")        # filter and reformat data frames
+library("tibble")       # Needed for converting column to row names
+library("tidyr")
+library("mctoolsr")
+library("vegan")
+library("gridExtra")    # allows you to make multiple plots on the same page with ggplot
+library("DESeq2") #for differential abundance analysis
+
+# Load in objects made in 16SExploratoryDataAnalysisAugust2021
+load(file = "EDA16SAug2021")
+# Prune samples to separate by EU and check to make sure each looks right
 
 EU_52_Soils.ps <- subset_samples(trimmedJustsoils.ps, EU == "EU_52")
 unique(sample_data(EU_52_Soils.ps)$EU)
@@ -88,6 +103,32 @@ m100_52_comp30 <- BrayDist_52.mat[m100_52, m30_52]
 m100_52_comp20 <- BrayDist_52.mat[m100_52, m20_52]
 m100_52_comp10 <- BrayDist_52.mat[m100_52, m10_52]
 
+
+bold_eu52p <- expression(bold("EU 52: Dissimilarity from 10m (patch)"))
+bold_eu52f <- expression(bold("EU 52: Dissimilarity from 100m (forest)"))
+quartz()
+par(mfrow=c(1,2))
+patch_box52 <- boxplot(list(m10_52_comp20, m10_52_comp30, m10_52_comp40,
+                            m10_52_comp50, m10_52_comp60, m10_52_comp70,
+                            m10_52_comp80, m10_52_comp90, m10_52_comp100),
+                       ylab = "Bray-Curtis Dissimilarity",
+                       names = c("20m", "30m", "40m", "50m",
+                                 "60m", "70m", "80m", "90m", "100m"), cex.axis = 0.8,
+                       cex.lab = 1,
+                       ylim=c(0.0, 1.0))
+mtext(text=bold_eu52p, side=3, adj = -0.065, line = 2)
+forest_box52 <- boxplot(list(m100_52_comp10, m100_52_comp20, m100_52_comp30, m100_52_comp40,
+                             m100_52_comp50, m100_52_comp60, m100_52_comp70,
+                             m100_52_comp80, m100_52_comp90), 
+                        ylab = "Bray-Curtis Dissimilarity",
+                        names = c("10m", "20m", "30m", "40m", "50m",
+                                  "60m", "70m", "80m", "90m"), cex.axis = 0.8,
+                        cex.lab = 1,
+                        ylim=c(0.0, 1.0))
+mtext(text=bold_eu52f, side=3, adj = -0.065, line = 2)
+
+
+
 ###########
 # EU 53N
 ##########
@@ -142,6 +183,30 @@ m100_53N_comp30 <- BrayDist_53N.mat[m100_53N, m30_53N]
 m100_53N_comp20 <- BrayDist_53N.mat[m100_53N, m20_53N]
 m100_53N_comp10 <- BrayDist_53N.mat[m100_53N, m10_53N]
 
+bold_eu53Np <- expression(bold("EU 53N: Dissimilarity from 10m (patch)"))
+bold_eu53Nf <- expression(bold("EU 53N: Dissimilarity from 100m (forest)"))
+quartz()
+par(mfrow=c(1,2))
+patch_box53N <- boxplot(list(m10_53N_comp20, m10_53N_comp30, m10_53N_comp40,
+                             m10_53N_comp50, m10_53N_comp60, m10_53N_comp70,
+                             m10_53N_comp80, m10_53N_comp90, m10_53N_comp100),
+                        ylab = "Bray-Curtis Dissimilarity",
+                        names = c("20m", "30m", "40m", "50m",
+                                  "60m", "70m", "80m", "90m", "100m"), cex.axis = 0.8,
+                        cex.lab = 1,
+                        ylim=c(0.0, 1.0))
+mtext(text=bold_eu53Np, side=3, adj = -0.065, line = 2)
+forest_box53N <- boxplot(list(m100_53N_comp10, m100_53N_comp20, m100_53N_comp30, m100_53N_comp40,
+                              m100_53N_comp50, m100_53N_comp60, m100_53N_comp70,
+                              m100_53N_comp80, m100_53N_comp90), 
+                         ylab = "Bray-Curtis Dissimilarity",
+                         names = c("10m", "20m", "30m", "40m", "50m",
+                                   "60m", "70m", "80m", "90m"), cex.axis = 0.8,
+                         cex.lab = 1,
+                         ylim=c(0.0, 1.0))
+mtext(text=bold_eu53Nf, side=3, adj = -0.065, line = 2)
+
+
 ###########
 # EU 54S
 ##########
@@ -149,52 +214,77 @@ m100_53N_comp10 <- BrayDist_53N.mat[m100_53N, m10_53N]
 ASVtab_54S <- psotu2veg(EU_54S_Soils.ps)
 
 # Get Bray-Curtis dissimilarities
-BrayDist_53N <- vegdist(ASVtab_53N, method="bray")
-BrayDist_53N.mat <- as.matrix(BrayDist_53N)
-diag(BrayDist_53N.mat) <- NA
-BrayDist_53N.mat[lower.tri(BrayDist_53N.mat)] <- NA #because symmetrical, can make lower triangle zero
+BrayDist_54S <- vegdist(ASVtab_54S, method="bray")
+BrayDist_54S.mat <- as.matrix(BrayDist_54S)
+diag(BrayDist_54S.mat) <- NA
+BrayDist_54S.mat[lower.tri(BrayDist_54S.mat)] <- NA #because symmetrical, can make lower triangle zero
 
 # Make data frame for indexing matrix
-colnames(BrayDist_53N.mat) == rownames(sample_data(EU_53N_Soils.ps))
+colnames(BrayDist_54S.mat) == rownames(sample_data(EU_54S_Soils.ps))
 # Since the thing above is true, we can get meter and replace the columns and rownames in the BC dist mat with it!
-samps53N <- colnames(BrayDist_53N.mat) #this is the Mapping Sample ID of these
-meter53N <- sample_data(EU_53N_Soils.ps)$Meter
-index53N.df <- data.frame(samps53N, meter53N)
+samps54S <- colnames(BrayDist_54S.mat) #this is the Mapping Sample ID of these
+meter54S <- sample_data(EU_54S_Soils.ps)$Meter
+index54S.df <- data.frame(samps54S, meter54S)
 
 # Get row numbers for each meter. Because these the rows (and columns) in the BC matrix are the same as the rows
 # in the index dataframe, this is how we'll get the rows and columns to use to subset the BC matrix
-m10_53N <- which(index53N.df$meter53N == 10)
-m20_53N <- which(index53N.df$meter53N == 20)
-m30_53N <- which(index53N.df$meter53N == 30)
-m40_53N <- which(index53N.df$meter53N == 40)
-m50_53N <- which(index53N.df$meter53N == 50)
-m60_53N <- which(index53N.df$meter53N == 60)
-m70_53N <- which(index53N.df$meter53N == 70)
-m80_53N <- which(index53N.df$meter53N == 80)
-m90_53N <- which(index53N.df$meter53N == 90)
-m100_53N <- which(index53N.df$meter53N == 100)
+m10_54S <- which(index54S.df$meter54S == 10)
+m20_54S <- which(index54S.df$meter54S == 20)
+m30_54S <- which(index54S.df$meter54S == 30)
+m40_54S <- which(index54S.df$meter54S == 40)
+m50_54S <- which(index54S.df$meter54S == 50)
+m60_54S <- which(index54S.df$meter54S == 60)
+m70_54S <- which(index54S.df$meter54S == 70)
+m80_54S <- which(index54S.df$meter54S == 80)
+m90_54S <- which(index54S.df$meter54S == 90)
+m100_54S <- which(index54S.df$meter54S == 100)
 
 # B-C distances between patch at 10m and each point along transect
-m10_53N_comp20 <- BrayDist_53N.mat[m10_53N, m20_53N]
-m10_53N_comp30 <- BrayDist_53N.mat[m10_53N, m30_53N]
-m10_53N_comp40 <- BrayDist_53N.mat[m10_53N, m40_53N]
-m10_53N_comp50 <- BrayDist_53N.mat[m10_53N, m50_53N]
-m10_53N_comp60 <- BrayDist_53N.mat[m10_53N, m60_53N]
-m10_53N_comp70 <- BrayDist_53N.mat[m10_53N, m70_53N]
-m10_53N_comp80 <- BrayDist_53N.mat[m10_53N, m80_53N]
-m10_53N_comp90 <- BrayDist_53N.mat[m10_53N, m90_53N]
-m10_53N_comp100 <- BrayDist_53N.mat[m10_53N, m100_53N]
+m10_54S_comp20 <- BrayDist_54S.mat[m10_54S, m20_54S]
+m10_54S_comp30 <- BrayDist_54S.mat[m10_54S, m30_54S]
+m10_54S_comp40 <- BrayDist_54S.mat[m10_54S, m40_54S]
+m10_54S_comp50 <- BrayDist_54S.mat[m10_54S, m50_54S]
+m10_54S_comp60 <- BrayDist_54S.mat[m10_54S, m60_54S]
+m10_54S_comp70 <- BrayDist_54S.mat[m10_54S, m70_54S]
+m10_54S_comp80 <- BrayDist_54S.mat[m10_54S, m80_54S]
+m10_54S_comp90 <- BrayDist_54S.mat[m10_54S, m90_54S]
+m10_54S_comp100 <- BrayDist_54S.mat[m10_54S, m100_54S]
 
 # B-C distances between forest at 100m and each point along transect
-m100_53N_comp90 <- BrayDist_53N.mat[m100_53N, m90_53N]
-m100_53N_comp80 <- BrayDist_53N.mat[m100_53N, m80_53N]
-m100_53N_comp70 <- BrayDist_53N.mat[m100_53N, m70_53N]
-m100_53N_comp60 <- BrayDist_53N.mat[m100_53N, m60_53N]
-m100_53N_comp50 <- BrayDist_53N.mat[m100_53N, m50_53N]
-m100_53N_comp40 <- BrayDist_53N.mat[m100_53N, m40_53N]
-m100_53N_comp30 <- BrayDist_53N.mat[m100_53N, m30_53N]
-m100_53N_comp20 <- BrayDist_53N.mat[m100_53N, m20_53N]
-m100_53N_comp10 <- BrayDist_53N.mat[m100_53N, m10_53N]
+m100_54S_comp90 <- BrayDist_54S.mat[m100_54S, m90_54S]
+m100_54S_comp80 <- BrayDist_54S.mat[m100_54S, m80_54S]
+m100_54S_comp70 <- BrayDist_54S.mat[m100_54S, m70_54S]
+m100_54S_comp60 <- BrayDist_54S.mat[m100_54S, m60_54S]
+m100_54S_comp50 <- BrayDist_54S.mat[m100_54S, m50_54S]
+m100_54S_comp40 <- BrayDist_54S.mat[m100_54S, m40_54S]
+m100_54S_comp30 <- BrayDist_54S.mat[m100_54S, m30_54S]
+m100_54S_comp20 <- BrayDist_54S.mat[m100_54S, m20_54S]
+m100_54S_comp10 <- BrayDist_54S.mat[m100_54S, m10_54S]
+
+
+# Plot
+bold_eu54Sp <- expression(bold("EU 54S: Dissimilarity from 10m (patch)"))
+bold_eu54Sf <- expression(bold("EU 54S: Dissimilarity from 100m (forest)"))
+quartz()
+par(mfrow=c(1,2))
+patch_box54S <- boxplot(list(m10_54S_comp20, m10_54S_comp30, m10_54S_comp40,
+                             m10_54S_comp50, m10_54S_comp60, m10_54S_comp70,
+                             m10_54S_comp80, m10_54S_comp90, m10_54S_comp100),
+                        ylab = "Bray-Curtis Dissimilarity",
+                        names = c("20m", "30m", "40m", "50m",
+                                  "60m", "70m", "80m", "90m", "100m"), cex.axis = 0.8,
+                        cex.lab = 1,
+                        ylim=c(0.0, 1.0))
+mtext(text=bold_eu54Sp, side=3, adj = -0.065, line = 2)
+forest_box54S <- boxplot(list(m100_54S_comp10, m100_54S_comp20, m100_54S_comp30, m100_54S_comp40,
+                              m100_54S_comp50, m100_54S_comp60, m100_54S_comp70,
+                              m100_54S_comp80, m100_54S_comp90), 
+                         ylab = "Bray-Curtis Dissimilarity",
+                         names = c("10m", "20m", "30m", "40m", "50m",
+                                   "60m", "70m", "80m", "90m"), cex.axis = 0.8,
+                         cex.lab = 1,
+                         ylim=c(0.0, 1.0))
+mtext(text=bold_eu54Sf, side=3, adj = -0.065, line = 2)
 
 ###########
 # EU 8
@@ -251,6 +341,33 @@ m100_8_comp30 <- BrayDist_8.mat[m100_8, m30_8]
 m100_8_comp20 <- BrayDist_8.mat[m100_8, m20_8]
 m100_8_comp10 <- BrayDist_8.mat[m100_8, m10_8]
 
+# Plot
+bold_eu8p <- expression(bold("EU 8: Dissimilarity from 10m (patch)"))
+bold_eu8f <- expression(bold("EU 8: Dissimilarity from 100m (forest)"))
+quartz()
+par(mfrow=c(1,2))
+patch_box8 <- boxplot(list(m10_8_comp20, m10_8_comp30, m10_8_comp40,
+                           m10_8_comp50, m10_8_comp60, m10_8_comp70,
+                           m10_8_comp80, m10_8_comp90, m10_8_comp100),
+                      col= "burlywood3",
+                      ylab = "Bray-Curtis Dissimilarity",
+                      names = c("20m", "30m", "40m", "50m",
+                                "60m", "70m", "80m", "90m", "100m"), cex.axis = 0.8,
+                      cex.lab = 1,
+                      ylim=c(0.0, 1.0))
+mtext(text=bold_eu8p, side=3, adj = -0.065, line = 2)
+forest_box8 <- boxplot(list(m100_8_comp10, m100_8_comp20, m100_8_comp30, m100_8_comp40,
+                            m100_8_comp50, m100_8_comp60, m100_8_comp70,
+                            m100_8_comp80, m100_8_comp90),
+                       col= "darkgreen",
+                       ylab = "Bray-Curtis Dissimilarity",
+                       names = c("10m", "20m", "30m", "40m", "50m",
+                                 "60m", "70m", "80m", "90m"), cex.axis = 0.8,
+                       cex.lab = 1,
+                       ylim=c(0.0, 1.0))
+mtext(text=bold_eu8f, side=3, adj = -0.065, line = 2)
+
+
 ###########
 # EU 53S
 ##########
@@ -306,6 +423,31 @@ m100_53S_comp30 <- BrayDist_53S.mat[m100_53S, m30_53S]
 m100_53S_comp20 <- BrayDist_53S.mat[m100_53S, m20_53S]
 m100_53S_comp10 <- BrayDist_53S.mat[m100_53S, m10_53S]
 
+# Plot
+
+bold_eu53Sp <- expression(bold("EU 53S: Dissimilarity from 10m (patch)"))
+bold_eu53Sf <- expression(bold("EU 53S: Dissimilarity from 100m (forest)"))
+quartz()
+par(mfrow=c(1,2))
+patch_box53S <- boxplot(list(m10_53S_comp20, m10_53S_comp30, m10_53S_comp40,
+                             m10_53S_comp50, m10_53S_comp60, m10_53S_comp70,
+                             m10_53S_comp80, m10_53S_comp90, m10_53S_comp100),
+                        ylab = "Bray-Curtis Dissimilarity",
+                        names = c("20m", "30m", "40m", "50m",
+                                  "60m", "70m", "80m", "90m", "100m"), cex.axis = 0.8,
+                        cex.lab = 1,
+                        ylim=c(0.0, 1.0))
+mtext(text=bold_eu53Sp, side=3, adj = -0.065, line = 2)
+forest_box53S <- boxplot(list(m100_53S_comp10, m100_53S_comp20, m100_53S_comp30, m100_53S_comp40,
+                              m100_53S_comp50, m100_53S_comp60, m100_53S_comp70,
+                              m100_53S_comp80, m100_53S_comp90), 
+                         ylab = "Bray-Curtis Dissimilarity",
+                         names = c("10m", "20m", "30m", "40m", "50m",
+                                   "60m", "70m", "80m", "90m"), cex.axis = 0.8,
+                         cex.lab = 1,
+                         ylim=c(0.0, 1.0))
+mtext(text=bold_eu53Sf, side=3, adj = -0.065, line = 2)
+
 ###########
 # EU 10
 ##########
@@ -359,29 +501,142 @@ m100_10_comp30 <- BrayDist_10.mat[m100_10, m30_10]
 m100_10_comp20 <- BrayDist_10.mat[m100_10, m20_10]
 m100_10_comp10 <- BrayDist_10.mat[m100_10, m10_10]
 
-
-######## MAKE BOXPLOTS ######## 
-# So far, this is just for EU 10. Still need to label/distinguish transects and take out outliers
-bold_eu10p <- expression(bold("EU 10: Dissimilarity Relative to 10m (patch)"))
-bold_eu10f <- expression(bold("EU 10: Dissimilarity Relative to 100m (forest)"))
+# Plot:
+bold_eu10p <- expression(bold("EU 10: Dissimilarity from 10m (patch)"))
+bold_eu10f <- expression(bold("EU 10: Dissimilarity from 100m (forest)"))
 quartz()
 par(mfrow=c(1,2))
 patch_box10 <- boxplot(list(m10_10_comp20, m10_10_comp30, m10_10_comp40,
-                          m10_10_comp50, m10_10_comp60, m10_10_comp70,
-                          m10_10_comp80, m10_10_comp90, m10_10_comp100),
-                     ylab = "Bray-Curtis Dissimilarity",
-                     names = c("20m", "30m", "40m", "50m",
-                               "60m", "70m", "80m", "90m", "100m"), cex.axis = 0.8,
-                     cex.lab = 1,
-                     ylim=c(0.0, 1.0))
+                            m10_10_comp50, m10_10_comp60, m10_10_comp70,
+                            m10_10_comp80, m10_10_comp90, m10_10_comp100),
+                       ylab = "Bray-Curtis Dissimilarity",
+                       names = c("20m", "30m", "40m", "50m",
+                                 "60m", "70m", "80m", "90m", "100m"), cex.axis = 0.8,
+                       cex.lab = 1,
+                       ylim=c(0.0, 1.0))
 mtext(text=bold_eu10p, side=3, adj = -0.065, line = 2)
 forest_box10 <- boxplot(list(m100_10_comp10, m100_10_comp20, m100_10_comp30, m100_10_comp40,
-                           m100_10_comp50, m100_10_comp60, m100_10_comp70,
-                           m100_10_comp80, m100_10_comp90), 
+                             m100_10_comp50, m100_10_comp60, m100_10_comp70,
+                             m100_10_comp80, m100_10_comp90), 
+                        ylab = "Bray-Curtis Dissimilarity",
+                        names = c("10m", "20m", "30m", "40m", "50m",
+                                  "60m", "70m", "80m", "90m"), cex.axis = 0.8,
+                        cex.lab = 1,
+                        ylim=c(0.0, 1.0))
+mtext(text=bold_eu10f, side=3, adj = -0.065, line = 2)
+
+
+######## MAKE BOXPLOTS ######## 
+# Put everything together in one big ol' plot
+
+quartz()
+par(mfrow=c(3,4))
+patch_box52 <- boxplot(list(m10_52_comp20, m10_52_comp30, m10_52_comp40,
+                            m10_52_comp50, m10_52_comp60, m10_52_comp70,
+                            m10_52_comp80, m10_52_comp90, m10_52_comp100), col= "burlywood3",
+                       ylab = "Bray-Curtis Dissimilarity",
+                       names = c("20m", "30m", "40m", "50m",
+                                 "60m", "70m", "80m", "90m", "100m"), cex.axis = 0.8,
+                       cex.lab = 1,
+                       ylim=c(0.0, 1.0))
+mtext(text=bold_eu52p, side=3, adj = -0.065, line = 2, cex=0.6)
+forest_box52 <- boxplot(list(m100_52_comp10, m100_52_comp20, m100_52_comp30, m100_52_comp40,
+                             m100_52_comp50, m100_52_comp60, m100_52_comp70,
+                             m100_52_comp80, m100_52_comp90), col= "darkgreen", 
+                        ylab = "Bray-Curtis Dissimilarity",
+                        names = c("10m", "20m", "30m", "40m", "50m",
+                                  "60m", "70m", "80m", "90m"), cex.axis = 0.8,
+                        cex.lab = 1,
+                        ylim=c(0.0, 1.0))
+mtext(text=bold_eu52f, side=3, adj = -0.065, line = 2, cex=0.6)
+patch_box53N <- boxplot(list(m10_53N_comp20, m10_53N_comp30, m10_53N_comp40,
+                             m10_53N_comp50, m10_53N_comp60, m10_53N_comp70,
+                             m10_53N_comp80, m10_53N_comp90, m10_53N_comp100), col= "burlywood3",
+                        ylab = "Bray-Curtis Dissimilarity",
+                        names = c("20m", "30m", "40m", "50m",
+                                  "60m", "70m", "80m", "90m", "100m"), cex.axis = 0.8,
+                        cex.lab = 1,
+                        ylim=c(0.0, 1.0))
+mtext(text=bold_eu53Np, side=3, adj = -0.065, line = 2, cex=0.6)
+forest_box53N <- boxplot(list(m100_53N_comp10, m100_53N_comp20, m100_53N_comp30, m100_53N_comp40,
+                              m100_53N_comp50, m100_53N_comp60, m100_53N_comp70,
+                              m100_53N_comp80, m100_53N_comp90), col= "darkgreen", 
+                         ylab = "Bray-Curtis Dissimilarity",
+                         names = c("10m", "20m", "30m", "40m", "50m",
+                                   "60m", "70m", "80m", "90m"), cex.axis = 0.8,
+                         cex.lab = 1,
+                         ylim=c(0.0, 1.0))
+mtext(text=bold_eu53Nf, side=3, adj = -0.065, line = 2, cex=0.6)
+patch_box54S <- boxplot(list(m10_54S_comp20, m10_54S_comp30, m10_54S_comp40,
+                             m10_54S_comp50, m10_54S_comp60, m10_54S_comp70,
+                             m10_54S_comp80, m10_54S_comp90, m10_54S_comp100), col= "burlywood3",
+                        ylab = "Bray-Curtis Dissimilarity",
+                        names = c("20m", "30m", "40m", "50m",
+                                  "60m", "70m", "80m", "90m", "100m"), cex.axis = 0.8,
+                        cex.lab = 1,
+                        ylim=c(0.0, 1.0))
+mtext(text=bold_eu54Sp, side=3, adj = -0.065, line = 2, cex=0.6)
+forest_box54S <- boxplot(list(m100_54S_comp10, m100_54S_comp20, m100_54S_comp30, m100_54S_comp40,
+                              m100_54S_comp50, m100_54S_comp60, m100_54S_comp70,
+                              m100_54S_comp80, m100_54S_comp90), col= "darkgreen", 
+                         ylab = "Bray-Curtis Dissimilarity",
+                         names = c("10m", "20m", "30m", "40m", "50m",
+                                   "60m", "70m", "80m", "90m"), cex.axis = 0.8,
+                         cex.lab = 1,
+                         ylim=c(0.0, 1.0))
+mtext(text=bold_eu54Sf, side=3, adj = -0.065, line = 2, cex=0.6)
+patch_box8 <- boxplot(list(m10_8_comp20, m10_8_comp30, m10_8_comp40,
+                           m10_8_comp50, m10_8_comp60, m10_8_comp70,
+                           m10_8_comp80, m10_8_comp90, m10_8_comp100), col= "burlywood3",
                       ylab = "Bray-Curtis Dissimilarity",
-                      names = c("10m", "20m", "30m", "40m", "50m",
-                                "60m", "70m", "80m", "90m"), cex.axis = 0.8,
+                      names = c("20m", "30m", "40m", "50m",
+                                "60m", "70m", "80m", "90m", "100m"), cex.axis = 0.8,
                       cex.lab = 1,
                       ylim=c(0.0, 1.0))
-mtext(text=bold_eu10f, side=3, adj = -0.065, line = 2)
+mtext(text=bold_eu8p, side=3, adj = -0.065, line = 2, cex=0.6)
+forest_box8 <- boxplot(list(m100_8_comp10, m100_8_comp20, m100_8_comp30, m100_8_comp40,
+                            m100_8_comp50, m100_8_comp60, m100_8_comp70,
+                            m100_8_comp80, m100_8_comp90), col= "darkgreen", 
+                       ylab = "Bray-Curtis Dissimilarity",
+                       names = c("10m", "20m", "30m", "40m", "50m",
+                                 "60m", "70m", "80m", "90m"), cex.axis = 0.8,
+                       cex.lab = 1,
+                       ylim=c(0.0, 1.0))
+mtext(text=bold_eu8f, side=3, adj = -0.065, line = 2, cex=0.6)
+patch_box53S <- boxplot(list(m10_53S_comp20, m10_53S_comp30, m10_53S_comp40,
+                             m10_53S_comp50, m10_53S_comp60, m10_53S_comp70,
+                             m10_53S_comp80, m10_53S_comp90, m10_53S_comp100), col= "burlywood3",
+                        ylab = "Bray-Curtis Dissimilarity",
+                        names = c("20m", "30m", "40m", "50m",
+                                  "60m", "70m", "80m", "90m", "100m"), cex.axis = 0.8,
+                        cex.lab = 1,
+                        ylim=c(0.0, 1.0))
+mtext(text=bold_eu53Sp, side=3, adj = -0.065, line = 2, cex=0.6)
+forest_box53S <- boxplot(list(m100_53S_comp10, m100_53S_comp20, m100_53S_comp30, m100_53S_comp40,
+                              m100_53S_comp50, m100_53S_comp60, m100_53S_comp70,
+                              m100_53S_comp80, m100_53S_comp90), col= "darkgreen", 
+                         ylab = "Bray-Curtis Dissimilarity",
+                         names = c("10m", "20m", "30m", "40m", "50m",
+                                   "60m", "70m", "80m", "90m"), cex.axis = 0.8,
+                         cex.lab = 1,
+                         ylim=c(0.0, 1.0))
+mtext(text=bold_eu53Sf, side=3, adj = -0.065, line = 2, cex=0.6)
+patch_box10 <- boxplot(list(m10_10_comp20, m10_10_comp30, m10_10_comp40,
+                            m10_10_comp50, m10_10_comp60, m10_10_comp70,
+                            m10_10_comp80, m10_10_comp90, m10_10_comp100), col= "burlywood3",
+                       ylab = "Bray-Curtis Dissimilarity",
+                       names = c("20m", "30m", "40m", "50m",
+                                 "60m", "70m", "80m", "90m", "100m"), cex.axis = 0.8,
+                       cex.lab = 1,
+                       ylim=c(0.0, 1.0))
+mtext(text=bold_eu10p, side=3, adj = -0.065, line = 2, cex=0.6)
+forest_box10 <- boxplot(list(m100_10_comp10, m100_10_comp20, m100_10_comp30, m100_10_comp40,
+                             m100_10_comp50, m100_10_comp60, m100_10_comp70,
+                             m100_10_comp80, m100_10_comp90), col= "darkgreen", 
+                        ylab = "Bray-Curtis Dissimilarity",
+                        names = c("10m", "20m", "30m", "40m", "50m",
+                                  "60m", "70m", "80m", "90m"), cex.axis = 0.8,
+                        cex.lab = 1,
+                        ylim=c(0.0, 1.0))
+mtext(text=bold_eu10f, side=3, adj = -0.065, line = 2, cex=0.6)
 
