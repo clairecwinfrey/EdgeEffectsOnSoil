@@ -17,7 +17,7 @@
 
 setwd("/Users/clairewinfrey/Desktop/CU_Research/SoilEdgeEffectsResearch/Bioinformatics")
 
-# load("EDA16SAug2021")
+# load("EDA16SAug2021") #stuff made in this script
 
 # Read in libraries
 library("phyloseq")
@@ -28,8 +28,7 @@ library("tibble")       # Needed for converting column to row names
 library("tidyr")
 library("mctoolsr")
 library("vegan")
-library("gridExtra")    # allows you to make multiple plots on the same page 
-library("DESeq2") #for differential abundance analysis
+library("gridExtra")    # allows you to make multiple plots on the same page with ggplot
 
 ##################################################################################
 # I. SET-UP, DATA CLEANING, RAREFACTION, AND FIRST TAXONOMIC & ORDINATION PLOTS
@@ -1180,4 +1179,4 @@ mtext(text=bold_b, side=3, adj = -0.065, line = 2)
 # SAVE ALL OF THESE FOR EASY ACCESS
 ##################################
 
-save(rarefied.ps, samples_df, relabun.phylatop99.5, relabun.phylatop99, top_99.5p_phyla, relabun.classtop95, ord, ordSoils, ASVsTrimmed, taxTrimmed, trimmedJustsoils.ps, trimOrd, outliersTrimmed, outliersASVtax, file = "EDA16SAug2021")
+#save(rarefied.ps, samples_df, relabun.phylatop99.5, relabun.phylatop99, top_99.5p_phyla, relabun.classtop95, ord, ordSoils, ASVsTrimmed, taxTrimmed, trimmedJustsoils.ps, trimOrd, outliersTrimmed, outliersASVtax, file = "EDA16SAug2021")
