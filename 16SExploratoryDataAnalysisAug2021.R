@@ -593,7 +593,7 @@ rowMeans(ASVsTrimmed)[ASVsinAllindex]
 
 coreASVs <- cbind.data.frame(rare_taxTab[ASVsinAllindex,], rowMeans(ASVsTrimmed)[ASVsinAllindex])
 colnames(coreASVs)[8] <- "meanAbundancePerSample"
-View(coreASVs)
+#View(coreASVs)
 
 # Merge trimmed ASV tables and taxonomy tables to get something that is formatted like
 # "seqtab_wTax_mctoolsr"
@@ -1010,7 +1010,7 @@ soilDeseq1 <- phyloseq_to_deseq2(soil_noedge.ps, ~ Habitat)
 # Note: uses default Benjamini-Hochberg correction 
 soilDeseqtested <- DESeq(soilDeseq1, test="Wald", fitType = "parametric")
 
-# Good explanation of resuts is here: https://support.illumina.com/help/BS_App_RNASeq_DE_OLH_1000000071939/Content/Source/Informatics/Apps/DESeq2ResultFile_swBS.htm#:~:text=baseMean%E2%80%94The%20average%20of%20the,factors%2C%20taken%20over%20all%20samples.&text=log2FoldChange%E2%80%93The%20effect%20size%20estimate,the%20comparison%20and%20control%20groups.
+# Good explanation of results is here: https://support.illumina.com/help/BS_App_RNASeq_DE_OLH_1000000071939/Content/Source/Informatics/Apps/DESeq2ResultFile_swBS.htm#:~:text=baseMean%E2%80%94The%20average%20of%20the,factors%2C%20taken%20over%20all%20samples.&text=log2FoldChange%E2%80%93The%20effect%20size%20estimate,the%20comparison%20and%20control%20groups.
 DeSeq_res <- results(soilDeseqtested, cooksCutoff = FALSE)
 alpha <- 0.001
 sigtab <- DeSeq_res[which(DeSeq_res$padj < alpha), ]
@@ -1103,7 +1103,6 @@ ASVtab <- psotu2veg(trimmedJustsoils.ps)
 ASVbrayDist <- vegdist(ASVtab, method = "bray")
 ASVBrayDist.mat <- as.matrix(ASVbrayDist)
 diag(ASVBrayDist.mat) <- NA
-ASVBrayDist.mat[lower.tri(ASVBrayDist.mat)] <- NA #because symmetrical 
 
 # Make data frame for indexing matrix
 rownames(ASVBrayDist.mat) == rownames(sample_data(trimmedJustsoils.ps))
@@ -1125,6 +1124,7 @@ m90 <- which(index.df$meter == 90)
 m100 <- which(index.df$meter == 100)
 
 # Distances between patch at 10m and each point along transect
+m10_comp10 <- ASVBrayDist.mat[m10, m10]
 m10_comp20 <- ASVBrayDist.mat[m10, m20]
 m10_comp30 <- ASVBrayDist.mat[m10, m30]
 m10_comp40 <- ASVBrayDist.mat[m10, m40]
@@ -1136,6 +1136,7 @@ m10_comp90 <- ASVBrayDist.mat[m10, m90]
 m10_comp100 <- ASVBrayDist.mat[m10, m100]
 
 # Distances between forest at 100m and each point along transect
+m100_comp100 <- ASVBrayDist.mat[m100, m100]
 m100_comp90 <- ASVBrayDist.mat[m100, m90]
 m100_comp80 <- ASVBrayDist.mat[m100, m80]
 m100_comp70 <- ASVBrayDist.mat[m100, m70]
@@ -1151,21 +1152,21 @@ bold_a <- expression(bold("Dissimilarity Relative to 10m (patch)"))
 bold_b <- expression(bold("Dissimilarity Relative to 100m (forest)"))
 quartz()
 par(mfrow=c(1,2))
-patch_box <- boxplot(list(m10_comp20, m10_comp30, m10_comp40,
+patch_box <- boxplot(list(m10_comp10, m10_comp20, m10_comp30, m10_comp40,
                           m10_comp50, m10_comp60, m10_comp70,
                           m10_comp80, m10_comp90, m10_comp100),
                     ylab = "Bray-Curtis Dissimilarity",
-                    names = c("20m", "30m", "40m", "50m",
+                    names = c("10m", "20m", "30m", "40m", "50m",
                               "60m", "70m", "80m", "90m", "100m"), cex.axis = 0.8,
                     cex.lab = 1,
                     ylim=c(0.0, 1.0))
 mtext(text=bold_a, side=3, adj = -0.065, line = 2)
 forest_box <- boxplot(list(m100_comp10, m100_comp20, m100_comp30, m100_comp40,
                         m100_comp50, m100_comp60, m100_comp70,
-                        m100_comp80, m100_comp90), 
+                        m100_comp80, m100_comp90, m100_comp100), 
                    ylab = "Bray-Curtis Dissimilarity",
                    names = c("10m", "20m", "30m", "40m", "50m",
-                             "60m", "70m", "80m", "90m"), cex.axis = 0.8,
+                             "60m", "70m", "80m", "90m", "100m"), cex.axis = 0.8,
                    cex.lab = 1,
                    ylim=c(0.0, 1.0))
 mtext(text=bold_b, side=3, adj = -0.065, line = 2)
