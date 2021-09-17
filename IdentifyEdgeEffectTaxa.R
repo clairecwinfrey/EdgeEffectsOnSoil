@@ -53,6 +53,9 @@ dat <- rpois(n=36, lambda = 1)
 # in cartoon example, as with real data above, ASVs are rows and samples are columns
 datmat <- matrix(dat, nrow=9, ncol=4) 
 
+index <- which(datmat > 0) #another way of doing it, R goes down columns
+datmat[index] <- 1
+
 # How many columns (samples) does each ASV (row) appear in?
 ASVsampCount <- rowSums(datmat > 0)
 ASVsampCount #looks correct!
@@ -194,6 +197,13 @@ above_50 <- which(ASVtab_52_10x_da_counts[,36] >= 50)
 ASVtab_52_10x_da_50 <- ASVtab_52_10x_da_counts[above_50,]
 # View(ASVtab_52_10x_da_50)
 
+# Ac
+
+
+mat_52_plot <- ASVtab_52_10x_da_50[,1:8]
+
+matplot(mat_52_plot, type= "l")
+
 # We want to plot these ASV abundances along the transect, but first we need to get separate matrices by transect
 # Initial step is to separate out by transect by getting index for each transect
 EU_52_Tindex <- which(sample_data(EU_52_10timesNoEdge.ps)$Transect=="T") # "top" transect
@@ -207,9 +217,43 @@ ASVtab_52_10x_T <- ASVtab_52_10x_da_50[,c(EU_52_Tindex,35:38)]
 # same sample order as ASVtab_52_10x_da_50)
 colnames(ASVtab_52_10x_T)[1:8] <- sample_data(EU_52_10timesNoEdge.ps)$Meter[EU_52_Tindex]
 ASVtab_52_10x_T # top transect 
+ASVtab_52_10x_T <- t(ASVtab_52_10x_T[,1:8])
+rownames(ASVtab_52_10x_T) #mssing 70m
+ASVtab_52_10x_T <- ASVtab_52_10x_T[c("10", "20", "30", "40", "60", "80", "90", "100"),] #rorder to make 10m - 100m
+
+ASVtab_52_10x_B <- ASVtab_52_10x_da_50[,c(EU_52_Bindex,35:38)] 
+colnames(ASVtab_52_10x_B)[1:8] <- sample_data(EU_52_10timesNoEdge.ps)$Meter[EU_52_Bindex]
+rownames(ASVtab_52_10x_B) #missing 90m
+ASVtab_52_10x_B <- t(ASVtab_52_10x_B[,1:8])
+ASVtab_52_10x_B <- ASVtab_52_10x_B[c("10", "20", "30", "40", "60", "70", "80", "100"),] #rorder to make 10m - 100m
 
 
+ASVtab_52_10x_L <- ASVtab_52_10x_da_50[,c(EU_52_Lindex,35:38)] 
+colnames(ASVtab_52_10x_L)[1:9] <- sample_data(EU_52_10timesNoEdge.ps)$Meter[EU_52_Lindex]
+ASVtab_52_10x_L <- t(ASVtab_52_10x_L[,1:9])
+ASVtab_52_10x_L <- ASVtab_52_10x_L[c("10", "20", "30", "40", "60", "70", "80", "90", "100"),] #re-order to make 10m - 100m
 
+ASVtab_52_10x_R <- ASVtab_52_10x_da_50[,c(EU_52_Rindex,35:38)] 
+colnames(ASVtab_52_10x_R)[1:9] <- sample_data(EU_52_10timesNoEdge.ps)$Meter[EU_52_Rindex]
+ASVtab_52_10x_R <- t(ASVtab_52_10x_R[,1:9])
+ASVtab_52_10x_R <- ASVtab_52_10x_R[c("10", "20", "30", "40", "60", "70", "80", "90", "100"),] #re-order to make 10m - 100m
+
+
+quartz()
+par(mfrow= c(2,2))
+T_52_plot <- matplot(sort(rownames(ASVplot_52_10x_T)), ASVplot_52_10x_T, type = "l", xlab= "Meter",
+        ylab= "Abundance", main= "Changes in ASV abundance across EU 52 T Transect")
+B_52_plot <- matplot(rownames(ASVtab_52_10x_B), ASVtab_52_10x_B, type = "l", xlab= "Meter",
+                     ylab= "Abundance", main= "Changes in ASV abundance across EU 52 B Transect")
+L_52_plot <- matplot(rownames(ASVtab_52_10x_L), ASVtab_52_10x_L, type = "l", xlab= "Meter",
+                     ylab= "Abundance", main= "Changes in ASV abundance across EU 52 L Transect")
+R_52_plot <- matplot(rownames(ASVtab_52_10x_R), ASVtab_52_10x_R, type = "l", xlab= "Meter",
+                     ylab= "Abundance", main= "Changes in ASV abundance across EU 52 R Transect")
+            
+
+quartz()
+R_52_plot <- matplot(rownames(ASVtab_52_10x_R), ASVtab_52_10x_R, type = "l", xlab= "Meter",
+                     ylab= "Abundance", main= "Changes in ASV abundance across EU 52 R Transect")
 
 
 #############
