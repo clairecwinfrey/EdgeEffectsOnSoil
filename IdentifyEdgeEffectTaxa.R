@@ -31,6 +31,12 @@ ASVs_outta_ps <- function(physeq){ #input is a phyloseq object
   return(as.data.frame(ASVTable))
 }
 
+# Handy function from Pierre L for getting rid of annoying "V" columns in data:
+# Source: https://stackoverflow.com/questions/32054368/use-first-row-data-as-column-names-in-r
+header.true <- function(df) { # from Pierre L: https://stackoverflow.com/questions/32054368/use-first-row-data-as-column-names-in-r
+  names(df) <- as.character(unlist(df[1,]))
+  df[-1,]
+}
 ###################################################################################################
 
 # Set working directory
@@ -90,7 +96,7 @@ cbind(datmat, ASVsampCount)
 ASVwithCount_52 <- ASVsampOccurrence(EU_52_Soils.ps)
 # View(ASVwithCount_52) taxa/ASVs re rows, and samples are columns
 dim(ASVwithCount_52)
-quartz()
+#quartz()
 barplot(table(ASVwithCount_52[,39]), ylab="Number of ASVs", xlab= "Number of Samples Present in (out of 38)", main= "EU_52" )
 length(which(ASVwithCount_52[,39] >= 4)) #7,514 ASVs are found in at least four samples!
 length(which(ASVwithCount_52[,39] >= 10)) #3506 ASVs found in at least 10
@@ -183,7 +189,7 @@ length(which(NoEdge52_count[,35] == 0)) #no, none were found only on the edge th
 # Combine samples by meter (values across ASV table is SUM across all samples at the same meter point,
 # and the rest of the metadata variables are the mean for each position along the meter)
 EU_52_10_ByMeter.ps <- merge_samples(EU_52_10timesNoEdge.ps, group= "Meter")
-EU_52_10_ByMeterASV <- as.data.frame(t(ASVs_outta_ps(EU_52_10_ByMeter))) #ASVs are rows, meter/samples are columns
+EU_52_10_ByMeterASV <- as.data.frame(t(ASVs_outta_ps(EU_52_10_ByMeter.ps))) #ASVs are rows, meter/samples are columns
 dim(EU_52_10_ByMeterASV) #ASVs are rows, meter/samples are columns
 # View(EU_52_10_ByMeterASV)
 class(EU_52_10_ByMeterASV)
@@ -218,7 +224,7 @@ ASVtab_52_10x_ByMeter_da_counts <- cbind(ASVtab_52_10x_ByMeter_da_counts, ASVabu
 # Use the forest and patch indices created above (when looking at 4x) to get average abundance in each
 forest_sum <- rowSums(ASVtab_52_10x_ByMeter_da_counts[,5:9]) #gets sum across each row of ONLY the forest samples
 forest_meanAbund <- forest_sum/5 #average number in each meter in the forest
-patch_sum <- rowSums(ASVtab_52_10x_da_counts[,1:4])
+patch_sum <- rowSums(ASVtab_52_10x_ByMeter_da_counts[,1:4])
 patch_meanAbund <- patch_sum/4
 
 # Combine it all together-- NON RELATIVE ABUNDANCE-- this is kinda like all the info!
@@ -242,25 +248,21 @@ relAbund_52_10x_ByMeter
 
 # Plot with Base R
 relAbund_52_10x_ByMeter <- t(relAbund_52_10x_ByMeter) #now samples are x and ASVs are y
-quartz()
+# quartz()
 relAbund_52_10x_ByMeter_plot <- matplot(rownames(relAbund_52_10x_ByMeter), relAbund_52_10x_ByMeter, type = "l", xlab= "Meter",
                      ylab= "Relative Abundance", main= "Changes in ASV abundance across EU 52- Meters Combined")
 
 # Plot with ggplot and color by taxonomic group???
-relAbund_52_10x_ByMeter_gg <- t(relAbund_52_10x_ByMeter) #switch it around again
-ASVindex <- rownames(relAbund_52_10x_ByMeter_gg) #get all of these sample names 
+relAbund_52_10x_ByMeter_gg <- t(relAbund_52_10x_ByMeter) #switch it around again (now is ASVs as rows and meters as columns )
+ASVindex <- rownames(relAbund_52_10x_ByMeter_gg) #get all of these ASV names 
 taxTable52NoEdge <- taxtable_outta_ps(EU_52_10_ByMeter.ps) #pull out tax table
 taxTable52NoEdge_10x_ByMeter <- taxTable52NoEdge[ASVindex,1:6] #get taxonomic information
-dim(taxTable52NoEdge_10x_ByMeter) #108 ASVs 
+dim(taxTable52NoEdge_10x_ByMeter) #108 ASVs , six taxonomic types (through genus)
 relAbund_52_10x_ByMeter_gg <- t(merge(relAbund_52_10x_ByMeter_gg, taxTable52NoEdge_10x_ByMeter, by=0)) #by=0 makes it combine by rownames
-# View(relAbund_52_10x_ByMeter_gg) #great, this looks as expected!
-header.true <- function(df) { # from Pierre L: https://stackoverflow.com/questions/32054368/use-first-row-data-as-column-names-in-r
-  names(df) <- as.character(unlist(df[1,]))
-  df[-1,]
-}
+# View(relAbund_52_10x_ByMeter_gg) #rows are now meters and taxonomic info, columns are ASVs
 relAbund_52_10x_ByMeter_gg <- header.true(relAbund_52_10x_ByMeter_gg) #lose ASV names but that's okay
-colnames(relAbund_52_10x_ByMeter_gg) <- rownames(taxTable52NoEdge_10x_ByMeter) #add them back in
-relAbund_52_10x_ByMeter_gg <- as.data.frame(relAbund_52_10x_ByMeter_gg)
+colnames(relAbund_52_10x_ByMeter_gg) <- rownames(taxTable52NoEdge_10x_ByMeter) #add ASV names back in
+relAbund_52_10x_ByMeter_gg <- as.data.frame(relAbund_52_10x_ByMeter_gg) #makes values numeric again!
 tax <- t(relAbund_52_10x_ByMeter_gg[10:15,]) #grab and save taxonomic information and invert it so I can make it into columns
 relAbund_52_10x_ByMeter_gg <- relAbund_52_10x_ByMeter_gg[1:9,] #remove last rows that are taxonomic info
 # help with ggplot from here: https://community.rstudio.com/t/how-plot-all-values-inside-a-data-frame-into-a-graph-using-ggplot-function/75021
@@ -268,17 +270,11 @@ relAbund_52_10x_ByMeter_gg <- rownames_to_column(relAbund_52_10x_ByMeter_gg, var
 relAbund_52_10x_ByMeter_gg <- relAbund_52_10x_ByMeter_gg %>% pivot_longer(cols= ASV_7:ASV_8741,
                               names_to= "ASV_name", values_to = "ASV_Rel_Abundance")
 head(relAbund_52_10x_ByMeter_gg) #now each ASV in each sample has a value
-tail(relAbund_52_10x_ByMeter_gg)
+tail(relAbund_52_10x_ByMeter_gg) #no more taxonomic info on the end
 relAbund_52_10x_ByMeter_gg <- cbind.data.frame(relAbund_52_10x_ByMeter_gg, tax) #tax is now columns
 # Make it so the meters are plotted in the correct order
 relAbund_52_10x_ByMeter_gg$Meter <- factor(relAbund_52_10x_ByMeter_gg$Meter, levels = c("10", "20", "30", "40", "60", "70", "80", "90", "100"))
-relAbund_52_10x_ByMeter_gg$ASV_Abundance <- as.numeric(relAbund_52_10x_ByMeter_gg$ASV_Abundance)
-quartz()
-ggplot(relAbund_52_10x_ByMeter_gg, aes(x=Meter, 
-        y=ASV_Abundance), color= Phylum, group=ASV_name) +
-    geom_point() +
-    geom_line() +
-    theme_classic()
+# Finally, plot this!
 
 quartz()
 ggplot(relAbund_52_10x_ByMeter_gg, aes(Meter, ASV_Rel_Abundance, color = Phylum, group = ASV_name)) + 
