@@ -48,7 +48,7 @@ zScore <- function(dat) { # input is dataframe
     ASVmean <- rowMeans(dat[i,]) #if you change rowMeans to mean, could use with matrices. Or could build in if/else statment
     ASVsd <- sd(dat[i,])
     for (j in 1:length(dat[i,])) {
-      zScoreDf[i,j] <- (dat[i,j]-ASVmean)/ASVsd #j isn't calling the right thing
+      zScoreDf[i,j] <- (dat[i,j]-ASVmean)/ASVsd # subtract row mean from value, then divide by standard deviation for z score
     }
   }
   return(zScoreDf)
@@ -373,11 +373,13 @@ tail(relAbund_52_15x_ByMeter_gg) #no more taxonomic info on the end
 relAbund_52_15x_ByMeter_gg <- cbind.data.frame(relAbund_52_15x_ByMeter_gg, tax) #tax is now columns
 # Make it so the meters are plotted in the correct order
 relAbund_52_15x_ByMeter_gg$Meter <- factor(relAbund_52_15x_ByMeter_gg$Meter, levels = c("10", "20", "30", "40", "50","60", "70", "80", "90", "100"))
-# Finally, plot this!
+relAbund_52_15x_ByMeter_gg$ASV_Rel_Abundance <- as.numeric(relAbund_52_15x_ByMeter_gg$ASV_Rel_Abundance) #make relative abundances numeric!!
 
+# Finally, plot this!
 quartz()
 ggplot(relAbund_52_15x_ByMeter_gg, aes(Meter, ASV_Rel_Abundance, color = Phylum, group = ASV_name)) + 
-  geom_line() + theme(axis.text.y = element_blank()) + ggtitle("Changes in ASV abundance across EU 52")
+  geom_line(size=2) + ggtitle("Changes in ASV abundance across EU 52") + ylab("ASV Relative Abundance")
+# to get rid of y-axis can use: + theme(axis.text.y = element_blank()) 
 
 ## USING Z-SCORES INSTEAD OF RELATIVE ABUNDANCE:
 
@@ -386,6 +388,46 @@ ASVtab_52_15x_ByMeterZ <- zScore(ASVtab_52_15x_ByMeter_da_counts[, 1:10]) #colum
 # Little test to show this works:
 # relevant <- ASVtab_52_15x_ByMeter_da_counts[, 1:10]
 # (relevant[20,2] - rowMeans(relevant[20,]))/sd(relevant[20,]) == ASVtab_52_15x_ByMeterZ[20,2] #just a lil test to show it works
+
+## USING Z scores
+# Plot with Base R
+relAbund_52_15x_Z.ByMeter.baseR <- t(ASVtab_52_15x_ByMeterZ) #now samples are rows and ASVs are columns
+# quartz()
+relAbund_52_15x_Z.ByMeter.baseR_plot <- matplot(rownames(relAbund_52_15x_Z.ByMeter.baseR), relAbund_52_15x_Z.ByMeter.baseR, type = "l", xlab= "Meter",
+                                        ylab= "Z-score", main= "Changes in ASV abundance across EU 52")
+xtick<-seq(0, 100, by=10) 
+axis(side=1, at=xtick, labels = TRUE) #change x axis
+
+# USING Z-SCORES: Plot with ggplot and color by taxonomic group
+relAbund_52_15x_ByMeter_Z_gg <- ASVtab_52_15x_ByMeterZ #ASVs are rows and meters are columns )
+ASVindex <- rownames(relAbund_52_15x_ByMeter_Z_gg) #get all of these ASV names 
+taxTable52_15_ByMeter <- taxtable_outta_ps(EU_52_15_ByMeter.ps) #pull out tax table
+taxTable52_15x_ByMeter <- taxTable52_15_ByMeter[ASVindex,1:6] #get taxonomic information
+dim(taxTable52_15x_ByMeter) #35 ASVs , six taxonomic types (through genus)
+relAbund_52_15x_ByMeter_Z_gg <- t(merge(relAbund_52_15x_ByMeter_Z_gg, taxTable52_15x_ByMeter, by=0)) #by=0 makes it combine by rownames
+# View(relAbund_52_15x_ByMeter_Z_gg) #rows are now meters and taxonomic info, columns are ASVs
+relAbund_52_15x_ByMeter_Z_gg  <- header.true(relAbund_52_15x_ByMeter_Z_gg) #lose ASV names but that's okay
+colnames(relAbund_52_15x_ByMeter_Z_gg) <- rownames(taxTable52_15x_ByMeter) #add ASV names back in
+relAbund_52_15x_ByMeter_Z_gg <- as.data.frame(relAbund_52_15x_ByMeter_Z_gg) #makes values numeric again!
+tax <- t(relAbund_52_15x_ByMeter_Z_gg[11:16,]) #grab and save taxonomic information and invert it so I can make it into columns
+relAbund_52_15x_ByMeter_Z_gg <- relAbund_52_15x_ByMeter_Z_gg[1:10,] #remove last rows that are taxonomic info
+# help with ggplot from here: https://community.rstudio.com/t/how-plot-all-values-inside-a-data-frame-into-a-graph-using-ggplot-function/75021
+relAbund_52_15x_ByMeter_Z_gg <- rownames_to_column(relAbund_52_15x_ByMeter_Z_gg, var="Meter")
+relAbund_52_15x_ByMeter_Z_gg <- relAbund_52_15x_ByMeter_Z_gg %>% pivot_longer(cols= ASV_7:ASV_2422,
+                                                                          names_to= "ASV_name", values_to = "ASV_ZScore")
+head(relAbund_52_15x_ByMeter_Z_gg) #now each ASV in each sample has a value
+tail(relAbund_52_15x_ByMeter_Z_gg) #no more taxonomic info on the end
+relAbund_52_15x_ByMeter_Z_gg <- cbind.data.frame(relAbund_52_15x_ByMeter_Z_gg, tax) #tax is now columns
+# Make it so the meters are plotted in the correct order
+relAbund_52_15x_ByMeter_Z_gg$Meter <- factor(relAbund_52_15x_ByMeter_Z_gg$Meter, levels = c("10", "20", "30", "40", "50","60", "70", "80", "90", "100"))
+relAbund_52_15x_ByMeter_Z_gg$ASV_ZScore <- as.numeric(relAbund_52_15x_ByMeter_Z_gg$ASV_ZScore) #make z-score a numeric variable!!!!
+
+# Finally, plot this!
+quartz()
+ggplot(relAbund_52_15x_ByMeter_Z_gg, aes(Meter, ASV_ZScore, color = Phylum, group = ASV_name)) + 
+  geom_line(size=2) + ggtitle("Changes in ASV abundance across EU 52") + theme(plot.title = element_text(hjust = 0.5)) +
+  theme(axis.text=element_text(size=14),
+         axis.title=element_text(size=15,face="bold"))
 
 ######### BY TRANSECT #########
 # In meeting September 21, Noah said not to worry about this, but that I should check PERMANOVA to make sure that I can justify 
