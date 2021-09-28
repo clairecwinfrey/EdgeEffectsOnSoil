@@ -25,7 +25,7 @@ ASVsampOccurrence <- function(physeq) { #input is a phyloseq object
   return(cbind(ASVmat, sampleOccurence)) #
 }
 
-# This function gets the ASV table out of phyloseq 
+# ASVs_outta_ps gets the ASV table out of phyloseq 
 ASVs_outta_ps <- function(physeq){ #input is a phyloseq object
   ASVTable <- otu_table(physeq)
   return(as.data.frame(ASVTable))
@@ -37,6 +37,36 @@ header.true <- function(df) { # from Pierre L: https://stackoverflow.com/questio
   names(df) <- as.character(unlist(df[1,]))
   df[-1,]
 }
+
+# zScore function computes the z-score for a given vector of numbers
+# The function is broadly applicable, but ASVs should be rows for its usage in this script  
+zScore <- function(dat) { # input is dataframe
+  zScoreDf <- matrix(NA, nrow=nrow(dat), ncol=ncol(dat))
+  colnames(zScoreDf) <- colnames(dat)
+  rownames(zScoreDf) <- rownames(dat)
+  for (i in 1:nrow(dat)){
+    ASVmean <- rowMeans(dat[i,]) #if you change rowMeans to mean, could use with matrices. Or could build in if/else statment
+    ASVsd <- sd(dat[i,])
+    for (j in 1:length(dat[i,])) {
+      zScoreDf[i,j] <- (dat[i,j]-ASVmean)/ASVsd #j isn't calling the right thing
+    }
+  }
+  return(zScoreDf)
+}
+
+# proof/testing out zScore function to make sure that it works
+set.seed(19)
+dat <- rpois(n=100, lambda = 1) 
+# in cartoon example, as with real data above, ASVs are rows and samples are columns
+datmat <- matrix(dat, nrow=20, ncol=5) 
+datmat <- as.data.frame(datmat)
+# testing it out below, it seems to work
+test <- zScore(datmat)
+dim(test) == dim(datmat) #yes
+test[1,1] == (datmat[1,1] - rowMeans(datmat[1,]))/sd(datmat[1,])
+(datmat[3,4] - rowMeans(datmat[3,]))/sd(datmat[3,]) == test[3,4]
+(datmat[20,2] - rowMeans(datmat[20,]))/sd(datmat[20,]) == test[20,2]
+
 ###################################################################################################
 
 # Set working directory
@@ -349,6 +379,13 @@ quartz()
 ggplot(relAbund_52_15x_ByMeter_gg, aes(Meter, ASV_Rel_Abundance, color = Phylum, group = ASV_name)) + 
   geom_line() + theme(axis.text.y = element_blank()) + ggtitle("Changes in ASV abundance across EU 52")
 
+## USING Z-SCORES INSTEAD OF RELATIVE ABUNDANCE:
+
+# Now use z-scores instead of relative abundance -- must convert to matrix because means in function does not work with dataframe
+ASVtab_52_15x_ByMeterZ <- zScore(ASVtab_52_15x_ByMeter_da_counts[, 1:10]) #columns 1:10 for only the ASV by meter data 
+# Little test to show this works:
+# relevant <- ASVtab_52_15x_ByMeter_da_counts[, 1:10]
+# (relevant[20,2] - rowMeans(relevant[20,]))/sd(relevant[20,]) == ASVtab_52_15x_ByMeterZ[20,2] #just a lil test to show it works
 
 ######### BY TRANSECT #########
 # In meeting September 21, Noah said not to worry about this, but that I should check PERMANOVA to make sure that I can justify 
