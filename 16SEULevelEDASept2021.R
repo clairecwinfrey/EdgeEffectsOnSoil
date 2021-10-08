@@ -17,7 +17,6 @@ library("mctoolsr")
 library("vegan")
 library("gridExtra")    # allows you to make multiple plots on the same page with ggplot
 library("DESeq2") #for differential abundance analysis
-library("DESeq2") #for differential abundance analysis
 library("grid")
 
 # Load in objects made in 16SExploratoryDataAnalysisAugust2021
