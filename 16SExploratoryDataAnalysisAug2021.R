@@ -11,24 +11,57 @@
 # investigations into why outlier samples might be outliers, how savannas/patches
 # differ from forests, etc.
 
-# Files saved in this script: rarefied.ps, relabun.phylatop99.5, relabun.phylatop99, top_99.5p_phyla, 
+# FILES SAVED IN THIS SCRIPT (both in Bioinformatics directory: (save code at end of script,
+# but commented out so that new files are not saved every time in Bioinformatics folder):
+# 1. "EDA16SAug2021"
+# rarefied.ps, relabun.phylatop99.5, relabun.phylatop99, top_99.5p_phyla, 
 # relabun.classtop95, ord, ordSoils, ASVsTrimmed, taxTrimmed.
-# file = "EDA16SAug2021"
+
+# 2. "trimmedJustsoils.ps" 
+# This is the phyloseq object that was made after rarefying, and keeping
+# only ASVs that occurred at least 50 times across the (rarefied) dataset. No
+# outliers were removed. 
+
+# FUNCTIONS CREATED IN THIS SCRIPT:
+# 1. Function to get the taxonomy table out of phyloseq:
+# (Inspired by similar function at https://jacobrprice.github.io/2017/08/26/phyloseq-to-vegan-and-back.html)
+taxtable_outta_ps <- function(physeq){ #input is a phyloseq object
+  taxTable <- tax_table(physeq)
+  return(as.data.frame(taxTable))
+}
+
+# 2. Function to get ASV table out of phyloseq so that we can view it better
+# (Inspired by similar function at https://jacobrprice.github.io/2017/08/26/phyloseq-to-vegan-and-back.html)
+ASVs_outta_ps <- function(physeq){ #input is a phyloseq object
+  ASVTable <- otu_table(physeq)
+  return(as.data.frame(ASVTable))
+}
+
+# 3. Function that gets OTU/ASV table out of phyloseq
+# (from https://jacobrprice.github.io/2017/08/26/phyloseq-to-vegan-and-back.html)
+psotu2veg <- function(physeq) {
+  OTU <- otu_table(physeq)
+  if (taxa_are_rows(OTU)) {
+    OTU <- t(OTU)
+  }
+  return(as(OTU, "matrix"))
+}
+
+#######################################################################################
 
 setwd("/Users/clairewinfrey/Desktop/CU_Research/SoilEdgeEffectsResearch/Bioinformatics")
 
-# load("EDA16SAug2021") #stuff made in this script
-
 # Read in libraries
 library("phyloseq")
-library("ggplot2")      # graphics
-library("readxl")       # necessary to import the data from Excel file
-library("dplyr")        # filter and reformat data frames
-library("tibble")       # Needed for converting column to row names
+library("ggplot2")      #graphics
+library("readxl")       #necessary to import the data from Excel file
+library("dplyr")        #filter and reformat data frames
+library("tibble")       #Needed for converting column to row names
 library("tidyr")
 library("mctoolsr")
 library("vegan")
-library("gridExtra")    # allows you to make multiple plots on the same page with ggplot
+library("gridExtra")    #allows you to make multiple plots on the same page with ggplot
+library("DESeq2") #for differential abundance analysis
 
 ##################################################################################
 # I. SET-UP, DATA CLEANING, RAREFACTION, AND FIRST TAXONOMIC & ORDINATION PLOTS
@@ -94,7 +127,6 @@ tax_sep$Species <- NA
 # IDEM for tax sep
 tax_mat <- tax_sep %>%
   tibble::column_to_rownames("#ASV_ID")
-
 
 # 3. Sample metadata
 metadata <- read.csv("SRS_AllMetadataAug17.csv") #this new csv has ALL sample metadata
@@ -209,13 +241,6 @@ sample_variables(SRS_16S.ps)
 
 # FILTER OUT MITOCHONDRIA, CHLOROPLASTS,a and KINGDOM EUKARYOTA
 # chloroplast is an order and mitochondria is a family 
-
-# Make a function to get the taxonomy table out of phyloseq:
-# (Inspired by similar function at https://jacobrprice.github.io/2017/08/26/phyloseq-to-vegan-and-back.html)
-taxtable_outta_ps <- function(physeq){ #input is a phyloseq object
-  taxTable <- tax_table(physeq)
-  return(as.data.frame(taxTable))
-}
 
 # Get taxonomy table out of phyloseq:
 SRS_taxTable <- taxtable_outta_ps(SRS_16S.ps)
@@ -334,7 +359,7 @@ rarefied.ps <- rarefy_even_depth(noeuksorNAs_ps, sample.size = 14973, replace=FA
 # 1121OTUs were removed because they are no longer present in any sample after random subsampling
 
 # Rarefaction curve:
-samp.col = c(rep("blue", 243), rep("grey", 26))
+samp.col <- c(rep("blue", 243), rep("grey", 26))
 
 rare.plot <- rarecurve(t(otu_table(noeuksorNAs_ps)), step = 3000, cex = 0.5, col = samp.col, label = FALSE, xlab = "Number of Sequences", ylab = "Number of ASVs")
 rarecurve(t(otu_table(noeuksorNAs_ps)), step = 3000, cex = 0.5, col = samp.col, label = FALSE, xlab = "Number of Sequences", ylab = "Number of ASVs")
@@ -534,12 +559,6 @@ outliers <- c("53ND_B_20", " 10C_L_10", "53ND_R_40", "53SD_R_10", "52D_L_100", "
 # 1) Do top phyla or classes change, or outliers, after this removal? If so, this is
 # evidence of these shifts being driven by rare taxa:
 
-# Use function to get ASV table out of phyloseq so that we can view it better
-ASVs_outta_ps <- function(physeq){ #input is a phyloseq object
-  ASVTable <- otu_table(physeq)
-  return(as.data.frame(ASVTable))
-}
-
 rare_ASVtab <- ASVs_outta_ps(rarefied.ps) 
 # Add column for abundance of ASVs across all (pre-rarefied) samples
 rare_ASVtab$Abundance <- rowSums(rare_ASVtab)
@@ -608,7 +627,6 @@ seqtab_wTax_trimmed[,239]
 ############ RE-DO ANALYSES WITH DATASET WHERE THE RARE TAXA HAVE BEEN REMOVED
 #### NEED TO REMAKE THESE INTO PHYLOSEQ OBJECTS FIRST (READ THROUGH THIS TOO)
 
-# Remake phyloseq object 
 class(taxTrimmed)
 dim(ASVsTrimmed)
 #View(ASVsTrimmed)
@@ -694,7 +712,6 @@ trimmedTop_99.5p_phyla <- relabunTrimmed.phylatrimmedTop99.5 %>%
   group_by(Sample, Phylum) %>%
   summarize(Mean = mean(Abundance)) %>%
   arrange(-Mean) 
-# View()
 
 #####################
 # trimmedTop CLASSES:
@@ -743,7 +760,7 @@ classtrimmedPlot.95pt + geom_bar(aes(), stat="identity", position="fill") +
   theme(legend.position="bottom") +
   guides(fill=guide_legend(nrow=4)) + theme(legend.text = element_text(colour="black", size = 5.5))  + ggtitle("Classes comprising at least 5% of total abundance")
 
-# Remove biocrust and controls before ordination:
+# Make new phyloseq object by removing biocrust and controls before ordination:
 trimmedJustsoils.ps <- subset_samples(TrimmedSRS_16S.ps, Type != "BioCrust" & Type != "ExtContWater")
 unique(sample_data(trimmedJustsoils.ps)[,27]) #only soils
 sample_names(trimmedJustsoils.ps) #another check to show that we have only soils!
@@ -987,8 +1004,6 @@ ggplot(outlierSigtab, aes(x=Genus, y=log2FoldChange, color=Phylum)) + geom_point
 #################
 
 # Added "habitat" column to metadata in Excel, re-ran whole script
-
-# WHY is this messed up now?? Check old version in GitHUb
 quartz()
 HabitatBrayNMDS <- phyloseq::plot_ordination(trimmedJustsoils.ps, trimOrd, type= "samples", color= "Habitat")
 HabitatBrayNMDS <- HabitatBrayNMDS + geom_polygon(aes(fill=Habitat)) + geom_point(size=3) + ggtitle("NMDS based on Bray-Curtis Dissimilarities")
@@ -1041,8 +1056,7 @@ colnames(sigtab)[16] <- "patchAbundance"
 # Add in mean abundance in each category
 sigtab$meanPercentForest <- sigtab[15]/sum(habitatASVs[,1])*100 #this is divided by total number of counts in the forest samples (after rarefying)
 sigtab$meanPercentPatch <- sigtab[16]/sum(habitatASVs[,2])*100 #this is divided by total number of counts in the patch samples (after rarefying)
-View(sigtab)
-
+#View(sigtab)
 
 # Plot 
 quartz()
@@ -1088,15 +1102,6 @@ ggplot(sigtab, aes(x=Family, y=log2FoldChange, color=Phylum)) + geom_point(aes(s
 ########################
 # Does the Bray-Curtis distance b/w samples tend to increase with distance?
 ########################
-
-psotu2veg <- function(physeq) {
-  OTU <- otu_table(physeq)
-  if (taxa_are_rows(OTU)) {
-    OTU <- t(OTU)
-  }
-  return(as(OTU, "matrix"))
-}
-
 ASVtab <- psotu2veg(trimmedJustsoils.ps)
 #View(ASVtab)
 
@@ -1156,8 +1161,9 @@ patch_box <- boxplot(list(m10_comp10, m10_comp20, m10_comp30, m10_comp40,
                           m10_comp50, m10_comp60, m10_comp70,
                           m10_comp80, m10_comp90, m10_comp100),
                     ylab = "Bray-Curtis Dissimilarity",
-                    names = c("10m", "20m", "30m", "40m", "50m",
-                              "60m", "70m", "80m", "90m", "100m"), cex.axis = 0.8,
+                    names = c("10", "20", "30", "40", "50",
+                              "60", "70", "80", "90", "100"), cex.axis = 0.8,
+                    xlab = "meter along transect",
                     cex.lab = 1,
                     ylim=c(0.0, 1.0))
 mtext(text=bold_a, side=3, adj = -0.065, line = 2)
@@ -1165,19 +1171,16 @@ forest_box <- boxplot(list(m100_comp10, m100_comp20, m100_comp30, m100_comp40,
                         m100_comp50, m100_comp60, m100_comp70,
                         m100_comp80, m100_comp90, m100_comp100), 
                    ylab = "Bray-Curtis Dissimilarity",
-                   names = c("10m", "20m", "30m", "40m", "50m",
-                             "60m", "70m", "80m", "90m", "100m"), cex.axis = 0.8,
+                   names = c("10", "20", "30", "40", "50",
+                             "60", "70", "80", "90", "100"), cex.axis = 0.8,
+                   xlab = "meter along transect",
                    cex.lab = 1,
                    ylim=c(0.0, 1.0))
 mtext(text=bold_b, side=3, adj = -0.065, line = 2)
-
-#######################
-# Variation Partitioning
-#######################
-
 
 ##################################
 # SAVE ALL OF THESE FOR EASY ACCESS
 ##################################
 
 #save(rarefied.ps, samples_df, relabun.phylatop99.5, relabun.phylatop99, top_99.5p_phyla, relabun.classtop95, ord, ordSoils, ASVsTrimmed, taxTrimmed, trimmedJustsoils.ps, trimOrd, outliersTrimmed, outliersASVtax, file = "EDA16SAug2021")
+# save(trimmedJustsoils.ps, file= "trimmedJustSoils.ps") 
