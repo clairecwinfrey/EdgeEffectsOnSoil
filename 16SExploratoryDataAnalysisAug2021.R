@@ -19,8 +19,8 @@
 
 # 2. "trimmedJustsoils.ps" 
 # This is the phyloseq object that was made after rarefying, and keeping
-# only ASVs that occurred at least 50 times across the (rarefied) dataset. No
-# outliers were removed. 
+# only ASVs that occurred at least 50 times across the (rarefied) dataset, including
+# soils and controls (NOT biocrusts). No outliers were removed. 
 
 # FUNCTIONS CREATED IN THIS SCRIPT:
 # 1. Function to get the taxonomy table out of phyloseq:
@@ -559,18 +559,23 @@ outliers <- c("53ND_B_20", " 10C_L_10", "53ND_R_40", "53SD_R_10", "52D_L_100", "
 # 1) Do top phyla or classes change, or outliers, after this removal? If so, this is
 # evidence of these shifts being driven by rare taxa:
 
-rare_ASVtab <- ASVs_outta_ps(rarefied.ps) 
+rarefiedNoBC.ps <- subset_samples(rarefied.ps, Type != "BioCrust") #make a phyloseq object that does not have biocrusts, but
+# that retains controls. 
+
+rare_ASVtab <- ASVs_outta_ps(rarefiedNoBC.ps) 
 # Add column for abundance of ASVs across all (pre-rarefied) samples
 rare_ASVtab$Abundance <- rowSums(rare_ASVtab)
+dim(rare_ASVtab) #33,878 ASVs
+# View(rare_ASVtab)
 
 # Most are rare! 
 quartz()
 plot(rare_ASVtab$Abundance)
-length(which(rare_ASVtab$Abundance <= 50)) #23,775 ASVs have 50 or fewer occurrences across the rarefied data set 
-length(which(rare_ASVtab$Abundance <= 35)) #20,744 ASVs have 30 or fewer occurrences across the rarefied data set
-length(which(rare_ASVtab$Abundance <= 10)) #9,818 ASVs have 10 or fewer occurrences across the rarefied data set
+length(which(rare_ASVtab$Abundance <= 50)) #23,903 ASVs have 50 or fewer occurrences across the rarefied data set 
+length(which(rare_ASVtab$Abundance <= 35)) #20,882 ASVs have 30 or fewer occurrences across the rarefied data set
+length(which(rare_ASVtab$Abundance <= 10)) #9,946 ASVs have 10 or fewer occurrences across the rarefied data set
 
-length(which(rare_ASVtab$Abundance >= 50)) #10,257 ASVs have 50 or more occurrences across the rarefied data set 
+length(which(rare_ASVtab$Abundance >= 50)) #10137 ASVs have 50 or more occurrences across the rarefied data set 
 
 # We'll get rid of the ASVs that do not occur AT LEAST 50 times across our dataset:
 keptASVsindex <- which(rare_ASVtab$Abundance >= 50) #gives row numbers to keep in the dataset 
@@ -624,7 +629,10 @@ seqtab_wTax_trimmed[,239]
 #write.csv(taxTrimmed, "SRSMay2021_16S_cleanedTaxTable.csv") 
 #write.csv(seqtab_wTax_trimmed[,-239], "SRSMay2021_16S_seqtab_wtax_trimmed.csv")
 
-############ RE-DO ANALYSES WITH DATASET WHERE THE RARE TAXA HAVE BEEN REMOVED
+# Do these ASVs that we'll keep differ if we remove the controls?
+rarefiedOnlyControls <- subset_samples(rarefied.ps, Type != "BioCrust" & Type != "ExtContWater")
+
+############ RE-DO ANALYSES WITH DATASET WHERE THE RARE TAXA HAVE BEEN REMOVED (couting soils and controls
 #### NEED TO REMAKE THESE INTO PHYLOSEQ OBJECTS FIRST (READ THROUGH THIS TOO)
 
 class(taxTrimmed)
@@ -1182,5 +1190,5 @@ mtext(text=bold_b, side=3, adj = -0.065, line = 2)
 # SAVE ALL OF THESE FOR EASY ACCESS
 ##################################
 
-#save(rarefied.ps, samples_df, relabun.phylatop99.5, relabun.phylatop99, top_99.5p_phyla, relabun.classtop95, ord, ordSoils, ASVsTrimmed, taxTrimmed, trimmedJustsoils.ps, trimOrd, outliersTrimmed, outliersASVtax, file = "EDA16SAug2021")
-# save(trimmedJustsoils.ps, file= "trimmedJustSoils.ps") 
+save(rarefied.ps, samples_df, ASVsTrimmed, taxTrimmed, trimmedJustsoils.ps, trimOrd, outliersTrimmed, outliersASVtax, file = "EDA16SAug2021")
+save(trimmedJustsoils.ps, file= "trimmedJustSoils.ps") 

@@ -15,7 +15,6 @@
 # Libraries
 library("phyloseq")
 library("ggplot2")      # graphics
-library("readxl")       # necessary to import the data from Excel file
 library("dplyr")        # filter and reformat data frames
 library("tibble")       # Needed for converting column to row names
 library("tidyr")
