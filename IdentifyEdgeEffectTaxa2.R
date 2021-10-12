@@ -27,6 +27,22 @@ ASVsampOccurrence <- function(physeq) { #input is a phyloseq object
   return(cbind(ASVmat, sampleOccurence)) #
 }
 
+# Proof of ASVsampOccurrence concept
+# Make mock community to see if approach works
+#Simulate non-negative integers simulating ASV "counts"
+set.seed(19)
+dat <- rpois(n=36, lambda = 1) 
+# in cartoon example, as with real data above, ASVs are rows and samples are columns
+datmat <- matrix(dat, nrow=9, ncol=4) 
+
+index <- which(datmat > 0) #another way of doing it, R goes down columns
+datmat[index] <- 1
+
+# How many columns (samples) does each ASV (row) appear in?
+ASVsampCount <- rowSums(datmat > 0)
+ASVsampCount #looks correct!
+cbind(datmat, ASVsampCount) 
+
 # 3. ASVs_outta_ps gets the ASV table out of phyloseq 
 ASVs_outta_ps <- function(physeq){ #input is a phyloseq object
   ASVTable <- otu_table(physeq)
@@ -90,3 +106,31 @@ library("grid")
 load("trimmedJustsoils.ps") #load phyloseq object that was made after rarefying, and keeping
 # only ASVs that occurred at least 50 times across the (rarefied) dataset (from 
 # 16SExploratoryDataAnalysisAug2021).
+
+#################################################################################
+# I. EXPLORING UBIQUITY
+##################################################################################
+
+# 1. What is the ubiquity of ASVs (looking at all EUs)?
+ASVubiquity <- ASVsampOccurrence(trimmedJustsoils.ps)
+# View(ASVubiquity) taxa/ASVs re rows, and samples are columns
+dim(ASVubiquity)
+abund <- rowSums(ASVubiquity)
+ASVubiquityAbund <- cbind(ASVubiquity, abund)
+# View(ASVubiquityAbund) #this shows that 59 of these ASVs do not appear at least 50 times,
+# likely this is due to removal of the controls?
+
+# Barplot showing ubiquity
+#quartz()
+barplot(table(ASVubiquity[,234]), ylab="Number of ASVs", xlab= "Number of Samples Present in (out of 233)" )
+
+# 2. How many EUs/sites does each ASV occur in?
+pooledEU.ps <- merge_samples(trimmedJustsoils.ps, "EU") #merge samples by site
+rownames(sample_data(pooledEU.ps)) #nice, this is by EU!
+ASVubiquityEU <- ASVsampOccurrence(t(pooledEU.ps)) #not sure why I had to transpose this...
+dim(ASVubiquityEU) #dimensions are correct and is working after transposing
+#View(ASVubiquityEU)
+
+# Barplot showing ubiquity by EU- shows that vast majority of ASVs, after dropping off rare ones, are present in more
+# than one site!
+barplot(table(ASVubiquityEU[,7]), ylab="Number of ASVs", xlab= "Number of EUs/sites Present in" )
