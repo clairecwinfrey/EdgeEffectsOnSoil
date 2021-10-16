@@ -220,30 +220,37 @@ EU52_T_ASVtab <- AllSoilsDAASVsandMeta %>%
   filter(EU == "EU_52" & Transect == "T") 
 #View(EU52_T_ASVtab)
 rownames(EU52_T_ASVtab) <- EU52_T_ASVtab$Meter #replace sample name with meter
-# Get z-scores
-EU52_T_ASV_Zs <- zScore(EU52_T_ASVtab[,1:1696]) #don't select metadata columns
-# View(EU52_T_ASV_Zs)
+# Get z-scores. Don't select metadata columns, and flip so ASVs are rows and samples are columns
+EU52_T_ASV_Zs <- zScore(as.data.frame(t(EU52_T_ASVtab[,1:1696]))) 
+# Test to make sure z-score is correct
+testtest <- EU52_T_ASVtab[,1] - mean(EU52_T_ASVtab[,1])
+testtesttestresults <- testtest/sd(EU52_T_ASVtab[,1])
+EU52_T_ASV_Zs[1,] == testtesttestresults #TRUE, function is working
 
 ## B ##
 EU52_B_ASVtab <- AllSoilsDAASVsandMeta %>% 
   filter(EU == "EU_52" & Transect == "B")
 rownames(EU52_B_ASVtab) <- EU52_B_ASVtab$Meter #replace sample name with meter
-# Get z-scores
-EU52_B_ASV_Zs <- zScore(EU52_B_ASVtab[,1:1696]) #don't select metadata columns
+# Get z-scores. Don't select metadata columns, and flip so ASVs are rows and samples are columns
+EU52_B_ASV_Zs <- zScore(as.data.frame(t(EU52_B_ASVtab[,1:1696]))) 
 
 ## L ##
 EU52_L_ASVtab <- AllSoilsDAASVsandMeta %>% 
   filter(EU == "EU_52" & Transect == "L")
 rownames(EU52_L_ASVtab) <- EU52_L_ASVtab$Meter #replace sample name with meter
-# Get z-scores
-EU52_L_ASV_Zs <- zScore(EU52_L_ASVtab[,1:1696]) #don't select metadata columns
+# Get z-scores. Don't select metadata columns, and flip so ASVs are rows and samples are columns
+EU52_L_ASV_Zs <- zScore(as.data.frame(t(EU52_L_ASVtab[,1:1696]))) 
 
 ## R ##
 EU52_R_ASVtab <- AllSoilsDAASVsandMeta %>% 
   filter(EU == "EU_52" & Transect == "R")
 rownames(EU52_R_ASVtab) <- EU52_R_ASVtab$Meter #replace sample name with meter
-# Get z-scores
-EU52_R_ASV_Zs <- zScore(EU52_R_ASVtab[,1:1696]) #don't select metadata columns
+# Get z-scores. Don't select metadata columns, and flip so ASVs are rows and samples are columns
+EU52_R_ASV_Zs <- zScore(as.data.frame(t(EU52_R_ASVtab[,1:1696])))
+# Test to make sure z-score is correct
+testtest2 <- EU52_R_ASVtab[,1] - mean(EU52_R_ASVtab[,1])
+testtesttestresults <- testtest2/sd(EU52_R_ASVtab[,1])
+EU52_R_ASV_Zs[1,] == testtesttestresults #TRUE, function is working
 
 ##############
 
@@ -383,6 +390,10 @@ EU10_B_ASVtab <- AllSoilsDAASVsandMeta %>%
 rownames(EU10_B_ASVtab) <- EU10_B_ASVtab$Meter #replace sample name with meter
 # Get z-scores. Don't select metadata columns, and flip so ASVs are rows and samples are columns
 EU10_B_ASV_Zs <- zScore(as.data.frame(t(EU10_B_ASVtab[,1:1696]))) 
+# Test to make sure z-score is correct
+test2 <- EU10_B_ASVtab[,1] - mean(EU10_B_ASVtab[,1])
+testresultsCol1 <- test2/sd(EU10_B_ASVtab[,1])
+EU10_B_ASV_Zs[1,] == testresultsCol1 #TRUE, function is working
 
 ## L ##
 EU10_L_ASVtab <- AllSoilsDAASVsandMeta %>% 
