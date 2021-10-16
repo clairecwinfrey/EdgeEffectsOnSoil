@@ -253,29 +253,30 @@ EU53N_T_ASVtab <- AllSoilsDAASVsandMeta %>%
   filter(EU == "EU_53N" & Transect == "T") 
 #View(EU53N_T_ASVtab)
 rownames(EU53N_T_ASVtab) <- EU53N_T_ASVtab$Meter #replace sample name with meter
-# Get z-scores
-EU53N_T_ASV_Zs <- zScore(EU53N_T_ASVtab[,1:1696]) #don't select metadata columns
+# Get z-scores. Don't select metadata columns, and flip so ASVs are rows and samples are columns
+EU53N_T_ASV_Zs <- zScore(as.data.frame(t(EU53N_T_ASVtab[,1:1696]))) 
+# View(EU53N_T_ASV_Zs)
 
 ## B ##
 EU53N_B_ASVtab <- AllSoilsDAASVsandMeta %>% 
   filter(EU == "EU_53N" & Transect == "B")
 rownames(EU53N_B_ASVtab) <- EU53N_B_ASVtab$Meter #replace sample name with meter
-# Get z-scores
-EU53N_B_ASV_Zs <- zScore(EU53N_B_ASVtab[,1:1696]) #don't select metadata columns
+# Get z-scores. Don't select metadata columns, and flip so ASVs are rows and samples are columns
+EU53N_B_ASV_Zs <- zScore(as.data.frame(t(EU53N_B_ASVtab[,1:1696]))) 
 
 ## L ##
 EU53N_L_ASVtab <- AllSoilsDAASVsandMeta %>% 
   filter(EU == "EU_53N" & Transect == "L")
 rownames(EU53N_L_ASVtab) <- EU53N_L_ASVtab$Meter #replace sample name with meter
-# Get z-scores
-EU53N_L_ASV_Zs <- zScore(EU53N_L_ASVtab[,1:1696]) #don't select metadata columns
+# Get z-scores. Don't select metadata columns, and flip so ASVs are rows and samples are columns
+EU53N_L_ASV_Zs <- zScore(as.data.frame(t(EU53N_L_ASVtab[,1:1696]))) 
 
 ## R ##
 EU53N_R_ASVtab <- AllSoilsDAASVsandMeta %>% 
   filter(EU == "EU_53N" & Transect == "R")
 rownames(EU53N_R_ASVtab) <- EU53N_R_ASVtab$Meter #replace sample name with meter
-# Get z-scores
-EU53N_R_ASV_Zs <- zScore(EU53N_R_ASVtab[,1:1696]) #don't select metadata columns
+# Get z-scores. Don't select metadata columns, and flip so ASVs are rows and samples are columns
+EU53N_R_ASV_Zs <- zScore(as.data.frame(t(EU53N_R_ASVtab[,1:1696]))) 
 ##############
 
 #### EU 54S ####
@@ -283,29 +284,29 @@ EU53N_R_ASV_Zs <- zScore(EU53N_R_ASVtab[,1:1696]) #don't select metadata columns
 EU54S_T_ASVtab <- AllSoilsDAASVsandMeta %>% 
   filter(EU == "EU_54S" & Transect == "T") 
 rownames(EU54S_T_ASVtab) <- EU54S_T_ASVtab$Meter #replace sample name with meter
-# Get z-scores
-EU54S_T_ASV_Zs <- zScore(EU54S_T_ASVtab[,1:1696]) #don't select metadata columns
+# Get z-scores. Don't select metadata columns, and flip so ASVs are rows and samples are columns
+EU54S_T_ASV_Zs <- zScore(as.data.frame(t(EU54S_T_ASVtab[,1:1696]))) 
 
 ## B ##
 EU54S_B_ASVtab <- AllSoilsDAASVsandMeta %>% 
   filter(EU == "EU_54S" & Transect == "B")
 rownames(EU54S_B_ASVtab) <- EU54S_B_ASVtab$Meter #replace sample name with meter
-# Get z-scores
-EU54S_B_ASV_Zs <- zScore(EU54S_B_ASVtab[,1:1696]) #don't select metadata columns
+# Get z-scores. Don't select metadata columns, and flip so ASVs are rows and samples are columns
+EU54S_B_ASV_Zs <- zScore(as.data.frame(t(EU54S_B_ASVtab[,1:1696]))) 
 
 ## L ##
 EU54S_L_ASVtab <- AllSoilsDAASVsandMeta %>% 
   filter(EU == "EU_54S" & Transect == "L")
 rownames(EU54S_L_ASVtab) <- EU54S_L_ASVtab$Meter #replace sample name with meter
-# Get z-scores
-EU54S_L_ASV_Zs <- zScore(EU54S_L_ASVtab[,1:1696]) #don't select metadata columns
+# Get z-scores. Don't select metadata columns, and flip so ASVs are rows and samples are columns
+EU54S_L_ASV_Zs <- zScore(as.data.frame(t(EU54S_L_ASVtab[,1:1696]))) 
 
 ## R ##
 EU54S_R_ASVtab <- AllSoilsDAASVsandMeta %>% 
   filter(EU == "EU_54S" & Transect == "R")
 rownames(EU54S_R_ASVtab) <- EU54S_R_ASVtab$Meter #replace sample name with meter
-# Get z-scores
-EU54S_R_ASV_Zs <- zScore(EU54S_R_ASVtab[,1:1696]) #don't select metadata columns
+# Get z-scores. Don't select metadata columns, and flip so ASVs are rows and samples are columns
+EU54S_R_ASV_Zs <- zScore(as.data.frame(t(EU54S_R_ASVtab[,1:1696]))) 
 ##############
 
 #### EU 8 ####
@@ -313,29 +314,29 @@ EU54S_R_ASV_Zs <- zScore(EU54S_R_ASVtab[,1:1696]) #don't select metadata columns
 EU8_T_ASVtab <- AllSoilsDAASVsandMeta %>% 
   filter(EU == "EU_8" & Transect == "T") 
 rownames(EU8_T_ASVtab) <- EU8_T_ASVtab$Meter #replace sample name with meter
-# Get z-scores
-EU8_T_ASV_Zs <- zScore(EU8_T_ASVtab[,1:1696]) #don't select metadata columns
+# Get z-scores. Don't select metadata columns, and flip so ASVs are rows and samples are columns
+EU8_T_ASV_Zs <- zScore(as.data.frame(t(EU8_T_ASVtab[,1:1696]))) 
 
 ## B ##
 EU8_B_ASVtab <- AllSoilsDAASVsandMeta %>% 
   filter(EU == "EU_8" & Transect == "B")
 rownames(EU8_B_ASVtab) <- EU8_B_ASVtab$Meter #replace sample name with meter
-# Get z-scores
-EU8_B_ASV_Zs <- zScore(EU8_B_ASVtab[,1:1696]) #don't select metadata columns
+# Get z-scores. Don't select metadata columns, and flip so ASVs are rows and samples are columns
+EU8_B_ASV_Zs <- zScore(as.data.frame(t(EU8_B_ASVtab[,1:1696]))) 
 
 ## L ##
 EU8_L_ASVtab <- AllSoilsDAASVsandMeta %>% 
   filter(EU == "EU_8" & Transect == "L")
 rownames(EU8_L_ASVtab) <- EU8_L_ASVtab$Meter #replace sample name with meter
-# Get z-scores
-EU8_L_ASV_Zs <- zScore(EU8_L_ASVtab[,1:1696]) #don't select metadata columns
+# Get z-scores. Don't select metadata columns, and flip so ASVs are rows and samples are columns
+EU8_L_ASV_Zs <- zScore(as.data.frame(t(EU8_L_ASVtab[,1:1696]))) 
 
 ## R ##
 EU8_R_ASVtab <- AllSoilsDAASVsandMeta %>% 
   filter(EU == "EU_8" & Transect == "R")
 rownames(EU8_R_ASVtab) <- EU8_R_ASVtab$Meter #replace sample name with meter
-# Get z-scores
-EU8_R_ASV_Zs <- zScore(EU8_R_ASVtab[,1:1696]) #don't select metadata columns
+# Get z-scores. Don't select metadata columns, and flip so ASVs are rows and samples are columns
+EU8_R_ASV_Zs <- zScore(as.data.frame(t(EU8_R_ASVtab[,1:1696]))) 
 ##############
 
 #### EU 53S ####
@@ -343,29 +344,29 @@ EU8_R_ASV_Zs <- zScore(EU8_R_ASVtab[,1:1696]) #don't select metadata columns
 EU53S_T_ASVtab <- AllSoilsDAASVsandMeta %>% 
   filter(EU == "EU_53S" & Transect == "T") 
 rownames(EU53S_T_ASVtab) <- EU53S_T_ASVtab$Meter #replace sample name with meter
-# Get z-scores
-EU53S_T_ASV_Zs <- zScore(EU53S_T_ASVtab[,1:1696]) #don't select metadata columns
+# Get z-scores. Don't select metadata columns, and flip so ASVs are rows and samples are columns
+EU53S_T_ASV_Zs <- zScore(as.data.frame(t(EU53S_T_ASVtab[,1:1696]))) 
 
 ## B ##
 EU53S_B_ASVtab <- AllSoilsDAASVsandMeta %>% 
   filter(EU == "EU_53S" & Transect == "B")
 rownames(EU53S_B_ASVtab) <- EU53S_B_ASVtab$Meter #replace sample name with meter
-# Get z-scores
-EU53S_B_ASV_Zs <- zScore(EU53S_B_ASVtab[,1:1696]) #don't select metadata columns
+# Get z-scores. Don't select metadata columns, and flip so ASVs are rows and samples are columns
+EU53S_B_ASV_Zs <- zScore(as.data.frame(t(EU53S_B_ASVtab[,1:1696]))) 
 
 ## L ##
 EU53S_L_ASVtab <- AllSoilsDAASVsandMeta %>% 
   filter(EU == "EU_53S" & Transect == "L")
 rownames(EU53S_L_ASVtab) <- EU53S_L_ASVtab$Meter #replace sample name with meter
-# Get z-scores
-EU53S_L_ASV_Zs <- zScore(EU53S_L_ASVtab[,1:1696]) #don't select metadata columns
+# Get z-scores. Don't select metadata columns, and flip so ASVs are rows and samples are columns
+EU53S_L_ASV_Zs <- zScore(as.data.frame(t(EU53S_L_ASVtab[,1:1696]))) 
 
 ## R ##
 EU53S_R_ASVtab <- AllSoilsDAASVsandMeta %>% 
   filter(EU == "EU_53S" & Transect == "R")
 rownames(EU53S_R_ASVtab) <- EU53S_R_ASVtab$Meter #replace sample name with meter
-# Get z-scores
-EU53S_R_ASV_Zs <- zScore(EU53S_R_ASVtab[,1:1696]) #don't select metadata columns
+# Get z-scores. Don't select metadata columns, and flip so ASVs are rows and samples are columns
+EU53S_R_ASV_Zs <- zScore(as.data.frame(t(EU53S_R_ASVtab[,1:1696]))) 
 ##############
 
 #### EU 10 ####
@@ -373,28 +374,28 @@ EU53S_R_ASV_Zs <- zScore(EU53S_R_ASVtab[,1:1696]) #don't select metadata columns
 EU10_T_ASVtab <- AllSoilsDAASVsandMeta %>% 
   filter(EU == "EU_10" & Transect == "T") 
 rownames(EU10_T_ASVtab) <- EU10_T_ASVtab$Meter #replace sample name with meter
-# Get z-scores
-EU10_T_ASV_Zs <- zScore(EU10_T_ASVtab[,1:1696]) #don't select metadata columns
+# Get z-scores. Don't select metadata columns, and flip so ASVs are rows and samples are columns
+EU10_T_ASV_Zs <- zScore(as.data.frame(t(EU10_T_ASVtab[,1:1696]))) 
 
 ## B ##
 EU10_B_ASVtab <- AllSoilsDAASVsandMeta %>% 
   filter(EU == "EU_10" & Transect == "B")
 rownames(EU10_B_ASVtab) <- EU10_B_ASVtab$Meter #replace sample name with meter
-# Get z-scores
-EU10_B_ASV_Zs <- zScore(EU10_B_ASVtab[,1:1696]) #don't select metadata columns
+# Get z-scores. Don't select metadata columns, and flip so ASVs are rows and samples are columns
+EU10_B_ASV_Zs <- zScore(as.data.frame(t(EU10_B_ASVtab[,1:1696]))) 
 
 ## L ##
 EU10_L_ASVtab <- AllSoilsDAASVsandMeta %>% 
   filter(EU == "EU_10" & Transect == "L")
 rownames(EU10_L_ASVtab) <- EU10_L_ASVtab$Meter #replace sample name with meter
-# Get z-scores
-EU10_L_ASV_Zs <- zScore(EU10_L_ASVtab[,1:1696]) #don't select metadata columns
+# Get z-scores. Don't select metadata columns, and flip so ASVs are rows and samples are columns
+EU10_L_ASV_Zs <- zScore(as.data.frame(t(EU10_L_ASVtab[,1:1696]))) 
 
 ## R ##
 EU10_R_ASVtab <- AllSoilsDAASVsandMeta %>% 
   filter(EU == "EU_10" & Transect == "R")
 rownames(EU10_R_ASVtab) <- EU10_R_ASVtab$Meter #replace sample name with meter
-# Get z-scores
-EU10_R_ASV_Zs <- zScore(EU10_R_ASVtab[,1:1696]) #don't select metadata columns
+# Get z-scores. Don't select metadata columns, and flip so ASVs are rows and samples are columns
+EU10_R_ASV_Zs <- zScore(as.data.frame(t(EU10_R_ASVtab[,1:1696]))) 
 ##############
 
