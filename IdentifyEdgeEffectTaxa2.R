@@ -155,10 +155,10 @@ namesAll_45 <- names(which(ASVubiquity[,234] >= 45)) #this gives the names of th
 length(namesAll_45) #4480 
 namesAll_45
 
-# Remove all of the ASVs from the phyloseq object that are not in at least ten times
+# Remove all of the ASVs from the phyloseq object that don't occur at least 45 times
 allEUs_45times.ps <- prune_taxa(namesAll_45,trimmedJustsoils.ps) #4480 taxa as expected!
 
-# Remove "edge" samples so that we can find samples that vary in edge versus forest withb new PS 
+# Remove "edge" samples so that we can find samples that vary in edge versus forest with new PS 
 all_45timesNoEdge.ps <- subset_samples(allEUs_45times.ps, Habitat != "edge")
 # Did we lose any ASVs that were only on the edge?
 all_45timesNOEdge_count <- ASVsampOccurrence(all_45timesNoEdge.ps)
@@ -186,10 +186,12 @@ ASVtab_all_45times_da <- all_45timesNoEdgeASV[names_all_45times,] #get a smaller
 SampleCount_all_45times_da <- rowSums(ASVtab_all_45times_da > 0) #get number of soil samples that the ASV appears in
 ASVtab_all_45times_da_counts <- cbind(ASVtab_all_45times_da, SampleCount_all_45times_da)
 ASVabund <- rowSums(ASVtab_all_45times_da_counts[,1:210]) #get abundance of each ASV ACROSS all samples
-ASVtab_all_45times_da_counts <- cbind(ASVtab_all_45times_da_counts, ASVabund)
+ASVtab_all_45times_da_counts <- cbind(ASVtab_all_45times_da_counts, ASVabund) #note, minimum is in 38 samples, because we took out edges for DA
 # View(ASVtab_all_45times_da_counts) 
 
-# BREAKING UP RESULTS BY TRANSECT:
+#################################################################################
+# III. Z-SCORE OF EACH ASV'S ABUNDANCE SEPARATED BY EU AND TRANSECT
+#################################################################################
 # First, get the names of each ASV identified in the differential abundance analysis:
 ASVnames_all_45times_da <- rownames(sigtab_all_45times)
 
@@ -409,4 +411,55 @@ rownames(EU10_R_ASVtab) <- EU10_R_ASVtab$Meter #replace sample name with meter
 # Get z-scores. Don't select metadata columns, and flip so ASVs are rows and samples are columns
 EU10_R_ASV_Zs <- zScore(as.data.frame(t(EU10_R_ASVtab[,1:1696]))) 
 ##############
+# View(EU10_R_ASV_Zs)
 
+#################################################################################
+# IV. PLOTTING Z-SCORES FOR SELECT ASVS
+#################################################################################
+# Now that we have all of the Z-scores by transect, choose those to plot:
+
+# First, manipulate "sigtab_all_45times" so that it can be a tibble:
+# Make ASV names (i.e. rownames) into a column instead and make into a tibble
+sigtab_all_45times.tb <- tibble::rownames_to_column(sigtab_all_45times, "ASV_name")
+
+#### "PATCH" ASVs ####
+# Get only ASVs with positive log fold change abundance and arrange in descending order log2foldchange
+sigtab_all_45Pos <- sigtab_all_45times.tb %>% filter(log2FoldChange > 0) %>% arrange(desc(log2FoldChange)) 
+# 1. Top 10 highest logfold change (i.e. most log fold abundant in patch)
+patchTop10 <- sigtab_all_45Pos[1:10,] # 10 most log fold abundant in patch
+
+# 2. Bottom 10 starting at 0.0 (i.e. ASVs that are barely more significantly abundant in patch)
+# Below, this gets the smallest log2FoldChanges
+patchBottom10 <- sigtab_all_45Pos[(nrow(sigtab_all_45Pos) - 9):(nrow(sigtab_all_45Pos)),]
+
+# 3. Middle 10 positive (i.e. ASVs that are enriched in patch to a medium degree)
+# Find row of ASV that corresponds to the median, then take this + 5 and -4 for ten values
+# Below, this code finds the row that has the log2FoldChange median value
+medIndex1 <- with(sigtab_all_45Pos, which.min(log2FoldChange != quantile(log2FoldChange, .5, type = 1)))
+# To check, get Log2FoldChange median and compare with value at row found above:
+median(sigtab_all_45Pos$log2FoldChange) == sigtab_all_45Pos$log2FoldChange[medIndex1]
+# This is true, so take four values less than median and five greater than for "middle 10")
+patchMiddle10 <- sigtab_all_45Pos[((medIndex1 - 5):(medIndex1 + 4)),]
+
+#######################
+#### "FOREST" ASVs ####
+# Most abundant in the forest
+# Get only ASVs with negative log fold change abundance and sort most neg to least neg:
+sigtab_all_45Neg <- sigtab_all_45times.tb %>% filter(log2FoldChange < 0) %>% arrange(log2FoldChange)  
+
+# 4. Top 10 most negative logfold change (i.e. most log fold abundant in forest)
+forestTop10 <- sigtab_all_45Neg[1:10,]
+
+# 5. Bottom 10 starting at 0.0 and going more negative (i.e. ASVs that are barely more
+# significantly abundant in forest
+# Below, this gets the last 10 negative, i.e. the most positive of the negatives
+forestBottom10 <- sigtab_all_45Neg[(nrow(sigtab_all_45Neg) - 9):(nrow(sigtab_all_45Neg)),]
+
+# 6. Middle 10 negative (i.e. ASVs that are enriched in forest to medium degree)
+# Find row of ASV that corresponds to the median, then take this + 5 and -4 for ten values
+# Below, this code finds the row that has the log2FoldChange median value
+medIndex2 <- with(sigtab_all_45Neg, which.min(log2FoldChange != quantile(log2FoldChange, .5, type = 1)))
+# To check, get Log2FoldChange median and compare with value at row found above:
+median(sigtab_all_45Neg$log2FoldChange) == sigtab_all_45Neg$log2FoldChange[medIndex2]
+# This is true, so take four values less than median and five greater than for "middle 10")
+forestMiddle10 <- sigtab_all_45Neg[((medIndex2 - 5):(medIndex2 + 4)),]
