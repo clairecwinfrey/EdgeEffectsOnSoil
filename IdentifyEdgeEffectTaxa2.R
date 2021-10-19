@@ -49,17 +49,16 @@ ASVs_outta_ps <- function(physeq){ #input is a phyloseq object
   return(as.data.frame(ASVTable))
 }
 
-# 4. Handy function from Pierre L for getting rid of annoying "V" columns in data:
-# Source: https://stackoverflow.com/questions/32054368/use-first-row-data-as-column-names-in-r
-header.true <- function(df) { # from Pierre L: https://stackoverflow.com/questions/32054368/use-first-row-data-as-column-names-in-r
-  names(df) <- as.character(unlist(df[1,]))
-  df[-1,]
-}
-
-# 5. # metadata_outta_ps takes the phyloseq metadata table and converts it to a dataframe
+# 4. # metadata_outta_ps takes the phyloseq metadata table and converts it to a dataframe
 metadata_outta_ps <- function(physeq){ #input is a phyloseq object
   metaDat <- sample_data(physeq)
   return(as.data.frame(metaDat))
+}
+
+# 5. numOrder, from user technocrat at https://community.rstudio.com/t/re-arranging-columns-in-numerical-order/55207 
+# re-orders columns in numerical order (least to greatest)
+numOrder <- function(x){
+  x %>% select(sort(colnames(df))) 
 }
 
 # 6. zScore function computes the z-score for a given vector of numbers
@@ -219,204 +218,273 @@ AllSoilsDAASVsandMeta <- cbind(trimmedJustSoilsDAASVs_t, trimmedJustSoilsMeta[,c
 #### EU 52 ####
 ## T ##
 EU52_T_ASVtab <- AllSoilsDAASVsandMeta %>% 
-  filter(EU == "EU_52" & Transect == "T") 
-#View(EU52_T_ASVtab)
-rownames(EU52_T_ASVtab) <- EU52_T_ASVtab$Meter #replace sample name with meter
-# Get z-scores. Don't select metadata columns, and flip so ASVs are rows and samples are columns
-EU52_T_ASV_Zs <- zScore(as.data.frame(t(EU52_T_ASVtab[,1:1696]))) 
+  filter(EU == "EU_52" & Transect == "T") %>% 
+  tibble::rownames_to_column("SampleID") %>% #have to do this so that we can arrange by meter
+  arrange(Meter)
+#now, this is ordered by meter (but meter is last column)
+#class(EU52_T_ASVtab)
+# View(EU52_T_ASVtab)
+# Get z-scores. Don't select metadata columns, and flip so ASVs and other variables are rows and samples are columns
+EU52_T_ASV_Zs <- zScore(as.data.frame(t(EU52_T_ASVtab[,2:1697]))) 
+colnames(EU52_T_ASV_Zs) <- EU52_T_ASVtab$Meter #these are in the correct order
 # Test to make sure z-score is correct
-testtest <- EU52_T_ASVtab[,1] - mean(EU52_T_ASVtab[,1])
-testtesttestresults <- testtest/sd(EU52_T_ASVtab[,1])
+testtest <- EU52_T_ASVtab[,2] - mean(EU52_T_ASVtab[,2])
+testtesttestresults <- testtest/sd(EU52_T_ASVtab[,2])
 EU52_T_ASV_Zs[1,] == testtesttestresults #TRUE, function is working
+
 
 ## B ##
 EU52_B_ASVtab <- AllSoilsDAASVsandMeta %>% 
-  filter(EU == "EU_52" & Transect == "B")
-rownames(EU52_B_ASVtab) <- EU52_B_ASVtab$Meter #replace sample name with meter
-# Get z-scores. Don't select metadata columns, and flip so ASVs are rows and samples are columns
-EU52_B_ASV_Zs <- zScore(as.data.frame(t(EU52_B_ASVtab[,1:1696]))) 
+  filter(EU == "EU_52" & Transect == "B") %>% 
+  tibble::rownames_to_column("SampleID") %>% #have to do this so that we can arrange by meter
+  arrange(Meter) #order by meter
+# Get z-scores. Don't select metadata columns, and flip so ASVs and other variables are rows and samples are columns
+EU52_B_ASV_Zs <- zScore(as.data.frame(t(EU52_B_ASVtab[,2:1697]))) 
+colnames(EU52_B_ASV_Zs) <- EU52_B_ASVtab$Meter #these are in the correct order
 
 ## L ##
 EU52_L_ASVtab <- AllSoilsDAASVsandMeta %>% 
-  filter(EU == "EU_52" & Transect == "L")
-rownames(EU52_L_ASVtab) <- EU52_L_ASVtab$Meter #replace sample name with meter
-# Get z-scores. Don't select metadata columns, and flip so ASVs are rows and samples are columns
-EU52_L_ASV_Zs <- zScore(as.data.frame(t(EU52_L_ASVtab[,1:1696]))) 
+  filter(EU == "EU_52" & Transect == "L") %>% 
+  tibble::rownames_to_column("SampleID") %>% #have to do this so that we can arrange by meter
+  arrange(Meter) #order by meter
+# Get z-scores. Don't select metadata columns, and flip so ASVs and other variables are rows and samples are columns
+EU52_L_ASV_Zs <- zScore(as.data.frame(t(EU52_L_ASVtab[,2:1697]))) 
+colnames(EU52_L_ASV_Zs) <- EU52_L_ASVtab$Meter #these are in the correct order
 
 ## R ##
 EU52_R_ASVtab <- AllSoilsDAASVsandMeta %>% 
-  filter(EU == "EU_52" & Transect == "R")
-rownames(EU52_R_ASVtab) <- EU52_R_ASVtab$Meter #replace sample name with meter
-# Get z-scores. Don't select metadata columns, and flip so ASVs are rows and samples are columns
-EU52_R_ASV_Zs <- zScore(as.data.frame(t(EU52_R_ASVtab[,1:1696])))
-# Test to make sure z-score is correct
-testtest2 <- EU52_R_ASVtab[,1] - mean(EU52_R_ASVtab[,1])
-testtesttestresults <- testtest2/sd(EU52_R_ASVtab[,1])
-EU52_R_ASV_Zs[1,] == testtesttestresults #TRUE, function is working
-
-##############
+  filter(EU == "EU_52" & Transect == "R") %>% 
+  tibble::rownames_to_column("SampleID") %>% #have to do this so that we can arrange by meter
+  arrange(Meter) #order by meter
+# Get z-scores. Don't select metadata columns, and flip so ASVs and other variables are rows and samples are columns
+EU52_R_ASV_Zs <- zScore(as.data.frame(t(EU52_R_ASVtab[,2:1697]))) 
+colnames(EU52_R_ASV_Zs) <- EU52_R_ASVtab$Meter #these are in the correct order
 
 #### EU 53N ####
 ## T ##
 EU53N_T_ASVtab <- AllSoilsDAASVsandMeta %>% 
-  filter(EU == "EU_53N" & Transect == "T") 
-#View(EU53N_T_ASVtab)
-rownames(EU53N_T_ASVtab) <- EU53N_T_ASVtab$Meter #replace sample name with meter
-# Get z-scores. Don't select metadata columns, and flip so ASVs are rows and samples are columns
-EU53N_T_ASV_Zs <- zScore(as.data.frame(t(EU53N_T_ASVtab[,1:1696]))) 
-# View(EU53N_T_ASV_Zs)
+  filter(EU == "EU_53N" & Transect == "T") %>% 
+  tibble::rownames_to_column("SampleID") %>% #have to do this so that we can arrange by meter
+  arrange(Meter)
+#now, this is ordered by meter (but meter is last column)
+#class(EU53N_T_ASVtab)
+# View(EU53N_T_ASVtab)
+# Get z-scores. Don't select metadata columns, and flip so ASVs and other variables are rows and samples are columns
+EU53N_T_ASV_Zs <- zScore(as.data.frame(t(EU53N_T_ASVtab[,2:1697]))) 
+colnames(EU53N_T_ASV_Zs) <- EU53N_T_ASVtab$Meter #these are in the correct order
+# Test to make sure z-score is correct
+testtest <- EU53N_T_ASVtab[,2] - mean(EU53N_T_ASVtab[,2])
+testtesttestresults <- testtest/sd(EU53N_T_ASVtab[,2])
+EU53N_T_ASV_Zs[1,] == testtesttestresults #TRUE, function is working
 
 ## B ##
 EU53N_B_ASVtab <- AllSoilsDAASVsandMeta %>% 
-  filter(EU == "EU_53N" & Transect == "B")
-rownames(EU53N_B_ASVtab) <- EU53N_B_ASVtab$Meter #replace sample name with meter
-# Get z-scores. Don't select metadata columns, and flip so ASVs are rows and samples are columns
-EU53N_B_ASV_Zs <- zScore(as.data.frame(t(EU53N_B_ASVtab[,1:1696]))) 
+  filter(EU == "EU_53N" & Transect == "B") %>% 
+  tibble::rownames_to_column("SampleID") %>% #have to do this so that we can arrange by meter
+  arrange(Meter) #order by meter
+# Get z-scores. Don't select metadata columns, and flip so ASVs and other variables are rows and samples are columns
+EU53N_B_ASV_Zs <- zScore(as.data.frame(t(EU53N_B_ASVtab[,2:1697]))) 
+colnames(EU53N_B_ASV_Zs) <- EU53N_B_ASVtab$Meter #these are in the correct order
 
 ## L ##
 EU53N_L_ASVtab <- AllSoilsDAASVsandMeta %>% 
-  filter(EU == "EU_53N" & Transect == "L")
-rownames(EU53N_L_ASVtab) <- EU53N_L_ASVtab$Meter #replace sample name with meter
-# Get z-scores. Don't select metadata columns, and flip so ASVs are rows and samples are columns
-EU53N_L_ASV_Zs <- zScore(as.data.frame(t(EU53N_L_ASVtab[,1:1696]))) 
+  filter(EU == "EU_53N" & Transect == "L") %>% 
+  tibble::rownames_to_column("SampleID") %>% #have to do this so that we can arrange by meter
+  arrange(Meter) #order by meter
+# Get z-scores. Don't select metadata columns, and flip so ASVs and other variables are rows and samples are columns
+EU53N_L_ASV_Zs <- zScore(as.data.frame(t(EU53N_L_ASVtab[,2:1697]))) 
+colnames(EU53N_L_ASV_Zs) <- EU53N_L_ASVtab$Meter #these are in the correct order
 
 ## R ##
 EU53N_R_ASVtab <- AllSoilsDAASVsandMeta %>% 
-  filter(EU == "EU_53N" & Transect == "R")
-rownames(EU53N_R_ASVtab) <- EU53N_R_ASVtab$Meter #replace sample name with meter
-# Get z-scores. Don't select metadata columns, and flip so ASVs are rows and samples are columns
-EU53N_R_ASV_Zs <- zScore(as.data.frame(t(EU53N_R_ASVtab[,1:1696]))) 
-##############
+  filter(EU == "EU_53N" & Transect == "R") %>% 
+  tibble::rownames_to_column("SampleID") %>% #have to do this so that we can arrange by meter
+  arrange(Meter) #order by meter
+# Get z-scores. Don't select metadata columns, and flip so ASVs and other variables are rows and samples are columns
+EU53N_R_ASV_Zs <- zScore(as.data.frame(t(EU53N_R_ASVtab[,2:1697]))) 
+colnames(EU53N_R_ASV_Zs) <- EU53N_R_ASVtab$Meter #these are in the correct order
 
 #### EU 54S ####
 ## T ##
 EU54S_T_ASVtab <- AllSoilsDAASVsandMeta %>% 
-  filter(EU == "EU_54S" & Transect == "T") 
-rownames(EU54S_T_ASVtab) <- EU54S_T_ASVtab$Meter #replace sample name with meter
-# Get z-scores. Don't select metadata columns, and flip so ASVs are rows and samples are columns
-EU54S_T_ASV_Zs <- zScore(as.data.frame(t(EU54S_T_ASVtab[,1:1696]))) 
+  filter(EU == "EU_54S" & Transect == "T") %>% 
+  tibble::rownames_to_column("SampleID") %>% #have to do this so that we can arrange by meter
+  arrange(Meter)
+#now, this is ordered by meter (but meter is last column)
+#class(EU54S_T_ASVtab)
+# View(EU54S_T_ASVtab)
+# Get z-scores. Don't select metadata columns, and flip so ASVs and other variables are rows and samples are columns
+EU54S_T_ASV_Zs <- zScore(as.data.frame(t(EU54S_T_ASVtab[,2:1697]))) 
+colnames(EU54S_T_ASV_Zs) <- EU54S_T_ASVtab$Meter #these are in the correct order
+# Test to make sure z-score is correct
+testtest <- EU54S_T_ASVtab[,2] - mean(EU54S_T_ASVtab[,2])
+testtesttestresults <- testtest/sd(EU54S_T_ASVtab[,2])
+EU54S_T_ASV_Zs[1,] == testtesttestresults #TRUE, function is working
 
 ## B ##
 EU54S_B_ASVtab <- AllSoilsDAASVsandMeta %>% 
-  filter(EU == "EU_54S" & Transect == "B")
-rownames(EU54S_B_ASVtab) <- EU54S_B_ASVtab$Meter #replace sample name with meter
-# Get z-scores. Don't select metadata columns, and flip so ASVs are rows and samples are columns
-EU54S_B_ASV_Zs <- zScore(as.data.frame(t(EU54S_B_ASVtab[,1:1696]))) 
+  filter(EU == "EU_54S" & Transect == "B") %>% 
+  tibble::rownames_to_column("SampleID") %>% #have to do this so that we can arrange by meter
+  arrange(Meter) #order by meter
+# Get z-scores. Don't select metadata columns, and flip so ASVs and other variables are rows and samples are columns
+EU54S_B_ASV_Zs <- zScore(as.data.frame(t(EU54S_B_ASVtab[,2:1697]))) 
+colnames(EU54S_B_ASV_Zs) <- EU54S_B_ASVtab$Meter #these are in the correct order
 
 ## L ##
 EU54S_L_ASVtab <- AllSoilsDAASVsandMeta %>% 
-  filter(EU == "EU_54S" & Transect == "L")
-rownames(EU54S_L_ASVtab) <- EU54S_L_ASVtab$Meter #replace sample name with meter
-# Get z-scores. Don't select metadata columns, and flip so ASVs are rows and samples are columns
-EU54S_L_ASV_Zs <- zScore(as.data.frame(t(EU54S_L_ASVtab[,1:1696]))) 
+  filter(EU == "EU_54S" & Transect == "L") %>% 
+  tibble::rownames_to_column("SampleID") %>% #have to do this so that we can arrange by meter
+  arrange(Meter) #order by meter
+# Get z-scores. Don't select metadata columns, and flip so ASVs and other variables are rows and samples are columns
+EU54S_L_ASV_Zs <- zScore(as.data.frame(t(EU54S_L_ASVtab[,2:1697]))) 
+colnames(EU54S_L_ASV_Zs) <- EU54S_L_ASVtab$Meter #these are in the correct order
 
 ## R ##
 EU54S_R_ASVtab <- AllSoilsDAASVsandMeta %>% 
-  filter(EU == "EU_54S" & Transect == "R")
-rownames(EU54S_R_ASVtab) <- EU54S_R_ASVtab$Meter #replace sample name with meter
-# Get z-scores. Don't select metadata columns, and flip so ASVs are rows and samples are columns
-EU54S_R_ASV_Zs <- zScore(as.data.frame(t(EU54S_R_ASVtab[,1:1696]))) 
-##############
+  filter(EU == "EU_54S" & Transect == "R") %>% 
+  tibble::rownames_to_column("SampleID") %>% #have to do this so that we can arrange by meter
+  arrange(Meter) #order by meter
+# Get z-scores. Don't select metadata columns, and flip so ASVs and other variables are rows and samples are columns
+EU54S_R_ASV_Zs <- zScore(as.data.frame(t(EU54S_R_ASVtab[,2:1697]))) 
+colnames(EU54S_R_ASV_Zs) <- EU54S_R_ASVtab$Meter #these are in the correct order
 
 #### EU 8 ####
 ## T ##
 EU8_T_ASVtab <- AllSoilsDAASVsandMeta %>% 
-  filter(EU == "EU_8" & Transect == "T") 
-rownames(EU8_T_ASVtab) <- EU8_T_ASVtab$Meter #replace sample name with meter
-# Get z-scores. Don't select metadata columns, and flip so ASVs are rows and samples are columns
-EU8_T_ASV_Zs <- zScore(as.data.frame(t(EU8_T_ASVtab[,1:1696]))) 
+  filter(EU == "EU_8" & Transect == "T") %>% 
+  tibble::rownames_to_column("SampleID") %>% #have to do this so that we can arrange by meter
+  arrange(Meter)
+#now, this is ordered by meter (but meter is last column)
+#class(EU8_T_ASVtab)
+# View(EU8_T_ASVtab)
+# Get z-scores. Don't select metadata columns, and flip so ASVs and other variables are rows and samples are columns
+EU8_T_ASV_Zs <- zScore(as.data.frame(t(EU8_T_ASVtab[,2:1697]))) 
+colnames(EU8_T_ASV_Zs) <- EU8_T_ASVtab$Meter #these are in the correct order
+# Test to make sure z-score is correct
+testtest <- EU8_T_ASVtab[,2] - mean(EU8_T_ASVtab[,2])
+testtesttestresults <- testtest/sd(EU8_T_ASVtab[,2])
+EU8_T_ASV_Zs[1,] == testtesttestresults #TRUE, function is working
 
 ## B ##
 EU8_B_ASVtab <- AllSoilsDAASVsandMeta %>% 
-  filter(EU == "EU_8" & Transect == "B")
-rownames(EU8_B_ASVtab) <- EU8_B_ASVtab$Meter #replace sample name with meter
-# Get z-scores. Don't select metadata columns, and flip so ASVs are rows and samples are columns
-EU8_B_ASV_Zs <- zScore(as.data.frame(t(EU8_B_ASVtab[,1:1696]))) 
+  filter(EU == "EU_8" & Transect == "B") %>% 
+  tibble::rownames_to_column("SampleID") %>% #have to do this so that we can arrange by meter
+  arrange(Meter) #order by meter
+# Get z-scores. Don't select metadata columns, and flip so ASVs and other variables are rows and samples are columns
+EU8_B_ASV_Zs <- zScore(as.data.frame(t(EU8_B_ASVtab[,2:1697]))) 
+colnames(EU8_B_ASV_Zs) <- EU8_B_ASVtab$Meter #these are in the correct order
 
 ## L ##
 EU8_L_ASVtab <- AllSoilsDAASVsandMeta %>% 
-  filter(EU == "EU_8" & Transect == "L")
-rownames(EU8_L_ASVtab) <- EU8_L_ASVtab$Meter #replace sample name with meter
-# Get z-scores. Don't select metadata columns, and flip so ASVs are rows and samples are columns
-EU8_L_ASV_Zs <- zScore(as.data.frame(t(EU8_L_ASVtab[,1:1696]))) 
+  filter(EU == "EU_8" & Transect == "L") %>% 
+  tibble::rownames_to_column("SampleID") %>% #have to do this so that we can arrange by meter
+  arrange(Meter) #order by meter
+# Get z-scores. Don't select metadata columns, and flip so ASVs and other variables are rows and samples are columns
+EU8_L_ASV_Zs <- zScore(as.data.frame(t(EU8_L_ASVtab[,2:1697]))) 
+colnames(EU8_L_ASV_Zs) <- EU8_L_ASVtab$Meter #these are in the correct order
 
 ## R ##
 EU8_R_ASVtab <- AllSoilsDAASVsandMeta %>% 
-  filter(EU == "EU_8" & Transect == "R")
-rownames(EU8_R_ASVtab) <- EU8_R_ASVtab$Meter #replace sample name with meter
-# Get z-scores. Don't select metadata columns, and flip so ASVs are rows and samples are columns
-EU8_R_ASV_Zs <- zScore(as.data.frame(t(EU8_R_ASVtab[,1:1696]))) 
-##############
+  filter(EU == "EU_8" & Transect == "R") %>% 
+  tibble::rownames_to_column("SampleID") %>% #have to do this so that we can arrange by meter
+  arrange(Meter) #order by meter
+# Get z-scores. Don't select metadata columns, and flip so ASVs and other variables are rows and samples are columns
+EU8_R_ASV_Zs <- zScore(as.data.frame(t(EU8_R_ASVtab[,2:1697]))) 
+colnames(EU8_R_ASV_Zs) <- EU8_R_ASVtab$Meter #these are in the correct order
 
 #### EU 53S ####
 ## T ##
 EU53S_T_ASVtab <- AllSoilsDAASVsandMeta %>% 
-  filter(EU == "EU_53S" & Transect == "T") 
-rownames(EU53S_T_ASVtab) <- EU53S_T_ASVtab$Meter #replace sample name with meter
-# Get z-scores. Don't select metadata columns, and flip so ASVs are rows and samples are columns
-EU53S_T_ASV_Zs <- zScore(as.data.frame(t(EU53S_T_ASVtab[,1:1696]))) 
+  filter(EU == "EU_53S" & Transect == "T") %>% 
+  tibble::rownames_to_column("SampleID") %>% #have to do this so that we can arrange by meter
+  arrange(Meter)
+#now, this is ordered by meter (but meter is last column)
+#class(EU53S_T_ASVtab)
+# View(EU53S_T_ASVtab)
+# Get z-scores. Don't select metadata columns, and flip so ASVs and other variables are rows and samples are columns
+EU53S_T_ASV_Zs <- zScore(as.data.frame(t(EU53S_T_ASVtab[,2:1697]))) 
+colnames(EU53S_T_ASV_Zs) <- EU53S_T_ASVtab$Meter #these are in the correct order
+# Test to make sure z-score is correct
+testtest <- EU53S_T_ASVtab[,2] - mean(EU53S_T_ASVtab[,2])
+testtesttestresults <- testtest/sd(EU53S_T_ASVtab[,2])
+EU53S_T_ASV_Zs[1,] == testtesttestresults #TRUE, function is working
 
 ## B ##
 EU53S_B_ASVtab <- AllSoilsDAASVsandMeta %>% 
-  filter(EU == "EU_53S" & Transect == "B")
-rownames(EU53S_B_ASVtab) <- EU53S_B_ASVtab$Meter #replace sample name with meter
-# Get z-scores. Don't select metadata columns, and flip so ASVs are rows and samples are columns
-EU53S_B_ASV_Zs <- zScore(as.data.frame(t(EU53S_B_ASVtab[,1:1696]))) 
+  filter(EU == "EU_53S" & Transect == "B") %>% 
+  tibble::rownames_to_column("SampleID") %>% #have to do this so that we can arrange by meter
+  arrange(Meter) #order by meter
+# Get z-scores. Don't select metadata columns, and flip so ASVs and other variables are rows and samples are columns
+EU53S_B_ASV_Zs <- zScore(as.data.frame(t(EU53S_B_ASVtab[,2:1697]))) 
+colnames(EU53S_B_ASV_Zs) <- EU53S_B_ASVtab$Meter #these are in the correct order
 
 ## L ##
 EU53S_L_ASVtab <- AllSoilsDAASVsandMeta %>% 
-  filter(EU == "EU_53S" & Transect == "L")
-rownames(EU53S_L_ASVtab) <- EU53S_L_ASVtab$Meter #replace sample name with meter
-# Get z-scores. Don't select metadata columns, and flip so ASVs are rows and samples are columns
-EU53S_L_ASV_Zs <- zScore(as.data.frame(t(EU53S_L_ASVtab[,1:1696]))) 
+  filter(EU == "EU_53S" & Transect == "L") %>% 
+  tibble::rownames_to_column("SampleID") %>% #have to do this so that we can arrange by meter
+  arrange(Meter) #order by meter
+# Get z-scores. Don't select metadata columns, and flip so ASVs and other variables are rows and samples are columns
+EU53S_L_ASV_Zs <- zScore(as.data.frame(t(EU53S_L_ASVtab[,2:1697]))) 
+colnames(EU53S_L_ASV_Zs) <- EU53S_L_ASVtab$Meter #these are in the correct order
 
 ## R ##
 EU53S_R_ASVtab <- AllSoilsDAASVsandMeta %>% 
-  filter(EU == "EU_53S" & Transect == "R")
-rownames(EU53S_R_ASVtab) <- EU53S_R_ASVtab$Meter #replace sample name with meter
-# Get z-scores. Don't select metadata columns, and flip so ASVs are rows and samples are columns
-EU53S_R_ASV_Zs <- zScore(as.data.frame(t(EU53S_R_ASVtab[,1:1696]))) 
-##############
+  filter(EU == "EU_53S" & Transect == "R") %>% 
+  tibble::rownames_to_column("SampleID") %>% #have to do this so that we can arrange by meter
+  arrange(Meter) #order by meter
+# Get z-scores. Don't select metadata columns, and flip so ASVs and other variables are rows and samples are columns
+EU53S_R_ASV_Zs <- zScore(as.data.frame(t(EU53S_R_ASVtab[,2:1697]))) 
+colnames(EU53S_R_ASV_Zs) <- EU53S_R_ASVtab$Meter #these are in the correct order
 
 #### EU 10 ####
 ## T ##
 EU10_T_ASVtab <- AllSoilsDAASVsandMeta %>% 
-  filter(EU == "EU_10" & Transect == "T") 
-rownames(EU10_T_ASVtab) <- EU10_T_ASVtab$Meter #replace sample name with meter
-# Get z-scores. Don't select metadata columns, and flip so ASVs are rows and samples are columns
-EU10_T_ASV_Zs <- zScore(as.data.frame(t(EU10_T_ASVtab[,1:1696]))) 
+  filter(EU == "EU_10" & Transect == "T") %>% 
+  tibble::rownames_to_column("SampleID") %>% #have to do this so that we can arrange by meter
+  arrange(Meter)
+#now, this is ordered by meter (but meter is last column)
+#class(EU10_T_ASVtab)
+# View(EU10_T_ASVtab)
+# Get z-scores. Don't select metadata columns, and flip so ASVs and other variables are rows and samples are columns
+EU10_T_ASV_Zs <- zScore(as.data.frame(t(EU10_T_ASVtab[,2:1697]))) 
+colnames(EU10_T_ASV_Zs) <- EU10_T_ASVtab$Meter #these are in the correct order
+# Test to make sure z-score is correct
+testtest <- EU10_T_ASVtab[,2] - mean(EU10_T_ASVtab[,2])
+testtesttestresults <- testtest/sd(EU10_T_ASVtab[,2])
+EU10_T_ASV_Zs[1,] == testtesttestresults #TRUE, function is working
 
 ## B ##
 EU10_B_ASVtab <- AllSoilsDAASVsandMeta %>% 
-  filter(EU == "EU_10" & Transect == "B")
-rownames(EU10_B_ASVtab) <- EU10_B_ASVtab$Meter #replace sample name with meter
-# Get z-scores. Don't select metadata columns, and flip so ASVs are rows and samples are columns
-EU10_B_ASV_Zs <- zScore(as.data.frame(t(EU10_B_ASVtab[,1:1696]))) 
-# Test to make sure z-score is correct
-test2 <- EU10_B_ASVtab[,1] - mean(EU10_B_ASVtab[,1])
-testresultsCol1 <- test2/sd(EU10_B_ASVtab[,1])
-EU10_B_ASV_Zs[1,] == testresultsCol1 #TRUE, function is working
+  filter(EU == "EU_10" & Transect == "B") %>% 
+  tibble::rownames_to_column("SampleID") %>% #have to do this so that we can arrange by meter
+  arrange(Meter) #order by meter
+# Get z-scores. Don't select metadata columns, and flip so ASVs and other variables are rows and samples are columns
+EU10_B_ASV_Zs <- zScore(as.data.frame(t(EU10_B_ASVtab[,2:1697]))) 
+colnames(EU10_B_ASV_Zs) <- EU10_B_ASVtab$Meter #these are in the correct order
 
 ## L ##
 EU10_L_ASVtab <- AllSoilsDAASVsandMeta %>% 
-  filter(EU == "EU_10" & Transect == "L")
-rownames(EU10_L_ASVtab) <- EU10_L_ASVtab$Meter #replace sample name with meter
-# Get z-scores. Don't select metadata columns, and flip so ASVs are rows and samples are columns
-EU10_L_ASV_Zs <- zScore(as.data.frame(t(EU10_L_ASVtab[,1:1696]))) 
+  filter(EU == "EU_10" & Transect == "L") %>% 
+  tibble::rownames_to_column("SampleID") %>% #have to do this so that we can arrange by meter
+  arrange(Meter) #order by meter
+# Get z-scores. Don't select metadata columns, and flip so ASVs and other variables are rows and samples are columns
+EU10_L_ASV_Zs <- zScore(as.data.frame(t(EU10_L_ASVtab[,2:1697]))) 
+colnames(EU10_L_ASV_Zs) <- EU10_L_ASVtab$Meter #these are in the correct order
 
 ## R ##
 EU10_R_ASVtab <- AllSoilsDAASVsandMeta %>% 
-  filter(EU == "EU_10" & Transect == "R")
-rownames(EU10_R_ASVtab) <- EU10_R_ASVtab$Meter #replace sample name with meter
-# Get z-scores. Don't select metadata columns, and flip so ASVs are rows and samples are columns
-EU10_R_ASV_Zs <- zScore(as.data.frame(t(EU10_R_ASVtab[,1:1696]))) 
-##############
-# View(EU10_R_ASV_Zs)
+  filter(EU == "EU_10" & Transect == "R") %>% 
+  tibble::rownames_to_column("SampleID") %>% #have to do this so that we can arrange by meter
+  arrange(Meter) #order by meter
+# Get z-scores. Don't select metadata columns, and flip so ASVs and other variables are rows and samples are columns
+EU10_R_ASV_Zs <- zScore(as.data.frame(t(EU10_R_ASVtab[,2:1697]))) 
+colnames(EU10_R_ASV_Zs) <- EU10_R_ASVtab$Meter #these are in the correct order
 
 #################################################################################
-# IV. PLOTTING Z-SCORES FOR SELECT ASVS
+# IV. GETTING HIGH, MEDIUM, AND LOW LOG2FOLDABUNDANCE DIFFERNTIALLY ABUNDANT ASVs
 #################################################################################
-# Now that we have all of the Z-scores by transect, choose those to plot:
+# Get ASVs that have a high, medium, and low log2Fold Abundance for patch and separately
+# for forest. Then pull out the Zscores from these ASVs using the made in part III above.
 
 # First, manipulate "sigtab_all_45times" so that it can be a tibble:
 # Make ASV names (i.e. rownames) into a column instead and make into a tibble
@@ -463,3 +531,165 @@ medIndex2 <- with(sigtab_all_45Neg, which.min(log2FoldChange != quantile(log2Fol
 median(sigtab_all_45Neg$log2FoldChange) == sigtab_all_45Neg$log2FoldChange[medIndex2]
 # This is true, so take four values less than median and five greater than for "middle 10")
 forestMiddle10 <- sigtab_all_45Neg[((medIndex2 - 5):(medIndex2 + 4)),]
+
+# Combine all the ASV names
+HiMedLowASVs <- c(patchTop10$ASV_name, patchBottom10$ASV_name, patchMiddle10$ASV_name,
+                  forestTop10$ASV_name, forestBottom10$ASV_name, forestMiddle10$ASV_name)
+#################################################################################
+# V. HIGH, MEDIUM, AND LOW DIFFERNTIALLY ABUNDANT ASVs BY EU
+#################################################################################
+# Get median z-scores (transects) by EU
+# Dummy example for getting median of matrices. 
+A <- matrix(c(2,4,3,5), 2)
+B <- matrix(c(6,8,NA,9), 2)
+C <- matrix(c(2,4,8,5), 2)
+
+X <- list(A, B, C)
+Y <- do.call(cbind, X)
+Y <- array(Y, dim=c(dim(X[[1]]), length(X)))
+
+apply(Y, c(1, 2), median, na.rm = TRUE) #this works!
+
+#### EU 52 #####
+A <- EU52_T_ASV_Zs[HiMedLowASVs,] #missing 70
+# add 70 back in for A, as NAs
+Adf <- as.data.frame(A)
+Adf$"70" <- NA
+Adf <- cbind(Adf$"10", Adf$"20", Adf$"30", Adf$"40", Adf$"50", Adf$"60", Adf$"70", Adf$"80", Adf$"90", Adf$"100")
+rownames(Adf) <- rownames(A) #retrurn rownames
+A <- as.matrix(Adf)
+colnames(A) <- c("10", "20", "30", "40", "50", "60", "70", "80", "90", "100") #reset column names
+A
+B <- EU52_B_ASV_Zs[HiMedLowASVs,] #missing 90
+# Add back in 90 m as NAs for B
+Bdf <- as.data.frame(B)
+Bdf$"90" <- NA
+Bdf <- cbind(Bdf$"10", Bdf$"20", Bdf$"30", Bdf$"40", Bdf$"50", Bdf$"60", Bdf$"70", Bdf$"80", Bdf$"90", Bdf$"100")
+rownames(Bdf) <- rownames(B) #return rownames
+B <- as.matrix(Bdf)
+colnames(B) <- c("10", "20", "30", "40", "50", "60", "70", "80", "90", "100") #reset column names
+B
+C <- EU52_L_ASV_Zs[HiMedLowASVs,]
+D <- EU52_R_ASV_Zs[HiMedLowASVs,]
+
+X <- list(A, B, C, D)
+Y <- do.call(cbind, X)
+Y <- array(Y, dim=c(dim(X[[1]]), length(X)))
+
+EU52_topASVsMed <- apply(Y, c(1, 2), median, na.rm = TRUE)
+rownames(EU52_topASVsMed) <- rownames(A) #rownames of each ASV
+colnames(EU52_topASVsMed) <- colnames(A)
+EU52_topASVsMed
+
+#### EU 53N #####
+A <- EU53N_T_ASV_Zs[HiMedLowASVs,] #missing 20
+# add 20 back in for A, as NAs
+Adf <- as.data.frame(A)
+Adf$"20" <- NA
+Adf <- cbind(Adf$"10", Adf$"20", Adf$"30", Adf$"40", Adf$"50", Adf$"60", Adf$"70", Adf$"80", Adf$"90", Adf$"100")
+rownames(Adf) <- rownames(A) #retrurn rownames
+A <- as.matrix(Adf)
+colnames(A) <- c("10", "20", "30", "40", "50", "60", "70", "80", "90", "100") #reset column names
+A
+B <- EU53N_B_ASV_Zs[HiMedLowASVs,]
+C <- EU53N_L_ASV_Zs[HiMedLowASVs,]
+D <- EU53N_R_ASV_Zs[HiMedLowASVs,]
+
+X <- list(A, B, C, D)
+Y <- do.call(cbind, X)
+Y <- array(Y, dim=c(dim(X[[1]]), length(X)))
+
+EU53N_topASVsMed <- apply(Y, c(1, 2), median, na.rm = TRUE)
+rownames(EU53N_topASVsMed) <- rownames(A) #rownames of each ASV
+colnames(EU53N_topASVsMed) <- colnames(A)
+EU53N_topASVsMed
+
+#### EU 54S ####
+A <- EU54S_T_ASV_Zs[HiMedLowASVs,]
+B <- EU54S_B_ASV_Zs[HiMedLowASVs,]
+C <- EU54S_L_ASV_Zs[HiMedLowASVs,]
+D <- EU54S_R_ASV_Zs[HiMedLowASVs,]
+
+X <- list(A, B, C, D)
+Y <- do.call(cbind, X)
+Y <- array(Y, dim=c(dim(X[[1]]), length(X)))
+
+EU54S_topASVsMed <- apply(Y, c(1, 2), median, na.rm = TRUE)
+rownames(EU54S_topASVsMed) <- rownames(A) #rownames of each ASV
+colnames(EU54S_topASVsMed) <- colnames(A)
+EU54S_topASVsMed
+
+#### EU 8 #####
+A <- EU8_T_ASV_Zs[HiMedLowASVs,]
+B <- EU8_B_ASV_Zs[HiMedLowASVs,]
+C <- EU8_L_ASV_Zs[HiMedLowASVs,]
+D <- EU8_R_ASV_Zs[HiMedLowASVs,]
+
+X <- list(A, B, C, D)
+Y <- do.call(cbind, X)
+Y <- array(Y, dim=c(dim(X[[1]]), length(X)))
+
+EU8_topASVsMed <- apply(Y, c(1, 2), median, na.rm = TRUE)
+rownames(EU8_topASVsMed) <- rownames(A) #rownames of each ASV
+colnames(EU8_topASVsMed) <- colnames(A)
+EU8_topASVsMed
+
+#### EU 53S #####
+A <- EU53S_T_ASV_Zs[HiMedLowASVs,]
+B <- EU53S_B_ASV_Zs[HiMedLowASVs,]
+C <- EU53S_L_ASV_Zs[HiMedLowASVs,]
+D <- EU53S_R_ASV_Zs[HiMedLowASVs,]
+
+X <- list(A, B, C, D)
+Y <- do.call(cbind, X)
+Y <- array(Y, dim=c(dim(X[[1]]), length(X)))
+
+EU53S_topASVsMed <- apply(Y, c(1, 2), median, na.rm = TRUE)
+rownames(EU53S_topASVsMed) <- rownames(A) #rownames of each ASV
+colnames(EU53S_topASVsMed) <- colnames(A)
+EU53S_topASVsMed
+
+#### EU 10 #####
+A <- EU10_T_ASV_Zs[HiMedLowASVs,]
+B <- EU10_B_ASV_Zs[HiMedLowASVs,]
+C <- EU10_L_ASV_Zs[HiMedLowASVs,]
+D <- EU10_R_ASV_Zs[HiMedLowASVs,]
+
+X <- list(A, B, C, D)
+Y <- do.call(cbind, X)
+Y <- array(Y, dim=c(dim(X[[1]]), length(X)))
+
+EU10_topASVsMed <- apply(Y, c(1, 2), median, na.rm = TRUE)
+rownames(EU10_topASVsMed) <- rownames(A) #rownames of each ASV
+colnames(EU10_topASVsMed) <- colnames(A)
+EU10_topASVsMed
+###########################################
+# PLOTTING
+
+#EU52_topASVsMed, EU53N_topASVsMed, EU54S_topASVsMed, EU8_topASVsMed, EU53S_topASVsMed, EU10_topASVsMed
+quartz()
+par(mfrow=c(2,3))
+# this doesn't work! "'x' and 'y' must have same number of rows"--pivot_longer with more meters?
+EU52_topASVsMed_plot <-  matplot(colnames(EU52_topASVsMed), EU52_topASVsMed, type = "l", xlab= "Meter",
+                                 ylab= "Median Z-Score for ASV abundance", main= "Median ASV Z-Scores across EU 52")
+
+# need to pivot longer and plot with ggplot2, I think
+EU52_topASVsMedLonger <- as.data.frame(EU52_topASVsMed) %>% 
+  rownames_to_column(var="ASV_name") %>% 
+  pivot_longer(cols= "10":"100",
+               names_to= "Meter", values_to = "Median_Zscore") 
+# Make it so the meters are plotted in the correct order
+EU52_topASVsMedLonger$Meter <- factor(EU52_topASVsMedLonger$Meter, levels = c("10", "20", "30", "40", "50","60", "70", "80", "90", "100"))
+
+# why isn't y-axis showing up?
+quartz()
+ggplot(EU52_topASVsMedLonger, aes(x=Meter, y=Median_Zscore, color= ASV_name, group = ASV_name)) + 
+  geom_line() + theme(axis.text.y = element_blank()) + ggtitle("Median ASV Z-Scores across EU 52") +
+  theme(legend.position = "none") +
+  scale_y_continuous("Median Z-score")
+# add in this for scale_y_continuous(breaks=..., labels=...). ?
+
+  
+#################################################################################
+# VI. HIGH, MEDIUM, AND LOW DIFFERNTIALLY ABUNDANT ASVs-- ACROSS ALL TRANSECTS
+#################################################################################
