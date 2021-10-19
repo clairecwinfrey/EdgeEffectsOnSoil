@@ -535,6 +535,9 @@ forestMiddle10 <- sigtab_all_45Neg[((medIndex2 - 5):(medIndex2 + 4)),]
 # Combine all the ASV names
 HiMedLowASVs <- c(patchTop10$ASV_name, patchBottom10$ASV_name, patchMiddle10$ASV_name,
                   forestTop10$ASV_name, forestBottom10$ASV_name, forestMiddle10$ASV_name)
+
+# Just "high" ASVs
+HighASVs <- c(patchTop10$ASV_name, forestTop10$ASV_name)
 #################################################################################
 # V. HIGH, MEDIUM, AND LOW DIFFERNTIALLY ABUNDANT ASVs BY EU
 #################################################################################
@@ -681,15 +684,171 @@ EU52_topASVsMedLonger <- as.data.frame(EU52_topASVsMed) %>%
 # Make it so the meters are plotted in the correct order
 EU52_topASVsMedLonger$Meter <- factor(EU52_topASVsMedLonger$Meter, levels = c("10", "20", "30", "40", "50","60", "70", "80", "90", "100"))
 
+HiMedLowASVs <- c(patchTop10$ASV_name, patchBottom10$ASV_name, patchMiddle10$ASV_name,
+                  forestTop10$ASV_name, forestBottom10$ASV_name, forestMiddle10$ASV_name)
+
+
+patchTop10.tb <- EU52_topASVsMedLonger %>% 
+  filter(ASV_name == patchTop10$ASV_name) %>% 
+  mutate(ASVgroup = "patchTop10")
+patchBottom10.tb <- EU52_topASVsMedLonger %>% 
+  filter(ASV_name == patchBottom10$ASV_name) %>% 
+  mutate(ASVgroup = "patchBottom10")
+patchMiddle10.tb <- EU52_topASVsMedLonger %>% 
+  filter(ASV_name == patchMiddle10$ASV_name) %>% 
+  mutate(ASVgroup = "patchMiddle10")
+forestTop10.tb <- EU52_topASVsMedLonger %>% 
+  filter(ASV_name == forestTop10$ASV_name) %>% 
+  mutate(ASVgroup = "forestTop10")
+forestBottom10.tb <- EU52_topASVsMedLonger %>% 
+  filter(ASV_name == forestBottom10$ASV_name) %>% 
+  mutate(ASVgroup = "forestBottom10")
+forestMiddle10.tb <- EU52_topASVsMedLonger %>% 
+  filter(ASV_name == forestMiddle10$ASV_name) %>% 
+  mutate(ASVgroup = "forestMiddle10")
+
+EU52_topASVsGroups <- rbind(patchTop10.tb, patchBottom10.tb, patchMiddle10.tb, forestTop10.tb, forestBottom10.tb, forestMiddle10.tb)
+
+topPatchindex <- which(EU52_topASVsMedLonger$ASV_name==patchTop10$ASV_name)
+bottomPatchindex <- which(EU52_topASVsMedLonger$ASV_name==patchBottom10$ASV_name)
+middlePatchindex <- which(EU52_topASVsMedLonger$ASV_name==patchMiddle10$ASV_name)
+topForestindex <- which(EU52_topASVsMedLonger$ASV_name==forestTop10$ASV_name)
+bottomforestindex <- which(EU52_topASVsMedLonger$ASV_name==forestBottom10$ASV_name)
+middleforestindex <- which(EU52_topASVsMedLonger$ASV_name==forestMiddle10$ASV_name)
+
+EU52_topASVsMedLonger$ASVgroup <- NA
+EU52_topASVsMedLonger[1:100,4] <- "patchTop10"
+EU52_topASVsMedLonger[101:200,4] <- "patchBottom10"
+EU52_topASVsMedLonger[201:300,4] <- "patchMiddle10"
+EU52_topASVsMedLonger[301:400,4] <- "forestTop10"
+EU52_topASVsMedLonger[401:500,4] <- "forestBottom10"
+EU52_topASVsMedLonger[501:600,4] <- "forestMiddle10"
+
 # why isn't y-axis showing up?
 quartz()
-ggplot(EU52_topASVsMedLonger, aes(x=Meter, y=Median_Zscore, color= ASV_name, group = ASV_name)) + 
-  geom_line() + theme(axis.text.y = element_blank()) + ggtitle("Median ASV Z-Scores across EU 52") +
-  theme(legend.position = "none") +
-  scale_y_continuous("Median Z-score")
-# add in this for scale_y_continuous(breaks=..., labels=...). ?
-
+gg1 <- ggplot(EU52_topASVsMedLonger, aes(x=Meter, y=Median_Zscore, group = ASV_name)) 
+gg1 + geom_line(aes(color = ASVgroup)) + theme(axis.text.y = element_blank()) + ggtitle("Median ASV Z-Scores across EU 52") +
+  scale_y_continuous("Median Z-score") + theme_bw() +
+  scale_color_manual(values=c("#bfd3e6", "#8c96c6", "#810f7c", "#fee391", "#fe9929", "#993404")) 
+  # colors are assigned to variables in alphabetical order
   
 #################################################################################
-# VI. HIGH, MEDIUM, AND LOW DIFFERNTIALLY ABUNDANT ASVs-- ACROSS ALL TRANSECTS
+# VI. "HIGH" ASVs (i.e. "forestTop10" and "patchTop10" ACROSS ALL TRANSECTS
 #################################################################################
+
+# There will be a total of 20 ASVs represented, for 120 lines (i.e. one line per ASV per
+# EU, with the transect scores by EUs represented by their median)
+
+#### EU 52 #####
+A <- EU52_T_ASV_Zs[HighASVs,] #missing 70
+# add 70 back in for A, as NAs
+Adf <- as.data.frame(A)
+Adf$"70" <- NA
+Adf <- cbind(Adf$"10", Adf$"20", Adf$"30", Adf$"40", Adf$"50", Adf$"60", Adf$"70", Adf$"80", Adf$"90", Adf$"100")
+rownames(Adf) <- rownames(A) #retrurn rownames
+A <- as.matrix(Adf)
+colnames(A) <- c("10", "20", "30", "40", "50", "60", "70", "80", "90", "100") #reset column names
+A
+B <- EU52_B_ASV_Zs[HighASVs,] #missing 90
+# Add back in 90 m as NAs for B
+Bdf <- as.data.frame(B)
+Bdf$"90" <- NA
+Bdf <- cbind(Bdf$"10", Bdf$"20", Bdf$"30", Bdf$"40", Bdf$"50", Bdf$"60", Bdf$"70", Bdf$"80", Bdf$"90", Bdf$"100")
+rownames(Bdf) <- rownames(B) #return rownames
+B <- as.matrix(Bdf)
+colnames(B) <- c("10", "20", "30", "40", "50", "60", "70", "80", "90", "100") #reset column names
+B
+C <- EU52_L_ASV_Zs[HighASVs,]
+D <- EU52_R_ASV_Zs[HighASVs,]
+
+X <- list(A, B, C, D)
+Y <- do.call(cbind, X)
+Y <- array(Y, dim=c(dim(X[[1]]), length(X)))
+
+EU52_HighASVsMed <- apply(Y, c(1, 2), median, na.rm = TRUE)
+rownames(EU52_HighASVsMed) <- rownames(A) #rownames of each ASV
+colnames(EU52_HighASVsMed) <- colnames(A)
+EU52_HighASVsMed
+
+#### EU 53N #####
+A <- EU53N_T_ASV_Zs[HighASVs,] #missing 20
+# add 20 back in for A, as NAs
+Adf <- as.data.frame(A)
+Adf$"20" <- NA
+Adf <- cbind(Adf$"10", Adf$"20", Adf$"30", Adf$"40", Adf$"50", Adf$"60", Adf$"70", Adf$"80", Adf$"90", Adf$"100")
+rownames(Adf) <- rownames(A) #retrurn rownames
+A <- as.matrix(Adf)
+colnames(A) <- c("10", "20", "30", "40", "50", "60", "70", "80", "90", "100") #reset column names
+A
+B <- EU53N_B_ASV_Zs[HighASVs,]
+C <- EU53N_L_ASV_Zs[HighASVs,]
+D <- EU53N_R_ASV_Zs[HighASVs,]
+
+X <- list(A, B, C, D)
+Y <- do.call(cbind, X)
+Y <- array(Y, dim=c(dim(X[[1]]), length(X)))
+
+EU53N_HighASVsMed <- apply(Y, c(1, 2), median, na.rm = TRUE)
+rownames(EU53N_HighASVsMed) <- rownames(A) #rownames of each ASV
+colnames(EU53N_HighASVsMed) <- colnames(A)
+EU53N_HighASVsMed
+
+#### EU 54S ####
+A <- EU54S_T_ASV_Zs[HighASVs,]
+B <- EU54S_B_ASV_Zs[HighASVs,]
+C <- EU54S_L_ASV_Zs[HighASVs,]
+D <- EU54S_R_ASV_Zs[HighASVs,]
+
+X <- list(A, B, C, D)
+Y <- do.call(cbind, X)
+Y <- array(Y, dim=c(dim(X[[1]]), length(X)))
+
+EU54S_HighASVsMed <- apply(Y, c(1, 2), median, na.rm = TRUE)
+rownames(EU54S_HighASVsMed) <- rownames(A) #rownames of each ASV
+colnames(EU54S_HighASVsMed) <- colnames(A)
+EU54S_HighASVsMed
+
+#### EU 8 #####
+A <- EU8_T_ASV_Zs[HighASVs,]
+B <- EU8_B_ASV_Zs[HighASVs,]
+C <- EU8_L_ASV_Zs[HighASVs,]
+D <- EU8_R_ASV_Zs[HighASVs,]
+
+X <- list(A, B, C, D)
+Y <- do.call(cbind, X)
+Y <- array(Y, dim=c(dim(X[[1]]), length(X)))
+
+EU8_HighASVsMed <- apply(Y, c(1, 2), median, na.rm = TRUE)
+rownames(EU8_HighASVsMed) <- rownames(A) #rownames of each ASV
+colnames(EU8_HighASVsMed) <- colnames(A)
+EU8_HighASVsMed
+
+#### EU 53S #####
+A <- EU53S_T_ASV_Zs[HighASVs,]
+B <- EU53S_B_ASV_Zs[HighASVs,]
+C <- EU53S_L_ASV_Zs[HighASVs,]
+D <- EU53S_R_ASV_Zs[HighASVs,]
+
+X <- list(A, B, C, D)
+Y <- do.call(cbind, X)
+Y <- array(Y, dim=c(dim(X[[1]]), length(X)))
+
+EU53S_HighASVsMed <- apply(Y, c(1, 2), median, na.rm = TRUE)
+rownames(EU53S_HighASVsMed) <- rownames(A) #rownames of each ASV
+colnames(EU53S_HighASVsMed) <- colnames(A)
+EU53S_HighASVsMed
+
+#### EU 10 #####
+A <- EU10_T_ASV_Zs[HighASVs,]
+B <- EU10_B_ASV_Zs[HighASVs,]
+C <- EU10_L_ASV_Zs[HighASVs,]
+D <- EU10_R_ASV_Zs[HighASVs,]
+
+X <- list(A, B, C, D)
+Y <- do.call(cbind, X)
+Y <- array(Y, dim=c(dim(X[[1]]), length(X)))
+
+EU10_HighASVsMed <- apply(Y, c(1, 2), median, na.rm = TRUE)
+rownames(EU10_HighASVsMed) <- rownames(A) #rownames of each ASV
+colnames(EU10_HighASVsMed) <- colnames(A)
+EU10_HighASVsMed
