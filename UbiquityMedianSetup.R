@@ -3,9 +3,10 @@
 
 # This script picks up where 16SExploratoryDataAnalysisAug2021 leaves off,
 # applying a ubiquity filter to the samples (which have already been rarefied
-# and where I have removed ASVs that don't occur at least 50 times  in dataset).
+# and where I have removed ASVs that don't occur at least 50 times in dataset).
 # The output of this script should be fed into all downstream analyses (represented 
-# in scripts IdentifyEdgeEffectTaxa4 and DissimPatterns2.R)
+# in scripts IdentifyEdgeEffectTaxa4 and some future version of DissimPatterns.R...
+# UPDATE WITH NEW NAMES OF SCRIPTS!!!!!!!)
 ###################################################################################################
 
 # Set working directory
@@ -211,7 +212,40 @@ ASVtabMedian <- medAbund %>%
 taxTabMedian <- tax_table(postUbiquity.ps) #since we did not drop any ASVs when coding above,
 # this tax table should be the same as before 
 unique(sort(rownames(taxTabMedian)) == sort(rownames(ASVtabMedian))) #Statement above is true!!!
+taxTabMedian <- as(taxTabMedian, "matrix") #get this out of phyloseq
+class(taxTabMedian)
 
 # 3. Sample metadata
-metaMedian <- metadata_outta_ps(postUbiquity.ps)
-head(metaMedian)
+postUbiquityMeta <- metadata_outta_ps(postUbiquity.ps)
+head(postUbiquityMeta)
+# Constructing this for now; will find a more elegant coding solution later
+EUmeterNames <- colnames(ASVtabMedian)
+EUmeterNames
+
+metaDatMedian <- as.data.frame(matrix(nrow = length(EUmeterNames), ncol=3))
+rownames(metaDatMedian) <- EUmeterNames
+colnames(metaDatMedian) <- c("EU", "meter", "Habitat")
+metaDatMedian[,1] <- c(rep("EU_10", 10), rep("EU_52", 10), rep("EU_53N", 10), rep("EU_53S", 10), rep("EU_54S", 10), rep("EU_8", 10))
+metaDatMedian[,2] <- rep(c(10, 100, 20, 30, 40, 50, 60, 70, 80, 90),6)
+metaDatMedian[,3] <- rep(c("patch", "forest", "patch", "patch", "patch", "edge", "forest", "forest", "forest", "forest"), 6)
+
+# Transform all of the above to phyloseq objects
+ASVtabMedianPS <- otu_table(ASVtabMedian, taxa_are_rows = TRUE)
+taxTabMedianPS <- tax_table(taxTabMedian)
+metaDatMedianPS <- sample_data(metaDatMedian)
+medianEU.ps <- phyloseq(ASVtabMedianPS, taxTabMedianPS, metaDatMedianPS)
+medianEU.ps #as expected, this has 4480 taxa and 60 samples!
+colnames(otu_table(medianEU.ps))
+
+#####################################################################
+## FINALLY, SAVE THESE NEW PHYLOSEQ OBJECTS FOR EASY ACCESS #
+# (saves are commented out at the end of this script because they do not 
+# necessarily need to be re-saved everytime this script is run)
+
+# 1. Phyloseq object after rarefying, removal of rares (rares= <50 reads across dataset 
+# AND THEN ubiquity < 45 reads across that dataset)
+# save(postUbiquity.ps, file= "postUbiquity.ps") 
+
+# 2. Phyloseq object made with postUbiquity.ps, BUT with median ASV counts at each meter
+# in each EU
+# save(medianEU.ps, file="medianEU.ps")
