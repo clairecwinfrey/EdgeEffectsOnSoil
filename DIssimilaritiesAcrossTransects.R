@@ -3,11 +3,9 @@
 # November 14, 2021
 
 # This script calculates and plots the Bray-Curtis dissimilarities for the 
-# meters across the transect. 
-# ********** IMPORTANT ********** 
-# 1. CURRENTLY, THIS TREATS TRANSECTS SEPARATELY, INSTEAD OF USING MEDIAN ABUNDANCE
-# (FROM UBIQUITYMEDIANSETUP.R.). FURTHERMORE, THE INPUT HERE HAS NO UBIQUITY FILTER 
-# (YET).
+# meters across the transect. It uses the post-ubiquity (pre-median) abundances
+# of each ASV for each transect. See description below, where postUbiquity.ps is
+# loaded.
 
 # Libraries
 library("phyloseq")
@@ -20,9 +18,10 @@ library("gridExtra")    # allows you to make multiple plots on the same page wit
 
 setwd("/Users/clairewinfrey/Desktop/CU_Research/SoilEdgeEffectsResearch/Bioinformatics")
 
-load("trimmedJustsoils.ps") #load phyloseq object that was made after rarefying, and keeping
-# only ASVs that occurred at least 50 times across the (rarefied) dataset (from 
-# 16SExploratoryDataAnalysisAug2021).
+load("postUbiquity.ps") #load phyloseq object that was made after 1) rarefying,
+# the 2) keeping only ASVs that occurred at least 50 times across the (rarefied), 
+# then 3) filtering out ASVs with a ubiquity of <45. PostUbiquity.ps was made and 
+# saved in the script titled "UbiquityMedianSetup.R".
 
 #### *** IMPORTANT: SHOULD LOAD IN postUbiquity.ps FOR THIS?! *****
 # FUNCTIONS DEFINED IN THIS SCRIPT:
@@ -149,7 +148,7 @@ transectDissim3 <- function(physeq) {
   nRow100m4 <- nrow(comps100m[[4]])
   
   # Put it all together in a dataframe that is convenient for plotting
-  dissimResults <- as.data.frame(matrix(nrow= nrow(ASVsdf2)*2, ncol= 4)) #make a dataframe
+  dissimResults <- as.data.frame(matrix(nrow= nrow(ASVsdf)*2, ncol= 4)) #make a dataframe
   dissimResults[1:nrow(ASVsdf),4] <- "10m" #first half of dataframe has 10m comparisons
   dissimResults[(nrow(ASVsdf)+1):(nrow(ASVsdf)+nrow(ASVsdf)),4] <- "100m" #last half were 100m comparisons
   dissimResults[1:nRow10m1,1:3] <- as.data.frame(comps10m[[1]])
@@ -174,22 +173,22 @@ transectDissim3 <- function(physeq) {
 #############
 
 # To get dissimilarities, first split phyloseq object by EUs and remove ASVs that don't occur in subset
-EU_52_Soils.ps <- subset_samples(trimmedJustsoils.ps, EU == "EU_52")
+EU_52_Soils.ps <- subset_samples(postUbiquity.ps, EU == "EU_52")
 EU_52_Soils.ps <- prune_taxa(taxa_sums(EU_52_Soils.ps) > 0, EU_52_Soils.ps) #remove non-occuring ASVs
 
-EU_53N_Soils.ps <- subset_samples(trimmedJustsoils.ps, EU == "EU_53N")
+EU_53N_Soils.ps <- subset_samples(postUbiquity.ps, EU == "EU_53N")
 EU_53N_Soils.ps <- prune_taxa(taxa_sums(EU_53N_Soils.ps) > 0, EU_53N_Soils.ps) #remove non-occuring ASVs
 
-EU_54S_Soils.ps <- subset_samples(trimmedJustsoils.ps, EU == "EU_54S")
+EU_54S_Soils.ps <- subset_samples(postUbiquity.ps, EU == "EU_54S")
 EU_54S_Soils.ps <- prune_taxa(taxa_sums(EU_54S_Soils.ps) > 0, EU_54S_Soils.ps) #remove non-occuring ASVs
 
-EU_8_Soils.ps <- subset_samples(trimmedJustsoils.ps, EU == "EU_8")
+EU_8_Soils.ps <- subset_samples(postUbiquity.ps, EU == "EU_8")
 EU_8_Soils.ps <- prune_taxa(taxa_sums(EU_8_Soils.ps) > 0, EU_8_Soils.ps) #remove non-occuring ASVs
 
-EU_53S_Soils.ps <- subset_samples(trimmedJustsoils.ps, EU == "EU_53S")
+EU_53S_Soils.ps <- subset_samples(postUbiquity.ps, EU == "EU_53S")
 EU_53S_Soils.ps <- prune_taxa(taxa_sums(EU_53S_Soils.ps) > 0, EU_53S_Soils.ps) #remove non-occuring ASVs
 
-EU_10_Soils.ps <- subset_samples(trimmedJustsoils.ps, EU == "EU_10")
+EU_10_Soils.ps <- subset_samples(postUbiquity.ps, EU == "EU_10")
 EU_10_Soils.ps <- prune_taxa(taxa_sums(EU_10_Soils.ps) > 0, EU_10_Soils.ps) #remove non-occuring ASVs
 
 # Run function on each EU's phyloseq object and then make sure first two columns are numeric
@@ -221,65 +220,56 @@ dissim_10[,2] <- as.numeric(dissim_10[,2])
 # Plotting
 # Function above spits this out as it needs to be to plot using ggplot2. 
 
-grid.layout(nrow = 2, ncol = 3,
-            widths = unit(rep_len(1, ncol), "null"),
-            heights = unit(rep_len(1, nrow), "null"),
-            default.units = "null", respect = FALSE,
-            just="centre")
-
-quartz()
 ggEU_52 <- ggplot() + 
   geom_line(data=dissim_52[1:38,], aes(x=meter, y=`Bray-Curtis`, group = transect), color = "goldenrod") +
   geom_line(data=dissim_52[39:76,], aes(x=meter, y=`Bray-Curtis`, group = transect), color = "darkgreen") +
   theme_bw() + ylim(0.3, 1.00) +
   scale_x_continuous("Transect Meter", breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100)) +
-  ggtitle("EU 52")
+  ggtitle("EU 52") + geom_vline(xintercept = 50, linetype= "dashed", color= "grey")
 ggEU_52
-
-quartz()
+#quartz()
 ggEU_53N <- ggplot() + 
   geom_line(data=dissim_53N[1:39,], aes(x=meter, y=`Bray-Curtis`, group = transect), color = "goldenrod") +
   geom_line(data=dissim_53N[40:78,], aes(x=meter, y=`Bray-Curtis`, group = transect), color = "darkgreen") +
   theme_bw() + ylim(0.3, 1.00) +
   scale_x_continuous("Transect Meter", breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100)) +
-  ggtitle("EU 53N")
+  ggtitle("EU 53N") + geom_vline(xintercept = 50, linetype= "dashed", color= "grey")
 ggEU_53N
-
-quartz()
+#quartz()
 ggEU_54S <- ggplot() + 
   geom_line(data=dissim_54S[1:38,], aes(x=meter, y=`Bray-Curtis`, group = transect), color = "goldenrod") +
   geom_line(data=dissim_54S[39:76,], aes(x=meter, y=`Bray-Curtis`, group = transect), color = "darkgreen") +
   theme_bw() + ylim(0.3, 1.00) +
   scale_x_continuous("Transect Meter", breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100)) +
-  ggtitle("EU 53N")
+  ggtitle("EU 54S") + geom_vline(xintercept = 50, linetype= "dashed", color= "grey")
 ggEU_54S
-
-quartz()
+#quartz()
 ggEU_8 <- ggplot() + 
   geom_line(data=dissim_8[1:39,], aes(x=meter, y=`Bray-Curtis`, group = transect), color = "goldenrod") +
   geom_line(data=dissim_8[40:78,], aes(x=meter, y=`Bray-Curtis`, group = transect), color = "darkgreen") +
   theme_bw() + ylim(0.3, 1.00) +
   scale_x_continuous("Transect Meter", breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100)) +
-  ggtitle("EU 8")
+  ggtitle("EU 8") + geom_vline(xintercept = 50, linetype= "dashed", color= "grey")
 ggEU_8
-
-quartz()
+#quartz()
 ggEU_53S <- ggplot() + 
   geom_line(data=dissim_53S[1:40,], aes(x=meter, y=`Bray-Curtis`, group = transect), color = "goldenrod") +
   geom_line(data=dissim_53S[41:80,], aes(x=meter, y=`Bray-Curtis`, group = transect), color = "darkgreen") +
   theme_bw() + ylim(0.3, 1.00) +
   scale_x_continuous("Transect Meter", breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100)) +
-  ggtitle("EU 53S")
+  ggtitle("EU 53S") + geom_vline(xintercept = 50, linetype= "dashed", color= "grey")
 ggEU_53S
 
-quartz()
+#quartz()
 ggEU_10 <- ggplot() + 
   geom_line(data=dissim_10[1:39,], aes(x=meter, y=`Bray-Curtis`, group = transect), color = "goldenrod") +
   geom_line(data=dissim_10[40:78,], aes(x=meter, y=`Bray-Curtis`, group = transect), color = "darkgreen") +
   theme_bw() + ylim(0.3, 1.00) +
   scale_x_continuous("Transect Meter", breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100)) +
-  ggtitle("EU 10")
-ggEU_10
+  ggtitle("EU 10") + geom_vline(xintercept = 50, linetype= "dashed", color= "grey")
+ggEU_10 
 
-
+quartz()
+require(gridExtra)
+grid.arrange(ggEU_52, ggEU_53N, ggEU_54S, ggEU_8, ggEU_53S, ggEU_10, ncol=3)
 
