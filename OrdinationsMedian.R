@@ -136,10 +136,15 @@ grid.arrange(med52_BrayNMDS, med53N_BrayNMDS, med54S_BrayNMDS, med8_BrayNMDS, me
 set.seed(19)
 medOrdAll <- ordinate(medianEU.ps, method = "NMDS", distance = "bray", trymax = 100) 
 
-# plot
+# Differences among habitats (based on patch, edge, and forest)
 medBrayNMDS <- phyloseq::plot_ordination(medianEU.ps, medOrdAll, type= "samples", color= "Habitat")
 quartz()
 medBrayNMDS + geom_polygon(aes(fill=Habitat)) + geom_point(size=3) + ggtitle("NMDS based on Bray-Curtis Dissimilarities")
+
+# Differences among EUs
+medBrayNMDS_byEU <- phyloseq::plot_ordination(medianEU.ps, medOrdAll, type= "samples", color= "EU")
+quartz()
+medBrayNMDS_byEU + geom_polygon(aes(fill=EU)) + geom_point(size=3) + ggtitle("NMDS based on Bray-Curtis Dissimilarities")
 
 
 
