@@ -65,11 +65,41 @@ metadata_outta_ps <- function(physeq){ #input is a phyloseq object
   return(as.data.frame(metaDat))
 }
 
+# 5. zScore function computes the z-score for a given vector of numbers
+# The function is broadly applicable, but ASVs should be rows for its usage in this script  
+zScore <- function(dat) { # input is dataframe
+  zScoreDf <- matrix(NA, nrow=nrow(dat), ncol=ncol(dat))
+  colnames(zScoreDf) <- colnames(dat)
+  rownames(zScoreDf) <- rownames(dat)
+  for (i in 1:nrow(dat)){
+    ASVmean <- rowMeans(dat[i,]) #if you change rowMeans to mean, could use with matrices. Or could build in if/else statment
+    ASVsd <- sd(dat[i,])
+    for (j in 1:length(dat[i,])) {
+      zScoreDf[i,j] <- (dat[i,j]-ASVmean)/ASVsd # subtract row mean from value, then divide by standard deviation for z score
+    }
+  }
+  return(zScoreDf)
+}
+
+# Proof/testing out zScore function to make sure that it works
+set.seed(19)
+dat <- rpois(n=100, lambda = 1) 
+# in cartoon example, as with real data above, ASVs are rows and samples are columns
+datmat <- matrix(dat, nrow=20, ncol=5) 
+datmat <- as.data.frame(datmat)
+# testing it out below, it seems to work
+test <- zScore(datmat)
+dim(test) == dim(datmat) #yes
+test[1,1] == (datmat[1,1] - rowMeans(datmat[1,]))/sd(datmat[1,])
+(datmat[3,4] - rowMeans(datmat[3,]))/sd(datmat[3,]) == test[3,4]
+(datmat[20,2] - rowMeans(datmat[20,]))/sd(datmat[20,]) == test[20,2]
+
 #################################################################################
 # I. DIFFERENTIAL ABUNDANCE ANALYSIS
 #################################################################################
 # In this section, I do a differential abundance analysis on patch versus forest 
-# samples based on the final ASV table created in UbiquityMedianSetup.R.
+# samples based on the final ASV table created in UbiquityMedianSetup.R, i.e., 
+# that in "medianEU.ps". 
 
 # Remove "edge" samples so that we can find samples that vary in edge versus forest with new PS 
 medianEUNoEdge.ps <- subset_samples(medianEU.ps, Habitat != "edge") #CHECK, DOES THIS REMOVE ASVS THAT ARE NO LONGER PRESENT? I THINK NOT (SEE DISSIMILARITIESACROSSTRANSECTS.R FOR CODE?)
@@ -99,22 +129,53 @@ alpha01 <- 0.01
 sigtab_medianEU01 <- DeSeq_res_medianEU[which(DeSeq_res_medianEU$padj < alpha01), ]
 sigtab_medianEU01 <- cbind(as(sigtab_medianEU01, "data.frame"), as(tax_table(medianEUNoEdge.ps)[rownames(sigtab_medianEU01), ], "matrix"))
 head(sigtab_medianEU01)
-dim(sigtab_medianEU01)
+dim(sigtab_medianEU01) #1036 ASVs remaining... TOO high!
+
+# For now, pull out top 15 and bottom 15 ASVs BY logfold change
+sigtab_medEU_ordered <- sigtab_medianEU %>% 
+  arrange(log2FoldChange)
+topDAforest <- sigtab_medEU_ordered[c(1:15),]
+topDApatch <- sigtab_medEU_ordered[(nrow(sigtab_medEU_ordered)-14):nrow(sigtab_medEU_ordered),]
+dim(topDApatch) #15 long
+
+top15_DeSeq <- rbind(topDAforest, topDApatch) #most negative are forest, most positive are patch
+dim(top15_DeSeq) #30 rows, yaaaaaah
+
+# Get ASV table of the ASVs found above
+namesDStop15 <- rownames(top15_DeSeq) #got ASV names
+medEUNoEdgeASV <- t(ASVs_outta_ps(medianEUNoEdge.ps))    #pull out OG ASV table and flip it
+top15ASVtab_DS <- medEUNoEdgeASV[namesDStop15,] #get a smaller version of the ASV table that has only these ASVs
+#View(top15ASVtab_DS) #this has the ASV abundances (median of course) for each sample for these top 30 ASVs
+
+# Now transform abundances in the above dataframe to z-scores
+top15zScores_DS <- zScore(as.data.frame(top15ASVtab_DS))
+#View(top15zScores_DS)
+
+# Add in the information from the diffAbund analysis, namely logFoldChange, and some taxonomic info
+top15_da_all <- merge(top15zScores_DS, top15_DeSeq[,c(2,8:11)], by= "row.names")
+# View(top15_da_all) niiiiiiiice
+
+top15_da_all_longer <- top15_da_all %>% 
+  as_tibble() %>% 
+  pivot_longer(cols= EU_10_10:EU_8_90,
+               names_to="EUmeter",
+               values_to="z-score")
+
 
 # How many samples are each of these ASVs found in and what is their overall abundance?
-namesDSmedEU <- rownames(sigtab_medianEU) #pull out names of the ASVs found in DESeq analysis
-medEUNoEdgeASV <- t(ASVs_outta_ps(medianEUNoEdge.ps))    #pull out OG ASV table and flip it
-medEUNoEdgeASV_DS <- medEUNoEdgeASV[namesDSmedEU,] #get a smaller version of the ASV table that has only these ASVs
-medEUNoEdgeASV_DS_count <- rowSums(medEUNoEdgeASV_DS > 0) #get number of soil samples that the ASV appears in
-medEUNoEdgeASV_DS_counts <- cbind(medEUNoEdgeASV_DS, medEUNoEdgeASV_DS_count)
-ASVabund <- rowSums(medEUNoEdgeASV_DS_counts[,1:ncol(medEUNoEdgeASV)]) #get abundance of each ASV ACROSS all samples
-medEUNoEdgeASV_DS_counts <- cbind(medEUNoEdgeASV_DS_counts, ASVabund) #minimum is in 12/60 meter samples! max is in 54/60
+#namesDSmedEU <- rownames(sigtab_medianEU) #pull out names of the ASVs found in DESeq analysis
+#medEUNoEdgeASV <- t(ASVs_outta_ps(medianEUNoEdge.ps))    #pull out OG ASV table and flip it
+#medEUNoEdgeASV_DS <- medEUNoEdgeASV[namesDSmedEU,] #get a smaller version of the ASV table that has only these ASVs
+#medEUNoEdgeASV_DS_count <- rowSums(medEUNoEdgeASV_DS > 0) #get number of soil samples that the ASV appears in
+#medEUNoEdgeASV_DS_counts <- cbind(medEUNoEdgeASV_DS, medEUNoEdgeASV_DS_count)
+#ASVabund <- rowSums(medEUNoEdgeASV_DS_counts[,1:ncol(medEUNoEdgeASV)]) #get abundance of each ASV ACROSS all samples
+#medEUNoEdgeASV_DS_counts <- cbind(medEUNoEdgeASV_DS_counts, ASVabund) #minimum is in 12/60 meter samples! max is in 54/60
 # View(medEUNoEdgeASV_DS_counts) 
 
 # ###########################################
 # PLOTTING
 
-medEU_DS_ps <- prune_taxa(namesDSmedEU, medianEUNoEdge.ps) #only has ASVs from DS analysis
+medEU_DS_ps <- prune_taxa(namesDSmedEU, medianEUNoEdge.ps) #only has ASVs from DS analysis (678 ASVs)
 medEU_DS_ASVtab <- ASVs_outta_ps(medEU_DS_ps)
 medEU_DS_ASVtabTaxTab <- taxtable_outta_ps(medEU_DS_ps)
 medEU_DS_taxTab <- as(tax_table(medEU_DS_ps), "matrix") #get this out of phyloseq
@@ -133,27 +194,27 @@ EU52_topASVsMedLonger <- as.data.frame(EU52_topASVsMed) %>%
   pivot_longer(cols= "10":"100",
                names_to= "Meter", values_to = "Median_Zscore") 
 # Make it so the meters are plotted in the correct order
-EU52_topASVsMedLonger$Meter <- factor(EU52_topASVsMedLonger$Meter, levels = c("10", "20", "30", "40", "50","60", "70", "80", "90", "100"))
+#EU52_topASVsMedLonger$Meter <- factor(EU52_topASVsMedLonger$Meter, levels = c("10", "20", "30", "40", "50","60", "70", "80", "90", "100"))
 
-HiMedLowASVs <- c(patchTop10$ASV_name, patchBottom10$ASV_name, patchMiddle10$ASV_name,
-                  forestTop10$ASV_name, forestBottom10$ASV_name, forestMiddle10$ASV_name)
+#HiMedLowASVs <- c(patchTop10$ASV_name, patchBottom10$ASV_name, patchMiddle10$ASV_name,
+#                  forestTop10$ASV_name, forestBottom10$ASV_name, forestMiddle10$ASV_name)
 
 
-patchTop10.tb <- EU52_topASVsMedLonger %>% 
-  filter(ASV_name == patchTop10$ASV_name) %>% 
-  mutate(ASVgroup = "patchTop10")
-patchBottom10.tb <- EU52_topASVsMedLonger %>% 
-  filter(ASV_name == patchBottom10$ASV_name) %>% 
-  mutate(ASVgroup = "patchBottom10")
-patchMiddle10.tb <- EU52_topASVsMedLonger %>% 
-  filter(ASV_name == patchMiddle10$ASV_name) %>% 
-  mutate(ASVgroup = "patchMiddle10")
-forestTop10.tb <- EU52_topASVsMedLonger %>% 
-  filter(ASV_name == forestTop10$ASV_name) %>% 
-  mutate(ASVgroup = "forestTop10")
-forestBottom10.tb <- EU52_topASVsMedLonger %>% 
-  filter(ASV_name == forestBottom10$ASV_name) %>% 
-  mutate(ASVgroup = "forestBottom10")
-forestMiddle10.tb <- EU52_topASVsMedLonger %>% 
-  filter(ASV_name == forestMiddle10$ASV_name) %>% 
-  mutate(ASVgroup = "forestMiddle10")
+#patchTop10.tb <- EU52_topASVsMedLonger %>% 
+ # filter(ASV_name == patchTop10$ASV_name) %>% 
+#  mutate(ASVgroup = "patchTop10")
+#patchBottom10.tb <- EU52_topASVsMedLonger %>% 
+#  filter(ASV_name == patchBottom10$ASV_name) %>% 
+#  mutate(ASVgroup = "patchBottom10")
+#patchMiddle10.tb <- EU52_topASVsMedLonger %>% 
+#  filter(ASV_name == patchMiddle10$ASV_name) %>% 
+#  mutate(ASVgroup = "patchMiddle10")
+#forestTop10.tb <- EU52_topASVsMedLonger %>% 
+#  filter(ASV_name == forestTop10$ASV_name) %>% 
+#  mutate(ASVgroup = "forestTop10")
+#forestBottom10.tb <- EU52_topASVsMedLonger %>% 
+#  filter(ASV_name == forestBottom10$ASV_name) %>% 
+#  mutate(ASVgroup = "forestBottom10")
+#forestMiddle10.tb <- EU52_topASVsMedLonger %>% 
+#  filter(ASV_name == forestMiddle10$ASV_name) %>% 
+#  mutate(ASVgroup = "forestMiddle10")
