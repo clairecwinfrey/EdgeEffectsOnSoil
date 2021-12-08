@@ -131,43 +131,130 @@ sigtab_medianEU01 <- cbind(as(sigtab_medianEU01, "data.frame"), as(tax_table(med
 head(sigtab_medianEU01)
 dim(sigtab_medianEU01) #1036 ASVs remaining... TOO high!
 
-# For now, pull out top 15 and bottom 15 ASVs BY logfold change
-sigtab_medEU_ordered <- sigtab_medianEU %>% 
-  arrange(log2FoldChange)
-topDAforest <- sigtab_medEU_ordered[c(1:15),]
-topDApatch <- sigtab_medEU_ordered[(nrow(sigtab_medEU_ordered)-14):nrow(sigtab_medEU_ordered),]
-dim(topDApatch) #15 long
 
-top15_DeSeq <- rbind(topDAforest, topDApatch) #most negative are forest, most positive are patch
-dim(top15_DeSeq) #30 rows, yaaaaaah
+
+##############
+# Plot
+# Here, I make a two-paneled plot where the top panel has ASVs that are 
+# differentially enriched in the patch (i.e. positive log fold change)
+# and the second, lower panel has those that are positively enriched in 
+# the forest (negative log fold change)
+
+# First, how many ASVs were pulled out in each category?
+length(which(sigtab_medEU_ordered$log2FoldChange > 0)) #450 are enriched in the patch
+length(which(sigtab_medEU_ordered$log2FoldChange < 0)) #228 are enriched in the forest
+
+forestDA_ASVs <- sigtab_medEU_ordered[which(sigtab_medEU_ordered$log2FoldChange < 0),]
+patchDA_ASVs <- sigtab_medEU_ordered[which(sigtab_medEU_ordered$log2FoldChange > 0),]
+
+# To figure out how to best visually represent this, need to know how many
+# phyla and finer taxonomic levels are there
+length(unique(forestDA_ASVs$Phylum)) # 11 unique phyla in forest
+length(unique(forestDA_ASVs$Class)) #15 unique classes
+length(unique(forestDA_ASVs$Order)) # 30 unique orders
+length(unique(patchDA_ASVs$Phylum)) #14 unique phyla in patch
+length(unique(patchDA_ASVs$Class)) #30 unique classes
+length(unique(patchDA_ASVs$Order)) #49 unique orders
+
+# Which phyla overlap and do not overlap between the patch and the forest?
+intersect(forestDA_ASVs$Phylum, patchDA_ASVs$Phylum) #
+# "WPS-2", "Verrucomicrobia",  "Proteobacteria","Acidobacteria", "Planctomycetes", "Actinobacteria" 
+# "Bacteroidetes", "Cyanobacteria" 
+
+# Which phyla do not overlap between the patch and the forest?
+setdiff(forestDA_ASVs$Phylum, patchDA_ASVs$Phylum) # "Dependentiae", "Elusimicrobia", "Gemmatimonadetes" are
+## in forest, not patch
+setdiff(patchDA_ASVs$Phylum, forestDA_ASVs$Phylum) 
+# "Chloroflexi", "Thaumarchaeota", "Crenarchaeota", "Armatimonadetes", "Firmicutes", "Euryarchaeota" are
+# in patch, not forest
+
+# Thus, total number of phyla is:
+length(unique(forestDA_ASVs$Phylum)) + length(setdiff(patchDA_ASVs$Phylum, forestDA_ASVs$Phylum))#17
+
+# Total number of classes would be:
+length(unique(forestDA_ASVs$Class)) + length(setdiff(patchDA_ASVs$Class, forestDA_ASVs$Class)) #34
+
+# Total number of orders would be:
+length(unique(forestDA_ASVs$Order)) + length(setdiff(patchDA_ASVs$Order, forestDA_ASVs$Order)) #57.. too long!
+
+### PHYLUM ONLY PLOT
+# Forest
+forestByPhy <- forestDA_ASVs %>% 
+  rownames_to_column(var = "ASV_ID") %>% 
+  group_by(Phylum) %>% 
+  mutate(phyCount = n())
+
+# Check to make sure that the code above worked...IT DOES!
+# Try WPS-4 phylum
+length(which(forestByPhy$Phylum=="WPS-2")) #4, 
+forestByPhy[which(forestByPhy$Phylum=="WPS-2"),15] #each one is four, as expected!
+# Try Verrucomicrobiae phylum
+length(which(forestByPhy$Phylum=="Verrucomicrobia")) #29
+unique(forestByPhy[which(forestByPhy$Phylum=="Verrucomicrobia"),15]) #all 29!
+# Try Proteobacteria phylum
+length(which(forestByPhy$Phylum=="Proteobacteria")) #61
+unique(forestByPhy[which(forestByPhy$Phylum=="Proteobacteria"),15]) #61
+
+forestPhyCount <- ggplot(forestByPhy, aes(Phylum))
+forestPhyCount <- forestPhyCount + geom_bar() + theme(axis.text.x = element_text(angle = 90))
+
+# Patch
+patchtByPhy <- patchDA_ASVs %>% 
+  rownames_to_column(var = "ASV_ID") %>% 
+  group_by(Phylum) %>% 
+  mutate(phyCount = n())
+
+patchPhycount <- ggplot(patchtByPhy, aes(Phylum))
+patchPhycount <- patchPhycount + geom_bar() + theme(axis.text.x = element_text(angle = 90))
+
+quartz()
+require(gridExtra)
+grid.arrange(patchPhycount, forestPhyCount, ncol=1)
+
+
+# The greyed out lines below are if I decide to keep all of the indicator ASVs together!
+# and if I decide to just work with the top 15 patch and forest
+#################
+# For now, pull out top 15 and bottom 15 ASVs BY logfold change
+#sigtab_medEU_ordered <- sigtab_medianEU %>% 
+#  arrange(log2FoldChange)
+#topDAforest <- sigtab_medEU_ordered[c(1:15),]
+#topDApatch <- sigtab_medEU_ordered[(nrow(sigtab_medEU_ordered)-14):nrow(sigtab_medEU_ordered),]
+#dim(topDApatch) #15 long
+
+#top15_DeSeq <- rbind(topDAforest, topDApatch) #most negative are forest, most positive are patch
+#dim(top15_DeSeq) #30 rows, yaaaaaah
 
 # Get ASV table of the ASVs found above
-namesDStop15 <- rownames(top15_DeSeq) #got ASV names
-medEUNoEdgeASV <- t(ASVs_outta_ps(medianEUNoEdge.ps))    #pull out OG ASV table and flip it
-top15ASVtab_DS <- medEUNoEdgeASV[namesDStop15,] #get a smaller version of the ASV table that has only these ASVs
+#namesDStop15 <- rownames(top15_DeSeq) #got ASV names
+#medEUNoEdgeASV <- t(ASVs_outta_ps(medianEUNoEdge.ps))    #pull out OG ASV table and flip it
+#top15ASVtab_DS <- medEUNoEdgeASV[namesDStop15,] #get a smaller version of the ASV table that has only these ASVs
 #View(top15ASVtab_DS) #this has the ASV abundances (median of course) for each sample for these top 30 ASVs
 
 # Now transform abundances in the above dataframe to z-scores
-top15zScores_DS <- zScore(as.data.frame(top15ASVtab_DS))
+#top15zScores_DS <- zScore(as.data.frame(top15ASVtab_DS))
 #View(top15zScores_DS)
 
 # Add in the information from the diffAbund analysis, namely logFoldChange, and some taxonomic info
-top15_da_all <- merge(top15zScores_DS, top15_DeSeq[,c(2,8:11)], by= "row.names")
+#top15_da_all <- merge(top15zScores_DS, top15_DeSeq[,c(2,8:11)], by= "row.names")
 # View(top15_da_all) niiiiiiiice
 
-top15_da_all_longer <- top15_da_all %>% 
-  as_tibble() %>% 
-  pivot_longer(cols= EU_10_10:EU_8_90,
-               names_to="EUmeter",
-               values_to="z-score")
+
+#top15_da_all_longer <- top15_da_all %>% 
+ # as_tibble() %>% 
+ # pivot_longer(cols= EU_10_10:EU_8_90,
+  #             names_to="EUmeter",
+     #          values_to="z-score")
+#top15_da_all_longer #as is, this would have 180 lines (going over each meter in transect)
+#################
+
+
+
 
 
 # How many samples are each of these ASVs found in and what is their overall abundance?
-#namesDSmedEU <- rownames(sigtab_medianEU) #pull out names of the ASVs found in DESeq analysis
-#medEUNoEdgeASV <- t(ASVs_outta_ps(medianEUNoEdge.ps))    #pull out OG ASV table and flip it
-#medEUNoEdgeASV_DS <- medEUNoEdgeASV[namesDSmedEU,] #get a smaller version of the ASV table that has only these ASVs
-#medEUNoEdgeASV_DS_count <- rowSums(medEUNoEdgeASV_DS > 0) #get number of soil samples that the ASV appears in
-#medEUNoEdgeASV_DS_counts <- cbind(medEUNoEdgeASV_DS, medEUNoEdgeASV_DS_count)
+medEUNoEdgeASV_DS_count <- rowSums(top15ASVtab_DS > 0) #get number of soil samples that the ASV appears in
+medEUNoEdgeASV_DS_counts <- cbind(medEUNoEdgeASV_DS, medEUNoEdgeASV_DS_count)
 #ASVabund <- rowSums(medEUNoEdgeASV_DS_counts[,1:ncol(medEUNoEdgeASV)]) #get abundance of each ASV ACROSS all samples
 #medEUNoEdgeASV_DS_counts <- cbind(medEUNoEdgeASV_DS_counts, ASVabund) #minimum is in 12/60 meter samples! max is in 54/60
 # View(medEUNoEdgeASV_DS_counts) 
