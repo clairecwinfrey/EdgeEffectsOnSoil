@@ -1,4 +1,4 @@
-# Exploratory Data Analysis
+# Exploratory Data Analysis and Data Clean Up
 # Aug 17, 2021
 
 # This script is to take a first look at 16S MiSeq data from the samples that I
@@ -47,9 +47,26 @@ psotu2veg <- function(physeq) {
   return(as(OTU, "matrix"))
 }
 
+# 4. Function that gets average pH for each sample, based on the 2-3 pH readings taken
+mean_pH_func <- function(pHs_mat) { #enter a dataframe that has 1-3 pHs per row
+  # this function works for averaging 2-3 pHs (per row), but could easily be adjusted in
+  # for loop to be more flexible.
+  H_mat <- matrix(nrow=nrow(pHs_mat), ncol=ncol(pHs_mat))
+  colnames(H_mat) <- colnames(pHs_mat)
+  for(i in 1:nrow(pHs_mat)){ #get the H+ concentration for each pH reading
+    H_mat[i,1] <- 10^(pHs_mat[i,1]*-1)
+    H_mat[i,2] <- 10^(pHs_mat[i,2]*-1)
+    H_mat[i,3] <- 10^(pHs_mat[i,3]*-1)
+  }
+  avgH <- rowMeans(H_mat, na.rm=TRUE) #get the average H+ concentration for each set of pHs
+  avgpH <- -log10(avgH) #convert back to pH
+  return(avgpH)
+}
+
 #######################################################################################
 
-setwd("/Users/clairewinfrey/Desktop/CU_Research/SoilEdgeEffectsResearch/Bioinformatics")
+# Set working directory
+setwd("~/Desktop/CU_Research/SoilEdgeEffectsResearch/Bioinformatics")
 
 # Read in libraries
 library("phyloseq")
@@ -76,7 +93,7 @@ colnames(seqtab_wTax_mctoolsr)
 rownames(seqtab_wTax_mctoolsr)
 
 seqtab <- read.table("seqtab_final.txt", header=T)
-dim(seqtab)
+dim(seqtab) #38,255 ASVs and 270 samples (soil samples, controls, etc.)
 #View(seqtab)
 
 tax_final.txt <- read.table("tax_final.txt")
@@ -119,7 +136,7 @@ tax_sep <- separate(as.data.frame(step1), col = taxonomy, into= c("Kingdom", "Ph
 # View(tax_sep)
 str(tax_sep)
 all.equal(tax_sep$`#ASV_ID`, tax_sep$Species) #Yep
-# tax_final.txt shows that no species in this data set... A choice made in bioinformatics script?
+# tax_final.txt shows that no species in this data set, which was a choice made in the bioinformatics script
 colnames(tax_sep)
 tax_sep$Species <- NA
 #View(tax_sep)
@@ -129,7 +146,7 @@ tax_mat <- tax_sep %>%
   tibble::column_to_rownames("#ASV_ID")
 
 # 3. Sample metadata
-metadata <- read.csv("SRS_AllMetadataAug17.csv") #this new csv has ALL sample metadata
+metadata <- read.csv("SRS_AllMetadataAug17.csv") #this new csv has ALL sample metadata, but is missing some mean pH values
 # not just for biological samples (i.e. controls too)
 # View(metadata)
 colnames(metadata)
@@ -139,6 +156,9 @@ samples_df <- metadata %>%
   tibble::column_to_rownames("MappingSampID")
 str(samples_df)
 rownames(samples_df)
+colnames(samples_df)
+samples_df$mean_pH <- mean_pH_func(samples_df[,3:5]) #get mean pH for each sample
+# View(samples_df) #several of these were hand checked to make sure that function was working correctly
 
 # Need to rename samples_df to match those in otu_mat; because they don't match
 # each other except for the blanks and controls, those are the only ones that got
@@ -227,26 +247,27 @@ tax_mat <- as.matrix(tax_mat)
 OTU = otu_table(otu_mat, taxa_are_rows = TRUE)
 TAX = tax_table(tax_mat)
 samples = sample_data(samples_df)
-SRS_16S.ps <- phyloseq(OTU, TAX, samples)
-SRS_16S.ps 
-colnames(otu_table(SRS_16S.ps))
+SRS_16S_raw.ps <- phyloseq(OTU, TAX, samples)
+SRS_16S_raw.ps 
+colnames(otu_table(SRS_16S_raw.ps))
 
-sample_names(SRS_16S.ps) # IMPORTANT: THESE ARE THE NAMES BASED ON THE MAPPING
+sample_names(SRS_16S_raw.ps) # IMPORTANT: THESE ARE THE NAMES BASED ON THE MAPPING
 # FILE USED FOR DEMULITPLEXING; I.E. THEY CORRESPOND TO ORDER LOADED INTO ROWS
 # OF PLATES (*NOT NOT NOT*) DNA TUBE LABELS 
 
-rank_names(SRS_16S.ps)
-sample_variables(SRS_16S.ps)
+rank_names(SRS_16S_raw.ps)
+sample_variables(SRS_16S_raw.ps)
 
-
+##################################################################
 # FILTER OUT MITOCHONDRIA, CHLOROPLASTS,a and KINGDOM EUKARYOTA
-# chloroplast is an order and mitochondria is a family 
+# chloroplast is an order and mitochondria is a family in this version of SILVA
+##################################################################
 
 # Get taxonomy table out of phyloseq:
-SRS_taxTable <- taxtable_outta_ps(SRS_16S.ps)
+SRS_taxTable <- taxtable_outta_ps(SRS_16S_raw.ps)
 #View(SRS_taxTable)
 
-# These lines below are technically not needed, since I found a way to do it with phyloseq
+# These lines below (lines 274-281) are technically not needed, since I found a way to do it with phyloseq
 # tax_noeuksorNAs is no longer used, but serves as a good check to make sure that phyloseq
 # is doing what I want it to. 
 # Remove chloroplasts, mitochondria, and all eukaryotes:
@@ -297,10 +318,10 @@ length(bad_ASVs) == 149 + 959 + 482 + 490 + 2147
 
 # Inspiration for using phyloseq here (Joey711's code: https://github.com/joey711/phyloseq/issues/652
 # Remove the ASVs listed above:
-all_Taxa <- taxa_names(SRS_16S.ps) #get all tax names in original, uncleaned dataset
+all_Taxa <- taxa_names(SRS_16S_raw.ps) #get all tax names in original, uncleaned dataset
 ASVstoKeep <- all_Taxa[!(all_Taxa %in% bad_ASVs)]
 length(ASVstoKeep) #35000
-noeuksorNAs_ps <- prune_taxa(ASVstoKeep, SRS_16S.ps) #new phyloseq object with just the stuff we want!
+noeuksorNAs_ps <- prune_taxa(ASVstoKeep, SRS_16S_raw.ps) #new phyloseq object with just the stuff we want!
 
 # TAKING A LOOK AT THE DATA
 # How are number of reads distributed across the samples?
@@ -351,8 +372,8 @@ sort(seqspersample) #take a look in order from least to greatest (all samples an
 
 # We'll rarefy at 14973, which only costs us 7 samples (plus all but two of the controls)
 # The "random rarefaction is made without replacement so that the variance of rarefied
-# communities is rather related to rarefaction proportion than to the size of the sample". (quoted bit from 
-# vegan's manual page)
+# communities is rather related to rarefaction proportion than to the size of the sample". 
+# (quoted bit from vegan's manual page)
 
 set.seed(19)
 rarefied.ps <- rarefy_even_depth(noeuksorNAs_ps, sample.size = 14973, replace=FALSE, trimOTUs=TRUE)
@@ -372,7 +393,9 @@ sampleNames <- names(colSums(otu_table(rarefied.ps)))
 sampleNames
 
 ####################################################################
-# The following lines through about line 513 is all done BEFORE removing rare taxa)
+# The following lines through about line 513 is all done BEFORE removing rare taxa,
+# (i.e., with rarefied dataset, but BEFORE removing those that do not occur at least 50 
+# times in the dataset))
 
 #####################
 # TOP PHYLA
@@ -550,6 +573,8 @@ outliers <- c("53ND_B_20", " 10C_L_10", "53ND_R_40", "53SD_R_10", "52D_L_100", "
 
 ##################################################################################
 # II. REMOVAL OF "RARE" TAXA, NEW TAXONOMIC PLOTS AND ORDINATIONS
+# (tried out different numbers of taxa, but settled on removing taxa that did not
+# occur at least 5 times across the whole dataset)
 ##################################################################################
 
 ###########################################################################
@@ -805,7 +830,7 @@ outliersTrimmed
 # Do these outliers look weird?
 # Get the rows for the outliers in sample_df
 #View(samples_df)]
-# Code below looks for the row numbers corresponding to each one of hte outlier samples. It automatically sorts the data
+# Code below looks for the row numbers corresponding to each one of the outlier samples. It automatically sorts the data
 outlier_index <- which(samples_df$Sample.ID=="53ND_B_20" | samples_df$Sample.ID=="10C_L_10" | samples_df$Sample.ID=="53ND_R_40"
       | samples_df$Sample.ID=="53SD_R_10" | samples_df$Sample.ID=="52D_R_10" | samples_df$Sample.ID=="52D_L_100"
       | samples_df$Sample.ID=="53ND_L_80" | samples_df$Sample.ID=="10C_R_60")
@@ -970,7 +995,7 @@ colnames(outlierSigtab)[16] <- "outlierAbundance"
 # Add in mean abundance in each category
 outlierSigtab$meanPercentNotOutlier <- outlierSigtab[15]/sum(outlierASVs[,1])*100 #this is divided by total number of counts in the forest samples (after rarefying)
 outlierSigtab$meanPercentOutlier <- outlierSigtab[16]/sum(outlierASVs[,2])*100 #this is divided by total number of counts in the patch samples (after rarefying)
-View(outlierSigtab)
+#View(outlierSigtab)
 
 # Plot 
 quartz()
@@ -1190,5 +1215,6 @@ mtext(text=bold_b, side=3, adj = -0.065, line = 2)
 # SAVE ALL OF THESE FOR EASY ACCESS
 ##################################
 
-#save(rarefied.ps, samples_df, ASVsTrimmed, taxTrimmed, trimmedJustsoils.ps, trimOrd, outliersTrimmed, outliersASVtax, file = "EDA16SAug2021")
-#save(trimmedJustsoils.ps, file= "trimmedJustSoils.ps") 
+save(rarefied.ps, samples_df, ASVsTrimmed, taxTrimmed, trimmedJustsoils.ps, trimOrd, outliersTrimmed, outliersASVtax, file = "EDA16SAug2021")
+save(trimmedJustsoils.ps, file= "trimmedJustSoils.ps") 
+
