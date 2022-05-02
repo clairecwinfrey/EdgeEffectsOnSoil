@@ -1,5 +1,5 @@
 # EdgeEffectsOnSoil
-This repository contains the scripts used to process 16S and ITS data from soils collected at the Savannah River Site (SRS) in May 2021. Scripts were written by Claire Winfrey, with substantial input from Noah Fierer and Julian Resasco. Below is a description of each script, listed in the order that scripts should be run to replicate results:
+This repository contains the scripts used to process 16S and ITS data from soils collected at the Savannah River Site (SRS) in May 2021. Scripts were written by Claire Winfrey, with substantial input on analyses from Noah Fierer and Julian Resasco. Below is a description of each script, listed in the order that scripts should be run to replicate results:
 
 1. SRS_16S_Bioinformatics.R- This script demultiplexes raw 16S rDNA reads from the MiSeq, uses dada2 to trim, denoise, dereplicate, and merge reads, and assigns bacterial/archaeal taxonomy (using SILVA version 132).
 2. SRS_ITS_Bioinformatics.R- This script demultiplexes raw ITS rDNA reads from the MiSeq, uses dada2 to trim, denoise, dereplicate, and merge reads, and assigns bacterial/archaeal taxonomy (using UNITE database, Oct. 5, 2021 release).
