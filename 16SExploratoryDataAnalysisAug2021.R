@@ -66,7 +66,7 @@ mean_pH_func <- function(pHs_mat) { #enter a dataframe that has 1-3 pHs per row
 #######################################################################################
 
 # Set working directory
-setwd("~/Desktop/CU_Research/SoilEdgeEffectsResearch/Bioinformatics")
+setwd("~/Desktop/CU_Research/SoilEdgeEffectsResearch")
 
 # Read in libraries
 library("phyloseq")
@@ -85,18 +85,18 @@ library("DESeq2") #for differential abundance analysis
 ##################################################################################
 
 list.files()
-seqtab_wTax_mctoolsr <- read.table("seqtab_wTax_mctoolsr.txt")
+seqtab_wTax_mctoolsr <- read.table("Bioinformatics/seqtab_wTax_mctoolsr.txt")
 str(seqtab_wTax_mctoolsr)
 head(seqtab_wTax_mctoolsr)
 #View(seqtab_wTax_mctoolsr)
 colnames(seqtab_wTax_mctoolsr)
 rownames(seqtab_wTax_mctoolsr)
 
-seqtab <- read.table("seqtab_final.txt", header=T)
+seqtab <- read.table("Bioinformatics/seqtab_final.txt", header=T)
 dim(seqtab) #38,255 ASVs and 270 samples (soil samples, controls, etc.)
 #View(seqtab)
 
-tax_final.txt <- read.table("tax_final.txt")
+tax_final.txt <- read.table("Bioinformatics/tax_final.txt")
 str(tax_final.txt)
 #View(tax_final.txt)
 
@@ -146,7 +146,7 @@ tax_mat <- tax_sep %>%
   tibble::column_to_rownames("#ASV_ID")
 
 # 3. Sample metadata
-metadata <- read.csv("SRS_AllMetadataAug17.csv") #this new csv has ALL sample metadata, but is missing some mean pH values
+metadata <- read.csv("Bioinformatics/SRS_AllMetadataAug17.csv") #this new csv has ALL sample metadata, but is missing some mean pH values
 # not just for biological samples (i.e. controls too)
 # View(metadata)
 colnames(metadata)
@@ -341,11 +341,11 @@ simple <- c("ExtB1", "ExtB2", "ExtB3", "ExtW1", "ExtW10", "ExtW11", "ExtW12",
 "ExtW5","ExtW6","ExtW7","ExtW8", "ExtW9", "PCRNTC")
 seqsperctrl_simple <- setNames(seqsperctrl, simple)
 
-quartz()
+#quartz()
 barplot(seqsperctrl_simple, main="Controls: Total Sequences Per Sample",
                                     ylab= "Number of Sequences", xlab= "Sample Number", cex.names=0.35)
 
-# Let's rarefy:
+######## RAREFACTION ##########
 # What is the minimum for the non-control samples?
 min(seqspersample[1:243]) #1224
 max(seqspersample[1:243]) #157741
@@ -362,7 +362,7 @@ mean(seqspersample[244:length(seqspersample)]) # 3015.692
 sd(seqspersample[244:length(seqspersample)])
 
 # Plot this:
-quartz()
+#quartz()
 seqsPerExSamp <- seqspersample[1:243]
 SeqNumberPlotExSamp <- barplot(seqsPerExSamp, main="Soils: Total Sequences Per Sample",
                                     ylab= "Number of Sequences", xlab= "Sample Number", cex.names=0.4)
@@ -1027,7 +1027,6 @@ ggplot(outlierSigtab, aes(x=Genus, y=log2FoldChange, color=Phylum)) + geom_point
 # are in all the rest of the samples but are not found in the outliers (which is far fewer samples)
 
 
-
 ##################################################################################
 # IV. COMPARING FOREST AND PATCHES WITH ORDINATIONS AND DIFFERENTIAL ABUNDANCE ANALYSIS
 ##################################################################################
@@ -1215,6 +1214,11 @@ mtext(text=bold_b, side=3, adj = -0.065, line = 2)
 # SAVE ALL OF THESE FOR EASY ACCESS
 ##################################
 
-save(rarefied.ps, samples_df, ASVsTrimmed, taxTrimmed, trimmedJustsoils.ps, trimOrd, outliersTrimmed, outliersASVtax, file = "EDA16SAug2021")
-save(trimmedJustsoils.ps, file= "trimmedJustSoils.ps") 
-
+#resaved March 2 2022
+#save(rarefied.ps, samples_df, ASVsTrimmed, taxTrimmed, trimmedJustsoils.ps, trimOrd, outliersTrimmed, outliersASVtax, file = "RobjectsSaved/EDA16SAug2021")
+#save(trimmedJustsoils.ps, file= "RobjectsSaved/trimmedJustSoils.ps") 
+soils_noEuks <- ASVs_outta_ps(noeuksorNAs_ps) #this is the dataset pre-rarefaction, but after removing eukaryotes and ASVs not assigned at least to phylum.
+soils_noEuksTaxTable <- taxtable_outta_ps(noeuksorNAs_ps)
+write.csv(soils_noEuks, file = "RobjectsSaved/SRSsoilsNoEuks.csv") #saved April 25th and sent to Josep
+write.csv(soils_noEuksTaxTable, file= "RobjectsSaved/SRSsoilsNoEuksTaxTable.csv") #saved April 25th and sent to Josep
+write.csv(samples_df, file= "RobjectsSaved/SRS_soilsFinalMetadata.csv") #saved April 25th and sent to Josep
