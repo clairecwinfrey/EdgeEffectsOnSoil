@@ -7,11 +7,12 @@
 # 1. Performs differential abundance analyses on all EUs together (working on the 
 # dataset after removing v rare taxa and applying a ubiquity threshold 
 # (i.e. postUbiquity.ps)).
-# 2. Make a stacked barchart that shows number of differentially abundant ASVs in each  differential abundance breakdown by forest, patch,
-# and non-differentially abundant microbes 
+# 2. Creates data frame with z-score (of ASV abundance) for each ASV within each EU 
 # 3. Fits logistic curves to each one of the differentially abundant ASVs:
 # -- i. gets Z-score (of ASV abundance) for each ASV within each EU 
-# -- ii. for each ASV, then fits logistic models through THIS
+# -- ii. for each ASV, then fits logistic models to THIS
+# 2. Make a stacked barchart that shows number of differentially abundant ASVs in each  differential abundance breakdown by forest, patch,
+# and non-differentially abundant microbes 
 
 # IdentifyEdgeEffectTaxa5.R investigated linear fit and logisti model fit of the
 # the data, and found that logistic models were much better.
@@ -113,7 +114,8 @@ log.fit <- function(y, x){
   return(out)
 }
 
-log.fitdiffAbundFunct <- function(y, x, ASVnames){ 
+# 6. 
+log.fitdiffAbundFunct <- function(y, x, ASVnames){ #one important difference here is that ASV names name the ASVs as it plot it
   # y = a/ (1 + bc^-x)
   log.ss <- nls(y ~ SSlogis(x, phi1, phi2, phi3))
   # phi1 = Asym = a numeric parameter representing the asymptote
@@ -179,11 +181,11 @@ test[1,1] == (datmat[1,1] - rowMeans(datmat[1,]))/sd(datmat[1,])
 ############################################################
 # FUNCTION FOR GETTING LOGISTICAL FIT OF EACH INDICATOR ASV
 ############################################################
-
+#### REPLACE POSTUBIQUIRY THING WITH PHYSEQ TO RESTORE FUNCTION########
 # This function
 diffAbundfunct2 <- function(physeq, alpha){ 
   #physeq= phyloseq object (single EU represented),alpha is alpha significance level for DESeq analysis
-  NoEdge.ps <- subset_samples(physeq, Habitat != "edge") #remove edge samples
+  NoEdge.ps <- subset_samples(EU_52_Soils.ps, Habitat != "edge") #remove edge samples
   step1 <- phyloseq::phyloseq_to_deseq2(NoEdge.ps, ~ Habitat) #set up DESeq2 dds object 
   step2 <- DESeq2::DESeq(step1, test="Wald", fitType = "parametric") #differential expression analysis step;
   #uses default Benjamini-Hochberg correction 
@@ -194,12 +196,12 @@ diffAbundfunct2 <- function(physeq, alpha){
   forestDA_ASVs <- DeseqResults[which(DeseqResults$Habitat=="forest"),] #just forest ASVs
   patchDA_ASVs <- DeseqResults[which(DeseqResults$Habitat=="patch"),] #just patch ASVs
   # Next few lines prepare dataframe with diff abundance results, some sample info, and taxonomic info 
-  sampDat <- sample_data(physeq)[,c(1,6,8:9)] #Sample.ID, EU, Transect, Meter
+  sampDat <- sample_data(EU_52_Soils.ps)[,c(1,6,8:9)] #Sample.ID, EU, Transect, Meter
   attr(sampDat, "class") <- "data.frame" #remove phyloseq attribute, make dataframe
   sampDat <- tibble::rownames_to_column(sampDat, var="SampleNumberID") #make mapping file ID a column instead of rownames
   # Next 8 lines get abundances for each ASV across the transect for FOREST
   forestNames <- rownames(forestDA_ASVs) #pull out ASV names
-  ASVsAll <- as.data.frame(t(ASVs_outta_ps(physeq))) #get ASVs from original and transpose so that ASVs are rows
+  ASVsAll <- as.data.frame(t(ASVs_outta_ps(EU_52_Soils.ps))) #get ASVs from original and transpose so that ASVs are rows
   forestASVtab <- ASVsAll[forestNames,] #get a smaller version of the ASV table that has only the diff abundance ASVs
   # Create dataframe with everything of interest
   forest_diffAbunDat <- merge(forestDA_ASVs, forestASVtab, by= "row.names") #FOREST samples merging based on shared ASV (row) names
@@ -308,31 +310,210 @@ colnames(diffAbunDat_tidy)[2] <- "ASV_name" #rename "Row.names" column to be "AS
  #View(diffAbunDat_tidy) this has 395,168 rows, which is equal to 233 (number of samples) x 1696 (number of diff abund ASVs)
  ##########
 
+diffAbunDat_wide <- diffAbunDat %>% 
+  merge(sampDat, by="SampleNumberID") #merge with the sampDat to get metadata variables of interest.
+colnames(diffAbunDat_wide)[2] <- "ASV_name" #rename "Row.names" column to be "ASV_name".
+  
+
 ##########################################################################
 # GET Z-SCORES OF EACH ASV WITHIN EU
 ##########################################################################
-colnames(diffAbunDat_tidy)
-diffAbunDat_tidy_wider <- diffAbunDat_tidy %>% 
-  group_by(EU, ASV_name) %>% 
-  pivot_wider(names_from= Transect, values_from = ASVabundance)
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
+# 1. Samples based on raw (i.e. not median) abundance
+# Prune samples to separate by EU and check to make sure each looks right
+EU_52_Soils.ps <- subset_samples(postUbiquity.ps, EU == "EU_52")
+unique(sample_data(EU_52_Soils.ps)$EU) #only EU 52
+EU_53N_Soils.ps <- subset_samples(postUbiquity.ps, EU == "EU_53N")
+unique(sample_data(EU_53N_Soils.ps)$EU)
+EU_54S_Soils.ps <- subset_samples(postUbiquity.ps, EU == "EU_54S")
+unique(sample_data(EU_54S_Soils.ps)$EU)
+EU_8_Soils.ps <- subset_samples(postUbiquity.ps, EU == "EU_8")
+unique(sample_data(EU_8_Soils.ps)$EU)
+EU_53S_Soils.ps <- subset_samples(postUbiquity.ps, EU == "EU_53S")
+unique(sample_data(EU_53S_Soils.ps)$EU)
+EU_10_Soils.ps <- subset_samples(postUbiquity.ps, EU == "EU_10")
+unique(sample_data(EU_10_Soils.ps)$EU)
+
+# 2. Make list of all of these ASV tables by EU:
+ASVtabByEU_List <- vector("list", 6) #make a list to hold the ASV tabs from each 
+# Fill each element in the list in by each EU:
+ASVtabByEU_List[[1]] <- EU_52_Soils.ps
+ASVtabByEU_List[[2]] <- EU_53N_Soils.ps
+ASVtabByEU_List[[3]] <- EU_54S_Soils.ps
+ASVtabByEU_List[[4]] <- EU_8_Soils.ps
+ASVtabByEU_List[[5]] <- EU_53S_Soils.ps
+ASVtabByEU_List[[6]] <- EU_10_Soils.ps
+
+# 3. Remove ASVs that are not differentially abundant
+for (j in 1:length(ASVtabByEU_List)) {
+  otu_table(ASVtabByEU_List[[j]]) <- otu_table(ASVtabByEU_List[[j]])[ASVnamesDA] #pull out only diff abundant ASVs
+}
+
+# 4. Remove ASVs that, for any given EU, are not present 
+# pre-allocate zero-index list thing
+zeroIndexList <- vector("list", 6)
+for (k in 1:length(ASVtabByEU_List)) {
+  zeroIndexList[[k]] <- which(rowSums(otu_table(ASVtabByEU_List[[k]]))==0)
+  otu_table(ASVtabByEU_List[[k]]) <- otu_table(ASVtabByEU_List[[k]])[-zeroIndexList[[k]]] 
+}
+
+#### Scratch work for this above #####
+which(rowSums(otu_table(ASVtabByEU_List[[1]]))==0)
+otu_table(ASVtabByEU_List[[1]])
+zero_index_52 <- which(rowSums(otu_table(EU_52_Soils.ps))==0)
+names(zero_index_52)
+dim(otu_table(EU_52_Soils.ps)[zero_index_52]) # 13 ASVs across 38 samples
+otu_table(EU_52_Soils.ps) <- otu_table(EU_52_Soils.ps)[-zero_index_52] # 4467 ASVs
+dim(otu_table(EU_52_Soils.ps))
+otu_table(EU_52_Soils.ps)[[1]]
+otu_table(ASVtabByEU_List[[1]]) <- otu_table(ASVtabByEU_List[[1]])[-zero_index_52] 
+#####
+
+# 5. Rename elements of list by EU
+names(ASVtabByEU_List)[[1]] <- "EU_52_z"
+names(ASVtabByEU_List)[[2]] <- "EU_53N_z"
+names(ASVtabByEU_List)[[3]] <- "EU_54S_z"
+names(ASVtabByEU_List)[[4]] <- "EU_8_z"
+names(ASVtabByEU_List)[[5]]<- "EU_53S_z"
+names(ASVtabByEU_List)[[6]] <- "EU_10_z"
+
+ASVtabByEU_List[[1]]
+
+# 6. Get each element in the list out of phyloseq nad get z-scores
+for (k in 1:length(ASVtabByEU_List)){
+  ASVtabByEU_List[[k]] <- t(ASVs_outta_ps(ASVtabByEU_List[[k]])) #get ASV table out of phylosq and invert
+  ASVtabByEU_List[[k]] <- zScore(as.data.frame(ASVtabByEU_List[[k]])) #get z-score for each ASV (where mean and stdev are over all in that EU)
+}
+
+head(ASVtabByEU_List[[2]])
+
+# 7. Now, merge all these elements of the list by rowname, so that the there are as many rows as ASVs
+# and as many columns as samples (i.e. 233)
+## will have to periodically reset rownames to col one, so that can merge by them
+merge_1 <- merge(ASVtabByEU_List[[1]], ASVtabByEU_List[[2]], by= "row.names", all=TRUE) #merge first two EUs, all = TRUE merges even those ASVs that don't occur in both
+dim(ASVtabByEU_List[[1]])
+dim(ASVtabByEU_List[[2]])
+dim(merge_1) #1694, 78
+#View(merge_1) # now there are some NAs, but that should be okay for next step, I think
+merge_1 <- merge_1 %>% 
+  column_to_rownames(var="Row.names")
+head(merge_1)
+class(merge_1)
+merge_2 <- merge(merge_1, ASVtabByEU_List[[3]], by= "row.names",  all=TRUE)#merge first 2 EUs with EU 3
+dim(merge_2) #1696, 116
+merge_2 <- merge_2 %>% 
+  column_to_rownames(var="Row.names")
+head(merge_2)
+merge_3 <- merge(merge_2, ASVtabByEU_List[[4]], by= "row.names", all=TRUE) #merge first 3 EUs with EU 4
+dim(merge_3) #1696, 155
+merge_3 <- merge_3 %>% 
+  column_to_rownames(var="Row.names")
+head(merge_3)
+# View(merge_3)
+merge_4 <- merge(merge_3, ASVtabByEU_List[[5]], by= "row.names", all=TRUE) #merge first 4 EUs with EU 5
+dim(merge_4) #1696, 195
+merge_4 <- merge_4 %>% 
+  column_to_rownames(var="Row.names")
+head(merge_4)
+merge_5 <- merge(merge_4, ASVtabByEU_List[[6]], by= "row.names", all=TRUE)#merge first 5 EUs with EU 6
+dim(merge_5) #1696, 234
+merge_5 <- merge_5 %>% 
+  column_to_rownames(var="Row.names")
+head(merge_5)
+abundZscores_allEUs <- merge_5
+#View(abundZscores_allEUs)
+sum(apply(abundZscores_allEUs,2,is.nan)) #no NaNs 
+sum(apply(abundZscores_allEUs,2,is.na)) #1980 (what does this mean?). Are there that many NAs?! 
+dim(abundZscores_allEUs) #1696  233
+1696*233 #395168 total values
+
+##########################################################################
+# LOGISTIC FIT FOR EACH ASV
+##########################################################################
+
+# 1. Take abundZscores_allEUs and get relevant metadata so that can do logistic regression thing
+head(DeseqResults) #made earlier in this script
+sampDat # also made earlier in this script, has sample.ID, EU, Transect, Meter, SampleNumberID
+### this repeats a lot of the script from earlier
+### HERE IS WHERE WE CHANGE THINGS, SINCE WE DON'T NEED OR WANT SEPARATE DFS FOR FOREST AND PATCH
+ASVnamesDA <- rownames(DeseqResults) #1696 found
+#ASVsAll <- as.data.frame(t(ASVs_outta_ps(postUbiquity.ps))) #get ASVs from original and transpose so that ASVs are rows (4,480 ASVs in OG)
+# Create dataframe with everything of interest
+diffAbun_ZDat <- merge(DeseqResults, abundZscores_allEUs, by= "row.names") #grab ASV tab info from only those samples that are differentially abundant
+#View(diffAbun_ZDat)
+diffAbunDat_Z_tidy <- diffAbun_ZDat %>% 
+  pivot_longer(cols= 16:ncol(diffAbun_ZDat), names_to= "SampleNumberID", values_to= "ZabundASV") %>% #has # of rows equal to # of diff abund ASVs x sample number
+  merge(sampDat, by="SampleNumberID") #merge with the sampDat to get metadata variables of interest.
+colnames(diffAbunDat_Z_tidy)[2] <- "ASV_name" #rename "Row.names" column to be "ASV_name".
+
+# 2. Get logistic fits for all of these ASVs!
+ASVmeterAbunds <- vector("list", length(ASVnamesDA)) #pre-allocate space for each ASV's abundance for each ASV
+logFitList <- vector("list", length(ASVnamesDA)) #pre-allocate space for each ASV's logistic fit info
+names(ASVmeterAbunds) <- ASVnamesDA
+names(logFitList) <- ASVnamesDA
+for (i in 1:length(ASVmeterAbunds)){
+  tryCatch({
+    ASVmeterAbunds[[i]] <- diffAbunDat_Z_tidy[which(diffAbunDat_Z_tidy$ASV_name==ASVnamesDA[i]),c(10,13, 17:21)] #keeps phylum, family, ASV abundance, sample ID, EU, transect, and meter
+    ASVmeterAbunds[[i]] <- ASVmeterAbunds[[i]] %>% 
+      dplyr::arrange(Meter) #arrange by meter, in descending order
+  }, error=function(e){})
+}    
+
+# greying out for now for testing purposes
+#    logFitList[[i]] <- log.fitdiffAbundFunct(x=ASVmeterAbunds[[i]]$Meter, y=ASVmeterAbunds[[i]]$ASVabundance, ASVnames=ASVnamesDA) #errors are ignored so that those that fit can be fit
+# }, error=function(e){})
+# }
+
+# does this work?
+log.fitdiffAbundFunct(y= ASVmeterAbunds[[1]]$ZabundASV, x= ASVmeterAbunds[[1]]$Meter, ASVnames=names(ASVmeterAbunds)[[1]]) 
+  #Error in qr.solve(QR.B, cc) : singular matrix 'a' in solve
+# don't know what this issue is, but this is it!!
+
+log.fitdiffAbundFunct(x=ASVmeterAbunds[[1]]$Meter, y=ASVmeterAbunds[[i]]$ASVabundance, ASVnames=ASVnamesDA)
+diffAbunDat_Z_tidy[which(diffAbunDat_Z_tidy$ASV_name==ASVnamesDA[1]),c(10,13, 17:21)]
+
+#### BUT!!!! WE MAY BE ABLE TO PLOT IT ANYWAY!!
+# THIS DIDNT WORK!!!
+plotVec <- rep(NA, length(ASVmeterAbunds)) #pre-allocate
+for (i in 1:length(length(ASVmeterAbunds))){
+  plotVec[i] <- plot(ASVmeterAbunds[[i]]$ZabundASV ~ ASVmeterAbunds[[i]]$Meter, main = paste("Logistic Function for", names(ASVmeterAbunds)[[i]]), xlab= "distance (m)", ylab= "ASV abundance")
+}
+
+for (i in 1:length(length(ASVmeterAbunds))){
+  plot(ASVmeterAbunds[[i]]$ZabundASV ~ ASVmeterAbunds[[i]]$Meter, main = paste("Logistic Function for", names(ASVmeterAbunds)[[i]]), xlab= "distance (m)", ylab= "ASV abundance")
+}
+
+
+for (j in 1:length(length(ASVmeterAbunds))){
+  plotVec[i] <- plot(ASVmeterAbunds[[i]]$ZabundASV ~ ASVmeterAbunds[[i]]$Meter, main = paste("Logistic Function for", names(ASVmeterAbunds)[[i]]), xlab= "distance (m)", ylab= "ASV abundance")
+  print(plot(plotVec[i]))
+}
+
+quartz()
+plot(ASVmeterAbunds[[1]]$ZabundASV ~ ASVmeterAbunds[[1]]$Meter, main = paste("Logistic Function for", names(ASVmeterAbunds)[[1]]), xlab= "distance (m)", ylab= "ASV abundance")
+
+quartz()
+plot(ASVmeterAbunds[[2]]$ZabundASV ~ ASVmeterAbunds[[2]]$Meter, main = paste("Logistic Function for", names(ASVmeterAbunds)[[2]]), xlab= "distance (m)", ylab= "ASV abundance")
+
+quartz()
+plot(ASVmeterAbunds[[100]]$ZabundASV ~ ASVmeterAbunds[[100]]$Meter, main = paste("Logistic Function for", names(ASVmeterAbunds)[[100]]), xlab= "distance (m)", ylab= "ASV abundance")
+
+quartz()
+plot(ASVmeterAbunds[[243]]$ZabundASV ~ ASVmeterAbunds[[243]]$Meter, main = paste("Logistic Function for", names(ASVmeterAbunds)[[243]]), xlab= "distance (m)", ylab= "ASV abundance")
+
+quartz()
+plot(ASVmeterAbunds[[1000]]$ZabundASV ~ ASVmeterAbunds[[1000]]$Meter, main = paste("Logistic Function for", names(ASVmeterAbunds)[[1000]]), xlab= "distance (m)", ylab= "ASV abundance")
+
+quartz()
+plot(ASVmeterAbunds[[681]]$ZabundASV ~ ASVmeterAbunds[[681]]$Meter, main = paste("Logistic Function for", names(ASVmeterAbunds)[[681]]), xlab= "distance (m)", ylab= "ASV abundance")
+
+
+which(names(ASVmeterAbunds)=="ASV_1280")
+
+my_plot <- recordPlot()
+plot.new()  
+my_plot
+
+length(ASVmeterAbunds)
 ##########################################################################
 # STACKED BARCHART OF DIFFERENTIAL ABUNDANCE PHYLA NUMBER IN EACH CATEGORY
 ##########################################################################
@@ -382,3 +563,93 @@ chloro_index <- which(DAphylumAll$Phylum=="Chloroflexi")
 length(which(DAphylumAll[chloro_index,]$Habitat=="forest")) #4 forest specialists 
 length(which(DAphylumAll[chloro_index,]$Habitat=="patch")) #238 patch specialists
 length(which(DAphylumAll[chloro_index,]$Habitat=="AremainingASVs")) #180 remaining ASVs
+
+
+################################################################################################
+# DISCARD ALL OF THIS (PROBABLY)
+################################################################################################
+#####################
+# The rest of this is to be discarded (likely): 
+
+# REMOVE ASVS THAT DO NOT OCCUR IN EU
+#########
+# Proof to show that this above works:
+zero_index_52 <- which(rowSums(otu_table(EU_52_Soils.ps))==0)
+names(zero_index_52)
+dim(otu_table(EU_52_Soils.ps)[zero_index_52]) # 13 ASVs across 38 samples
+otu_table(EU_52_Soils.ps) <- otu_table(EU_52_Soils.ps)[-zero_index_52] # 4467 ASVs
+dim(otu_table(EU_52_Soils.ps))
+#########
+
+
+colnames(diffAbunDat_tidy)
+diffAbunDat_tidy_wider <- diffAbunDat_tidy %>% 
+  group_by(EU, ASV_name) %>% 
+  pivot_wider(names_from= Transect, values_from = ASVabundance)
+
+# Write a for loop that makes a new column for each ASV at a certain EU_transect_meter
+# This way, there is a unique identifier for each ASV within each sample (beyond just combination
+# of info in columns)
+for (i in 1:nrow(diffAbunDat_tidy)){
+  diffAbunDat_tidy$EU_TransectMeter[i] <- paste(diffAbunDat_tidy$ASV_name[i], "_", diffAbunDat_tidy$EU[i], diffAbunDat_tidy$Transect[i], "_", diffAbunDat_tidy$Meter[i], sep="")
+}
+head(diffAbunDat_tidy)
+
+small <- diffAbunDat_tidy[1:100, c(2, 10, 17, 19:ncol(diffAbunDat_tidy))]
+View(small)
+for (i in 1:nrow(small)){
+  small$ASV_nameEU[i] <- paste(small$ASV_name[i], "_", small$EU[i], sep="")
+}
+ncol(small)
+small[,9] <- small[,1]
+colnames(small)[9] <- "ASV_name"
+View(small)
+small[,1] <- small[,8]
+colnames(small)[1] <- "ASV_nameEU"
+View(small)
+small[,8] <- NULL
+View(small)
+
+small2 <- small %>% 
+  pivot_wider(names_from= EU_TransectMeter, values_from = ASVabundance) 
+View(small2)
+
+small3 <- small %>% 
+  group_by(ASV_nameEU) %>% 
+  pivot_wider(names_from= EU_TransectMeter, values_from = ASVabundance) 
+View(small3)
+
+small$ASVabundance
+
+
+small_try <- small %>% 
+  group_by(EU, ASV_name) %>%
+  pivot_wider(names_from= EU_TransectMeter, values_from = ASVabundance)
+View(small_try)
+
+# Now make it wider so that 
+diffAbunDat_tidy_wider <- diffAbunDat_tidy %>% 
+  pivot_wider(names_from= EU_TransectMeter, values_from = ASVabundance)
+
+diffAbunDat_tidy3 <- diffAbunDat_tidy2 %>% 
+  pivot_wider(names_from= EU_TransectMeter, values_from = ASVabundance)
+
+diffAbunDat_tidy_wider <- diffAbunDat_tidy %>% 
+  group_by(EU, ASV_name) %>% 
+  pivot_wider(names_from=EU_TransectMeter, values_from = ASVabundance)
+head(diffAbunDat_tidy_wider)
+
+
+View(diffAbunDat_tidy_wider)
+
+#create data frame
+df <- data.frame(player=rep(c('A', 'B'), each=4),
+                 year=rep(c(1, 1, 2, 2), times=2),
+                 stat=rep(c('points', 'assists'), times=4),
+                 amount=c(14, 6, 18, 7, 22, 9, 38, 4))
+
+#view data frame
+df
+
+df2 <- df %>% 
+  pivot_wider(names_from=stat, values_from=amount)
