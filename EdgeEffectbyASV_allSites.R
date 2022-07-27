@@ -310,9 +310,10 @@ colnames(diffAbunDat_tidy)[2] <- "ASV_name" #rename "Row.names" column to be "AS
  #View(diffAbunDat_tidy) this has 395,168 rows, which is equal to 233 (number of samples) x 1696 (number of diff abund ASVs)
  ##########
 
-diffAbunDat_wide <- diffAbunDat %>% 
-  merge(sampDat, by="SampleNumberID") #merge with the sampDat to get metadata variables of interest.
-colnames(diffAbunDat_wide)[2] <- "ASV_name" #rename "Row.names" column to be "ASV_name".
+# THIS BELOW DOESN'T WORK SO I'M GREYING OUT FOR NOW
+#diffAbunDat_wide <- diffAbunDat %>% 
+#  merge(sampDat, by="SampleNumberID") #merge with the sampDat to get metadata variables of interest.
+#colnames(diffAbunDat_wide)[2] <- "ASV_name" #rename "Row.names" column to be "ASV_name".
   
 
 ##########################################################################
@@ -335,8 +336,8 @@ unique(sample_data(EU_10_Soils.ps)$EU)
 
 # 2. Make list of all of these ASV tables by EU:
 ASVtabByEU_List <- vector("list", 6) #make a list to hold the ASV tabs from each 
-# Fill each element in the list in by each EU:
-ASVtabByEU_List[[1]] <- EU_52_Soils.ps
+# Fill each element in the list in by each EU (all currently have 4480 taxa, i.e. the whole dataset)
+ASVtabByEU_List[[1]] <- EU_52_Soils.ps #4480 taxa
 ASVtabByEU_List[[2]] <- EU_53N_Soils.ps
 ASVtabByEU_List[[3]] <- EU_54S_Soils.ps
 ASVtabByEU_List[[4]] <- EU_8_Soils.ps
@@ -350,23 +351,29 @@ for (j in 1:length(ASVtabByEU_List)) {
 
 # 4. Remove ASVs that, for any given EU, are not present 
 # pre-allocate zero-index list thing
-zeroIndexList <- vector("list", 6)
+zeroIndexList <- vector("list", 6) #pre-allocate a new list of 6 vectors, one per EU
 for (k in 1:length(ASVtabByEU_List)) {
-  zeroIndexList[[k]] <- which(rowSums(otu_table(ASVtabByEU_List[[k]]))==0)
+  # next line finds each ASV in each EU, that is not present at least once and makes an index for it
+  zeroIndexList[[k]] <- which(rowSums(otu_table(ASVtabByEU_List[[k]]))==0) 
+  # line below takes out all of these ASVs that do not appear in each EU.
   otu_table(ASVtabByEU_List[[k]]) <- otu_table(ASVtabByEU_List[[k]])[-zeroIndexList[[k]]] 
 }
+# Check a few to see if code above worked
+which(rowSums(otu_table(ASVtabByEU_List[[1]]))==0) 
+which(rowSums(otu_table(ASVtabByEU_List[[6]]))==0)
 
-#### Scratch work for this above #####
-which(rowSums(otu_table(ASVtabByEU_List[[1]]))==0)
-otu_table(ASVtabByEU_List[[1]])
-zero_index_52 <- which(rowSums(otu_table(EU_52_Soils.ps))==0)
-names(zero_index_52)
-dim(otu_table(EU_52_Soils.ps)[zero_index_52]) # 13 ASVs across 38 samples
-otu_table(EU_52_Soils.ps) <- otu_table(EU_52_Soils.ps)[-zero_index_52] # 4467 ASVs
-dim(otu_table(EU_52_Soils.ps))
-otu_table(EU_52_Soils.ps)[[1]]
-otu_table(ASVtabByEU_List[[1]]) <- otu_table(ASVtabByEU_List[[1]])[-zero_index_52] 
-#####
+################
+#### Scratch work for (4) this above #####
+#which(rowSums(otu_table(ASVtabByEU_List[[1]]))==0)
+#otu_table(ASVtabByEU_List[[1]])
+#zero_index_52 <- which(rowSums(otu_table(EU_52_Soils.ps))==0)
+#names(zero_index_52)
+#dim(otu_table(EU_52_Soils.ps)[zero_index_52]) # 13 ASVs across 38 samples
+#otu_table(EU_52_Soils.ps) <- otu_table(EU_52_Soils.ps)[-zero_index_52] # 4467 ASVs
+#dim(otu_table(EU_52_Soils.ps))
+#otu_table(EU_52_Soils.ps)[[1]]
+#otu_table(ASVtabByEU_List[[1]]) <- otu_table(ASVtabByEU_List[[1]])[-zero_index_52] 
+################
 
 # 5. Rename elements of list by EU
 names(ASVtabByEU_List)[[1]] <- "EU_52_z"
@@ -376,15 +383,55 @@ names(ASVtabByEU_List)[[4]] <- "EU_8_z"
 names(ASVtabByEU_List)[[5]]<- "EU_53S_z"
 names(ASVtabByEU_List)[[6]] <- "EU_10_z"
 
-ASVtabByEU_List[[1]]
+ASVtabByEU_List[[1]] #shows that these are still phyloseq objects
 
-# 6. Get each element in the list out of phyloseq nad get z-scores
-for (k in 1:length(ASVtabByEU_List)){
-  ASVtabByEU_List[[k]] <- t(ASVs_outta_ps(ASVtabByEU_List[[k]])) #get ASV table out of phylosq and invert
+# 6. Get each element in the list out of phyloseq and get z-scores
+for (k in 1:length(ASVtabByEU_List)){ #ASVtabByEU_List is a list of phyloseq objects that has only the differentially abundant ASVs
+  # in each EU
+  ASVtabByEU_List[[k]] <- t(ASVs_outta_ps(ASVtabByEU_List[[k]])) #get ASV table out of phyloseq and invert
+ 
   ASVtabByEU_List[[k]] <- zScore(as.data.frame(ASVtabByEU_List[[k]])) #get z-score for each ASV (where mean and stdev are over all in that EU)
 }
 
-head(ASVtabByEU_List[[2]])
+################
+# This area of "scratch work" is to see if it matters to replace 0s with 0.01 in the z-score step above
+# In a nutshell, only 118/64896 observations are zero, or 0.18%, so I think not.
+#ASVzs0 <- ASVtabByEU_List[[2]] #ad
+#ASVzs0.01 <- ASVtabByEU_List[[2]] #made with replacing all 0s with 0.01 with this line in the for loop:
+# # ASVtabByEU_List[[k]][ASVtabByEU_List[[k]] == 0] <- 0.01
+#ASVzs0 <- ASVtabByEU_List[[2]]
+#length(ASVtabByEU_List[[2]])
+#ASVzs0.01 <- ASVtabByEU_List[[2]]
+#length(which(ASVzs0==0))
+#length(which(ASVzs0.01==0))
+#ASVzs0.01[(which(ASVzs0==0))]
+#ASVzs0[(which(ASVzs0==0))]
+#dim(ASVzs0.01)
+#dim(ASVzs0)
+#all.equal(ASVzs0, ASVzs0.01)
+################
+
+
+# Does it change much if we do NOT replace the 0 with 0.01? (before I did this, I re-ran the code up to the previous for loop)
+ASVtabByEU_List2 <- vector("list", 6) #pre-allocate a new list of 6 vectors, one per EU
+for (k in 1:length(ASVtabByEU_List2)){ #ASVtabByEU_List is a list of phyloseq objects that has only the differentially abundant ASVs
+  # in each EU
+  ASVtabByEU_List2[[k]] <- t(ASVs_outta_ps(ASVtabByEU_List[[k]])) #get ASV table out of phyloseq and invert
+  ASVtabByEU_List2[[k]] <- zScore(as.data.frame(ASVtabByEU_List[[k]])) #get z-score for each ASV (where mean and stdev are over all in that EU)
+}
+
+head(ASVtabByEU_List2[[2]])
+
+####### scratch work for this above:
+### if you use this scratch work, ust re-create ASVtabByEU_List objects
+ASVtabByEU_List[[1]] <- ASVs_outta_ps(ASVtabByEU_List[[1]])
+class(ASVtabByEU_List[[1]])
+tiny <- ASVtabByEU_List[[1]][1:12, 1:12] #try on a smaller subset
+tiny[tiny == 0] <- 0.01 #it works!
+tiny2 <- zScore(as.data.frame(tiny))
+
+ASVtabByEU_List[[1]][ASVtabByEU_List[[1]] == 0] <- 0.01
+############################
 
 # 7. Now, merge all these elements of the list by rowname, so that the there are as many rows as ASVs
 # and as many columns as samples (i.e. 233)
@@ -422,9 +469,11 @@ head(merge_5)
 abundZscores_allEUs <- merge_5
 #View(abundZscores_allEUs)
 sum(apply(abundZscores_allEUs,2,is.nan)) #no NaNs 
-sum(apply(abundZscores_allEUs,2,is.na)) #1980 (what does this mean?). Are there that many NAs?! 
+length(which(is.na(abundZscores_allEUs)))  #1980 (what does this mean?). Are there that many NAs?! 
 dim(abundZscores_allEUs) #1696  233
 1696*233 #395168 total values
+
+abundZscores_allEUs[385,]
 
 ##########################################################################
 # LOGISTIC FIT FOR EACH ASV
