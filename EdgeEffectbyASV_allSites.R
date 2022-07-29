@@ -1,8 +1,8 @@
-# EdgeEdgebyASV_allSites.R
+# EdgeEdgebyASV_allSites.R -- 16S
 # May 4, 2022 (begun)
 
 # ~~~~CLEAN UP DESCRIPTION~~~~
-# This script identifies edge effect ASVs using differential abundance analyses
+# This script identifies edge effect BACTERIAL AND ARCHAEAL (16S) ASVs using differential abundance analyses
 # (DESeq2). This script:
 # 1. Performs differential abundance analyses on all EUs together (working on the 
 # dataset after removing v rare taxa and applying a ubiquity threshold 
@@ -628,11 +628,12 @@ length(ASVmeterAbunds)
 # STACKED BARCHART OF DIFFERENTIAL ABUNDANCE PHYLA NUMBER IN EACH CATEGORY
 ##########################################################################
 
-DeseqResultsMini <- DeseqResults[,c(8,14)] %>%  #diff abund analysis: just ASV name (as rownames), phylum, and habitat 
+DeseqResultsMini <- DeseqResults[,c(8,14)]  #diff abund analysis: just ASV name (as rownames), phylum, and habitat 
 postUbiqTaxTab <- taxtable_outta_ps(postUbiquity.ps) #get full taxonomy table from post ubiquity dataset
 length(which(rownames(postUbiqTaxTab) %in% rownames(DeseqResultsMini) == TRUE)) #1696 
-length(which(rownames(postUbiqTaxTab) %in% rownames(DeseqResultsMini) == FALSE)) #2784 #which ASVs are NOT differentially abundant?
+length(which(rownames(postUbiqTaxTab) %in% rownames(DeseqResultsMini) == FALSE)) #2784 ASVs are NOT differentially abundant?
 false_index <- which(rownames(postUbiqTaxTab) %in% rownames(DeseqResultsMini) == FALSE) #also 2,784
+# Now, construct a dataframe with the taxa that were not differentially abundant 
 notDA_taxTab <- postUbiqTaxTab[false_index,] #get a taxonomy tab with ONLY the non-differentially abundant ASVs
 notDA_taxTab$Habitat <- "AremainingASVs" #make a habitat column that labels these as NOT differentially abundant. A in front so that would be first
 # in ggplot for ease.
@@ -649,7 +650,7 @@ ggplot(DAphylumAll, aes(fill=Habitat, x=Phylum)) +
   theme(axis.text.x = element_text(angle = 90), legend.title= element_blank()) +
   scale_y_continuous(breaks=seq(0,1000,by=100)) +
   ylab("number of ASVs in phylum") +
-  ggtitle("Differentially Abundant ASVs")
+  ggtitle("Differentially Abundant Bacterial and Archaeal ASVs")
 
 # A few checks to make sure that the counting above is working as expected
 # Acidobacteria
@@ -675,91 +676,3 @@ length(which(DAphylumAll[chloro_index,]$Habitat=="patch")) #238 patch specialist
 length(which(DAphylumAll[chloro_index,]$Habitat=="AremainingASVs")) #180 remaining ASVs
 
 
-################################################################################################
-# DISCARD ALL OF THIS (PROBABLY)
-################################################################################################
-#####################
-# The rest of this is to be discarded (likely): 
-
-# REMOVE ASVS THAT DO NOT OCCUR IN EU
-#########
-# Proof to show that this above works:
-zero_index_52 <- which(rowSums(otu_table(EU_52_Soils.ps))==0)
-names(zero_index_52)
-dim(otu_table(EU_52_Soils.ps)[zero_index_52]) # 13 ASVs across 38 samples
-otu_table(EU_52_Soils.ps) <- otu_table(EU_52_Soils.ps)[-zero_index_52] # 4467 ASVs
-dim(otu_table(EU_52_Soils.ps))
-#########
-
-
-colnames(diffAbunDat_tidy)
-diffAbunDat_tidy_wider <- diffAbunDat_tidy %>% 
-  group_by(EU, ASV_name) %>% 
-  pivot_wider(names_from= Transect, values_from = ASVabundance)
-
-# Write a for loop that makes a new column for each ASV at a certain EU_transect_meter
-# This way, there is a unique identifier for each ASV within each sample (beyond just combination
-# of info in columns)
-for (i in 1:nrow(diffAbunDat_tidy)){
-  diffAbunDat_tidy$EU_TransectMeter[i] <- paste(diffAbunDat_tidy$ASV_name[i], "_", diffAbunDat_tidy$EU[i], diffAbunDat_tidy$Transect[i], "_", diffAbunDat_tidy$Meter[i], sep="")
-}
-head(diffAbunDat_tidy)
-
-small <- diffAbunDat_tidy[1:100, c(2, 10, 17, 19:ncol(diffAbunDat_tidy))]
-View(small)
-for (i in 1:nrow(small)){
-  small$ASV_nameEU[i] <- paste(small$ASV_name[i], "_", small$EU[i], sep="")
-}
-ncol(small)
-small[,9] <- small[,1]
-colnames(small)[9] <- "ASV_name"
-View(small)
-small[,1] <- small[,8]
-colnames(small)[1] <- "ASV_nameEU"
-View(small)
-small[,8] <- NULL
-View(small)
-
-small2 <- small %>% 
-  pivot_wider(names_from= EU_TransectMeter, values_from = ASVabundance) 
-View(small2)
-
-small3 <- small %>% 
-  group_by(ASV_nameEU) %>% 
-  pivot_wider(names_from= EU_TransectMeter, values_from = ASVabundance) 
-View(small3)
-
-small$ASVabundance
-
-
-small_try <- small %>% 
-  group_by(EU, ASV_name) %>%
-  pivot_wider(names_from= EU_TransectMeter, values_from = ASVabundance)
-View(small_try)
-
-# Now make it wider so that 
-diffAbunDat_tidy_wider <- diffAbunDat_tidy %>% 
-  pivot_wider(names_from= EU_TransectMeter, values_from = ASVabundance)
-
-diffAbunDat_tidy3 <- diffAbunDat_tidy2 %>% 
-  pivot_wider(names_from= EU_TransectMeter, values_from = ASVabundance)
-
-diffAbunDat_tidy_wider <- diffAbunDat_tidy %>% 
-  group_by(EU, ASV_name) %>% 
-  pivot_wider(names_from=EU_TransectMeter, values_from = ASVabundance)
-head(diffAbunDat_tidy_wider)
-
-
-View(diffAbunDat_tidy_wider)
-
-#create data frame
-df <- data.frame(player=rep(c('A', 'B'), each=4),
-                 year=rep(c(1, 1, 2, 2), times=2),
-                 stat=rep(c('points', 'assists'), times=4),
-                 amount=c(14, 6, 18, 7, 22, 9, 38, 4))
-
-#view data frame
-df
-
-df2 <- df %>% 
-  pivot_wider(names_from=stat, values_from=amount)
