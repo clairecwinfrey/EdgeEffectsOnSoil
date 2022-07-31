@@ -1,4 +1,4 @@
-# Exploratory Data Analysis and Data Clean Up
+# 16S ONLY Exploratory Data Analysis and Data Clean Up
 # Aug 17, 2021
 
 # This script is to take a first look at 16S MiSeq data from the samples that I
@@ -10,6 +10,9 @@
 # Then, I move forward with the rarefied, rare-removed data set and do preliminary
 # investigations into why outlier samples might be outliers, how savannas/patches
 # differ from forests, etc.
+
+# ****IMPORTANT NOTE****: THE DIFFERENTIAL ABUNDANCE ANALYSIS PERFORMED HERE IS *NOT* THE ONE
+# USED FOR LATER ANALYSES OF THE EDGE EFFECT TAXA.
 
 # FILES SAVED IN THIS SCRIPT (both in Bioinformatics directory: (save code at end of script,
 # but commented out so that new files are not saved every time in Bioinformatics folder):
@@ -337,7 +340,6 @@ sampleNames
 # TURN ASVs INTO PHYLUM LEVEL
 rarefied.phylum.glom <-  tax_glom(rarefied.ps, taxrank = "Phylum") 
 tax_table(rarefied.phylum.glom) # 
-length(unique(tax_table(rarefied.phylum.glom))) #280
 
 # TRANSFORM SAMPLE COUNTS ON JUST GLOMMED SAMPLES (UNLIKE WHAT WE DID AT FIRST)
 relabun.phyla.0 <- transform_sample_counts(rarefied.phylum.glom, function(x) x / sum(x) )
@@ -410,7 +412,6 @@ top_99.5p_phyla <- relabun.phylatop99.5 %>%
    # TURN ASVs INTO class LEVEL
 rarefied.class.glom <-  tax_glom(rarefied.ps, taxrank = "Class") 
 tax_table(rarefied.class.glom) # good, this is only class (42 different phyla!)
-length(unique(tax_table(rarefied.class.glom))) #854 classes... although some NAs in there too
 
  # TRANSFORM SAMPLE COUNTS ON JUST GLOMMED SAMPLES (UNLIKE WHAT WE DID AT FIRST)
 relabun.class.0 <- transform_sample_counts(rarefied.class.glom, function(x) x / sum(x) )
@@ -505,7 +506,7 @@ outliers <- c("53ND_B_20", " 10C_L_10", "53ND_R_40", "53SD_R_10", "52D_L_100", "
 ##################################################################################
 # II. REMOVAL OF "RARE" TAXA, NEW TAXONOMIC PLOTS AND ORDINATIONS
 # (tried out different numbers of taxa, but settled on removing taxa that did not
-# occur at least 5 times across the whole dataset)
+# occur at least 50 times across the whole dataset)
 ##################################################################################
 
 ###########################################################################
@@ -620,12 +621,11 @@ tax_table(rarefiedTrimmed.phylum.glom) # good, this is only phyla (42 different 
 
 # TRANSFORM SAMPLE COUNTS ON JUST GLOMMED SAMPLES (UNLIKE WHAT WE DID AT FIRST)
 relabunTrimmed.phyla.0 <- transform_sample_counts(rarefiedTrimmed.phylum.glom, function(x) x / sum(x) )
-rownames(otu_table(relabunTrimmed.phyla.0)) #weirdly, this is ASV_.... Is this right? 
-# I think that the ASVs are just representative from each phylum
+rownames(otu_table(relabunTrimmed.phyla.0)) #I think that the ASVs are just representative from each phylum
 
 # MERGE SAMPLES so that we only have combined abundances for site and different kinds of controls
 relabunTrimmed.phyla.1 <- merge_samples(relabunTrimmed.phyla.0, group = "EU")
-sample_data(relabunTrimmed.phyla.1) #shows that we still have samples from each EU, biocrust, and extcontrol (water)
+sample_data(relabunTrimmed.phyla.1) 
 
 # CONVERT TO PROPORTIONS AGAIN B/C TOTAL ABUNDANCE OF EACH SITE WILL EQUAL NUMBER OF SPECIES THAT WERE MERGED
 relabunTrimmed.phyla.2 <- transform_sample_counts(relabunTrimmed.phyla.1, function(x) x / sum(x))
@@ -685,8 +685,7 @@ trimmedTop_99.5p_phyla <- relabunTrimmed.phylatrimmedTop99.5 %>%
 # https://github.com/clairecwinfrey/PhanBioMS_scripts/blob/master/R_scripts/figures/taxonomic_bartrimmedPlots.R)
 # TURN ASVs INTO PHYLUM LEVEL
 rarefiedTrimmed.class.glom <-  tax_glom(TrimmedSRS_16S.ps, taxrank = "Class") 
-tax_table(rarefiedTrimmed.class.glom) # good, this is only class (42 different phyla!)
-length(unique(tax_table(rarefiedTrimmed.class.glom))) #854 classes... although some NAs in there too
+tax_table(rarefiedTrimmed.class.glom) # good, this is only class 
 
 # TRANSFORM SAMPLE COUNTS ON JUST GLOMMED SAMPLES (UNLIKE WHAT WE DID AT FIRST)
 relabunTrimmed.class.0 <- transform_sample_counts(rarefiedTrimmed.class.glom, function(x) x / sum(x) )
@@ -741,7 +740,7 @@ trimmedBrayNMDS + geom_polygon(aes(fill=EU)) + geom_point(size=3) + ggtitle("NMD
 
 # Add in labels to figure out what weird samples are
 quartz()
-labeledTrimmedBrayNMDS <- phyloseq::plot_ordination(trimmedJustsoils.ps, ordSoils, type= "samples", color= "EU", label = "Sample.ID")
+labeledTrimmedBrayNMDS <- phyloseq::plot_ordination(trimmedJustsoils.ps, trimOrd, type= "samples", color= "EU", label = "Sample.ID")
 labeledTrimmedBrayNMDS + geom_polygon(aes(fill=EU)) + geom_point(size=3) + ggtitle("NMDS based on Bray-Curtis Dissimilarities")
 
 
@@ -805,7 +804,6 @@ outliersASVtax$Abundance <- rowSums(outliersASVtax[,1:7]) #What is the abundance
 # TURN ASVs INTO PHYLUM LEVEL
 outliers.phylum.glom <-  tax_glom(outliers.ps, taxrank = "Phylum") 
 tax_table(outliers.phylum.glom) # only phyla
-length(unique(tax_table(outliers.phylum.glom))) #231 phyla, which is less than the 280 found across the whole rarefied dataset
 sample_data(outliers.phylum.glom)
 
 # TRANSFORM SAMPLE COUNTS ON JUST GLOMMED SAMPLES (UNLIKE WHAT WE DID AT FIRST)
@@ -890,6 +888,8 @@ grid.arrange(outliers.phylumPlot.95pt, justsoils.phylaPlot.95percent, nrow=1)
 
 #################
 # Differential abundance analysis of outliers versus total data
+# ***IMPORTANT NOTE****: THE DIFFERENTIAL ABUNDANCE ANALYSIS PERFORMED HERE IS *NOT* THE ONE
+# USED FOR LATER ANALYSES OF THE EDGE EFFECT TAXA.
 #################
 # Paper for DESeq2 : Love, M.I., Huber, W. & Anders, S. Moderated estimation of fold change and dispersion for RNA-seq data with DESeq2. 
 # Genome Biol 15, 550 (2014). https://doi.org/10.1186/s13059-014-0550-8
@@ -1148,8 +1148,8 @@ mtext(text=bold_b, side=3, adj = -0.065, line = 2)
 #resaved March 2 2022
 #save(rarefied.ps, samples_df, ASVsTrimmed, taxTrimmed, trimmedJustsoils.ps, trimOrd, outliersTrimmed, outliersASVtax, file = "RobjectsSaved/EDA16SAug2021")
 #save(trimmedJustsoils.ps, file= "RobjectsSaved/trimmedJustSoils.ps") 
-soils_noEuks <- ASVs_outta_ps(noeuksorNAs_ps) #this is the dataset pre-rarefaction, but after removing eukaryotes and ASVs not assigned at least to phylum.
-soils_noEuksTaxTable <- taxtable_outta_ps(noeuksorNAs_ps)
-write.csv(soils_noEuks, file = "RobjectsSaved/SRSsoilsNoEuks.csv") #saved April 25th and sent to Josep
-write.csv(soils_noEuksTaxTable, file= "RobjectsSaved/SRSsoilsNoEuksTaxTable.csv") #saved April 25th and sent to Josep
-write.csv(samples_df, file= "RobjectsSaved/SRS_soilsFinalMetadata.csv") #saved April 25th and sent to Josep
+#soils_noEuks <- ASVs_outta_ps(noeuksorNAs_ps) #this is the dataset pre-rarefaction, but after removing eukaryotes and ASVs not assigned at least to phylum.
+#soils_noEuksTaxTable <- taxtable_outta_ps(noeuksorNAs_ps)
+#write.csv(soils_noEuks, file = "RobjectsSaved/SRSsoilsNoEuks.csv") #saved April 25, 2022 and sent to Josep R.
+#write.csv(soils_noEuksTaxTable, file= "RobjectsSaved/SRSsoilsNoEuksTaxTable.csv") #saved April 25, 2022 and sent to Josep R.
+#write.csv(samples_df, file= "RobjectsSaved/SRS_soilsFinalMetadata.csv") #saved April 25, 2022 and sent to Josep R.
