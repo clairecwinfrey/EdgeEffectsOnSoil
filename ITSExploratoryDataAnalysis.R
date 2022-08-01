@@ -1,4 +1,4 @@
-# Exploratory Data Analysis and Data Clean Up
+# ITS ONLY Exploratory Data Analysis and Data Clean Up
 # started May 13, 2022
 
 # This script is to take a first look at ITS MiSeq data from the samples that I
