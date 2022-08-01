@@ -27,24 +27,19 @@ setwd("~/Desktop/CU_Research/SoilEdgeEffectsResearch")
 library("phyloseq")
 library("tidyverse")    
 library("readxl")       # necessary to import the data from Excel file
-library("dplyr")        # filter and reformat data frames
-library("tibble")       # Needed for converting column to row names
-library("tidyr")
 library("vegan")
 library("gridExtra")    # allows you to make multiple plots on the same page with ggplot
 library("DESeq2") #for differential abundance analysis
 library("grid")
-library("stringr") #for grep-like tools for data manipulation with character strings in data
 library("drc") # might use for log fit thing
 
 # Load data
 load("RobjectsSaved/postUbiquity.ps") #load phyloseq object that was made after 1) rarefying,
 # the 2) keeping only ASVs that occurred at least 50 times across the (rarefied), 
-# then 3) filtering out ASVs with a ubiquity of <45
+# then 3) filtering out ASVs with a ubiquity of <40
 # R OBJECT MADE IN: UbiquityMedianSetup.R
 
 ######
-
 # FUNCTIONS DEFINED IN THIS SCRIPT (but often used first in other scripts):
 # 1. taxtable_outta_ps takes the phyloseq ASV table and converts it to a dataframe
 taxtable_outta_ps <- function(physeq){ #input is a phyloseq object
@@ -286,29 +281,44 @@ View(try1)
 # make a dataframe which has a row corresponging to the abundance of each differentially
 # abundant ASV in each place along the transect, as well as taxonomic info, and 
 # whether or not that ASV was differentially abundant in patch or the forest.
-  NoEdge.ps <- subset_samples(postUbiquity.ps, Habitat != "edge") #remove edge samples
-  step1 <- phyloseq::phyloseq_to_deseq2(NoEdge.ps, ~ Habitat) #set up DESeq2 dds object 
+
+# The next steps add 1 to all of the ASV abundance counts and re-make a phyloseq object.
+# This was necessary because DESeq2 could not compute the geometric mean of the samples
+# since every gene had at least one zero in it (and was thus thrown out of the analysis)
+# (see recommendations and explanations here:
+# https://help.galaxyproject.org/t/error-with-deseq2-every-gene-contains-at-least-one-zero/564)
+postUbiqASVs_16S <- ASVs_outta_ps(postUbiquity.ps)
+postUbiqASVs_16SPlus1 <- t(postUbiqASVs_16S + 1) #adding one to every abundance count for differential abundance analysis;
+# see explanation a few lines down. Invert so that I can make into a new phyloseq object.
+# Make a new phyloseq object with these above
+OTU = otu_table(postUbiqASVs_16SPlus1, taxa_are_rows = TRUE)
+postUbiqASVs16S_Plus1.ps <- phyloseq(OTU, tax_table(postUbiquity.ps), sample_data(postUbiquity.ps))
+
+# Remove edge samples to compare patch and matrix
+NoEdgePlus1.ps <- subset_samples(postUbiqASVs16S_Plus1.ps, Habitat != "edge") 
+NoEdgePlus1.ps
+  step1 <- phyloseq::phyloseq_to_deseq2(NoEdgePlus1.ps, ~ Habitat) #set up DESeq2 dds object 
   step2 <- DESeq2::DESeq(step1, test="Wald", fitType = "parametric") #differential expression analysis step;
   #uses default Benjamini-Hochberg correction 
   DeseqResults <- results(step2, cooksCutoff = FALSE) #make results object
   DeseqResults <- DeseqResults[which(DeseqResults$padj < 0.001), ] #only get those ASVs below alpha level
-  DeseqResults <- cbind(as(DeseqResults, "data.frame"), as(tax_table(NoEdge.ps)[rownames(DeseqResults), ], "matrix")) #clean up format
+  DeseqResults <- cbind(as(DeseqResults, "data.frame"), as(tax_table(NoEdgePlus1.ps)[rownames(DeseqResults), ], "matrix")) #clean up format
   DeseqResults$Habitat <- ifelse(DeseqResults$log2FoldChange<0, "forest", "patch") #make new column specifying which ecosystem each ASV is for
   # Next few lines prepare dataframe with diff abundance results, some sample info, and taxonomic info 
-  # View(DeseqResults) #1,803 diff abund ASVs)
-  sampDat <- sample_data(postUbiquity.ps)[,c(1,6,8:9)] #Sample.ID, EU, Transect, Meter
+  # View(DeseqResults) #2,169 diff abund ASVs)
+  sampDat <- sample_data(postUbiqASVs16S_Plus1.ps)[,c(1,6,8:9)] #Sample.ID, EU, Transect, Meter
   attr(sampDat, "class") <- "data.frame" #remove phyloseq attribute, make dataframe
   sampDat <- tibble::rownames_to_column(sampDat, var="SampleNumberID") #make mapping file ID a column instead of rownames
   ### HERE IS WHERE WE CHANGE THINGS, SINCE WE DON'T NEED OR WANT SEPARATE DFS FOR FOREST AND PATCH
-  ASVnamesDA <- rownames(DeseqResults) #1696 found
-  ASVsAll <- as.data.frame(t(ASVs_outta_ps(postUbiquity.ps))) #get ASVs from original and transpose so that ASVs are rows 
+  ASVnamesDA <- rownames(DeseqResults) #2169 found
+  ASVsAll <- as.data.frame(t(ASVs_outta_ps(postUbiqASVs16S_Plus1.ps))) #get ASVs from original and transpose so that ASVs are rows 
   # Create dataframe with everything of interest
   diffAbunDat <- merge(DeseqResults, ASVsAll, by= "row.names") #grab ASV tab info from only those samples that are differentially abundant
   diffAbunDat_tidy <- diffAbunDat %>% 
     pivot_longer(cols= 16:ncol(diffAbunDat), names_to= "SampleNumberID", values_to= "ASVabundance") %>% #has # of rows equal to # of forest ASVs x sample number
     merge(sampDat, by="SampleNumberID") #merge with the sampDat to get metadata variables of interest.
 colnames(diffAbunDat_tidy)[2] <- "ASV_name" #rename "Row.names" column to be "ASV_name".
- #View(diffAbunDat_tidy) this has 420,099 rows, which is equal to 233 (number of samples) x 1,803 (number of diff abund ASVs)
+ #View(diffAbunDat_tidy) this has 505,377 rows, which is equal to 233 (number of samples) x 2,169 (number of diff abund ASVs)
  ##########
 
 ##########################################################################
@@ -317,17 +327,17 @@ colnames(diffAbunDat_tidy)[2] <- "ASV_name" #rename "Row.names" column to be "AS
 # 1. Samples based on raw (i.e. not median) abundance
 # Prune samples to separate by EU and check to make sure each looks right
 # Each has 5219 ASVs (those left after applying ubiquity threshold of 40). However, not all are found in each EU
-EU_52_Soils.ps <- subset_samples(postUbiquity.ps, EU == "EU_52")
+EU_52_Soils.ps <- subset_samples(postUbiqASVs16S_Plus1.ps, EU == "EU_52")
 unique(sample_data(EU_52_Soils.ps)$EU) #only EU 52
-EU_53N_Soils.ps <- subset_samples(postUbiquity.ps, EU == "EU_53N")
+EU_53N_Soils.ps <- subset_samples(postUbiqASVs16S_Plus1.ps, EU == "EU_53N")
 unique(sample_data(EU_53N_Soils.ps)$EU)
-EU_54S_Soils.ps <- subset_samples(postUbiquity.ps, EU == "EU_54S")
+EU_54S_Soils.ps <- subset_samples(postUbiqASVs16S_Plus1.ps, EU == "EU_54S")
 unique(sample_data(EU_54S_Soils.ps)$EU)
-EU_8_Soils.ps <- subset_samples(postUbiquity.ps, EU == "EU_8")
+EU_8_Soils.ps <- subset_samples(postUbiqASVs16S_Plus1.ps, EU == "EU_8")
 unique(sample_data(EU_8_Soils.ps)$EU)
-EU_53S_Soils.ps <- subset_samples(postUbiquity.ps, EU == "EU_53S")
+EU_53S_Soils.ps <- subset_samples(postUbiqASVs16S_Plus1.ps, EU == "EU_53S")
 unique(sample_data(EU_53S_Soils.ps)$EU)
-EU_10_Soils.ps <- subset_samples(postUbiquity.ps, EU == "EU_10")
+EU_10_Soils.ps <- subset_samples(postUbiqASVs16S_Plus1.ps, EU == "EU_10")
 unique(sample_data(EU_10_Soils.ps)$EU)
 
 # 2. Make list of all of these ASV tables by EU:
@@ -352,7 +362,7 @@ for (j in 1:length(ASVtabByEU_List)) {
   ASVtabByEU_List[[j]] <- ASVtabByEU_List[[j]][ASVnamesDA] #pull out only diff abundant ASVs
   print(dim(ASVtabByEU_List[[j]]))
 }
-# shows that all now have only 1,803 ASVs, or the differentially abundant ones
+# shows that all now have only 2,169 ASVs, or the differentially abundant ones
 
 # How many NAs, if any, exist at this step?
 length(which(is.na(ASVtabByEU_List))) #i think that this shows me what I want, but just in case:
@@ -493,23 +503,23 @@ merge_1 <- merge_1 %>%
 head(merge_1)
 class(merge_1)
 merge_2 <- merge(merge_1, ASVtabByEU_List[[3]], by= "row.names",  all=TRUE)#merge first 2 EUs with EU 3
-dim(merge_2) #1696, 116
+dim(merge_2) 
 merge_2 <- merge_2 %>% 
   column_to_rownames(var="Row.names")
 head(merge_2)
 merge_3 <- merge(merge_2, ASVtabByEU_List[[4]], by= "row.names", all=TRUE) #merge first 3 EUs with EU 4
-dim(merge_3) #1696, 155
+dim(merge_3) 
 merge_3 <- merge_3 %>% 
   column_to_rownames(var="Row.names")
 head(merge_3)
 # View(merge_3)
 merge_4 <- merge(merge_3, ASVtabByEU_List[[5]], by= "row.names", all=TRUE) #merge first 4 EUs with EU 5
-dim(merge_4) #1696, 195
+dim(merge_4) #2169 195
 merge_4 <- merge_4 %>% 
   column_to_rownames(var="Row.names")
 head(merge_4)
 merge_5 <- merge(merge_4, ASVtabByEU_List[[6]], by= "row.names", all=TRUE)#merge first 5 EUs with EU 6
-dim(merge_5) #1696, 234
+dim(merge_5) #2169  234
 merge_5 <- merge_5 %>% #
   column_to_rownames(var="Row.names")
 head(merge_5) 
@@ -521,17 +531,18 @@ abundZscores_allEUs <- merge_5
 
 # How many NAs are there in the dataframe? NAs should be places where a particular sample
 # did not have that ASV present
-length(which(is.na(abundZscores_allEUs)))  #there are 2953 NAs across dataset 
+length(which(is.na(abundZscores_allEUs)))  #there are 3807 NAs across dataset 
 index <- which(is.na(abundZscores_allEUs))
 length(index)
-dim(abundZscores_allEUs) #1803  233
+dim(abundZscores_allEUs) #2169  233
 # another way of looking for NAs
 NAs <- sapply(abundZscores_allEUs, function(x) sum(is.na(x)))
-sum(NAs) #1980
+sum(NAs) #3807
 # Which ASVs have NAs (that is, do not show up in every EU)
 abundZscores_allEUs_NAsIndexRowCols <- which(is.na(abundZscores_allEUs), arr.ind = TRUE)
 NonOverlappingASVs <- unique(rownames(abundZscores_allEUs_NAsIndexRowCols))
 NonOverlappingASVs #these ASVs have some NaNs associated with them
+
 ##########################################################################
 # LOGISTIC FIT FOR EACH ASV
 ##########################################################################
@@ -625,10 +636,10 @@ length(ASVmeterAbunds)
 ##########################################################################
 
 DeseqResultsMini <- DeseqResults[,c(8,14)]  #diff abund analysis: just ASV name (as rownames), phylum, and habitat 
-postUbiqTaxTab <- taxtable_outta_ps(postUbiquity.ps) #get full taxonomy table from post ubiquity dataset
-length(which(rownames(postUbiqTaxTab) %in% rownames(DeseqResultsMini) == TRUE)) #1803
-length(which(rownames(postUbiqTaxTab) %in% rownames(DeseqResultsMini) == FALSE)) #3416 ASVs are NOT differentially abundant?
-false_index <- which(rownames(postUbiqTaxTab) %in% rownames(DeseqResultsMini) == FALSE) #also 3416
+postUbiqTaxTab <- taxtable_outta_ps(postUbiqASVs16S_Plus1.ps) #get full taxonomy table from post ubiquity dataset
+length(which(rownames(postUbiqTaxTab) %in% rownames(DeseqResultsMini) == TRUE)) #2169
+length(which(rownames(postUbiqTaxTab) %in% rownames(DeseqResultsMini) == FALSE)) #3050 ASVs are NOT differentially abundant?
+false_index <- which(rownames(postUbiqTaxTab) %in% rownames(DeseqResultsMini) == FALSE) #also 3050
 # Now, construct a dataframe with the taxa that were not differentially abundant 
 notDA_taxTab <- postUbiqTaxTab[false_index,] #get a taxonomy tab with ONLY the non-differentially abundant ASVs
 notDA_taxTab$Habitat <- "AremainingASVs" #make a habitat column that labels these as NOT differentially abundant. A in front so that would be first
@@ -649,29 +660,22 @@ diffAbund_16S_stackedBarplotPhyla <- ggplot(DAphylumAll, aes(fill=Habitat, x=Phy
   ggtitle("Differentially Abundant Bacterial and Archaeal ASVs")
 # quartz()
 diffAbund_16S_stackedBarplotPhyla
-# Below saved July 31, 2022 so that it can be added to a 2 paneled plot with fungal plot!
+# Below saved August 1, 2022 so that it can be added to a 2 paneled plot with fungal plot!
 # save(diffAbund_16S_stackedBarplotPhyla, file="RobjectsSaved/diffAbund_16S_stackedBarplotPhyla_plot")
 
 # A few checks to make sure that the counting above is working as expected
 # Acidobacteria
 length(which(DAphylumAll$Phylum=="Acidobacteria")) #1043
 acido_index <- which(DAphylumAll$Phylum=="Acidobacteria")
-length(which(DAphylumAll[acido_index,]$Habitat=="forest")) #178 forest specialists within Acidobacteria
-length(which(DAphylumAll[acido_index,]$Habitat=="patch")) #222 patch specialists within Acidobacteria
-length(which(DAphylumAll[acido_index,]$Habitat=="AremainingASVs")) #643 remaining ASVs
-(178+ 222 + 643) == length(which(DAphylumAll$Phylum=="Acidobacteria"))
-
-# Firmicutes
-length(which(DAphylumAll$Phylum=="Firmicutes")) #23
-firmi_index <- which(DAphylumAll$Phylum=="Firmicutes")
-length(which(DAphylumAll[firmi_index,]$Habitat=="forest")) #0 forest specialists 
-length(which(DAphylumAll[firmi_index,]$Habitat=="patch")) #2 patch specialists
-length(which(DAphylumAll[firmi_index,]$Habitat=="AremainingASVs")) #21 remaining ASVs
+length(which(DAphylumAll[acido_index,]$Habitat=="forest")) #342 forest specialists within Acidobacteria
+length(which(DAphylumAll[acido_index,]$Habitat=="patch")) #174 patch specialists within Acidobacteria
+length(which(DAphylumAll[acido_index,]$Habitat=="AremainingASVs")) #527 remaining ASVs
+(342+ 174 + 527) == length(which(DAphylumAll$Phylum=="Acidobacteria"))
 
 #Chloroflexi
 length(which(DAphylumAll$Phylum=="Chloroflexi")) #498
 chloro_index <- which(DAphylumAll$Phylum=="Chloroflexi")
-length(which(DAphylumAll[chloro_index,]$Habitat=="forest")) #4 forest specialists 
-length(which(DAphylumAll[chloro_index,]$Habitat=="patch")) #274 patch specialists
-length(which(DAphylumAll[chloro_index,]$Habitat=="AremainingASVs")) #220 remaining ASVs
-(4+274+220) == length(which(DAphylumAll$Phylum=="Chloroflexi"))
+length(which(DAphylumAll[chloro_index,]$Habitat=="forest")) #17 forest specialists 
+length(which(DAphylumAll[chloro_index,]$Habitat=="patch")) #252 patch specialists
+length(which(DAphylumAll[chloro_index,]$Habitat=="AremainingASVs")) #229 remaining ASVs
+(17+252+229) == length(which(DAphylumAll$Phylum=="Chloroflexi"))
