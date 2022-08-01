@@ -295,32 +295,28 @@ View(try1)
   DeseqResults <- cbind(as(DeseqResults, "data.frame"), as(tax_table(NoEdge.ps)[rownames(DeseqResults), ], "matrix")) #clean up format
   DeseqResults$Habitat <- ifelse(DeseqResults$log2FoldChange<0, "forest", "patch") #make new column specifying which ecosystem each ASV is for
   # Next few lines prepare dataframe with diff abundance results, some sample info, and taxonomic info 
+  # View(DeseqResults) #1,803 diff abund ASVs)
   sampDat <- sample_data(postUbiquity.ps)[,c(1,6,8:9)] #Sample.ID, EU, Transect, Meter
   attr(sampDat, "class") <- "data.frame" #remove phyloseq attribute, make dataframe
   sampDat <- tibble::rownames_to_column(sampDat, var="SampleNumberID") #make mapping file ID a column instead of rownames
   ### HERE IS WHERE WE CHANGE THINGS, SINCE WE DON'T NEED OR WANT SEPARATE DFS FOR FOREST AND PATCH
   ASVnamesDA <- rownames(DeseqResults) #1696 found
-  ASVsAll <- as.data.frame(t(ASVs_outta_ps(postUbiquity.ps))) #get ASVs from original and transpose so that ASVs are rows (4,480 ASVs in OG)
+  ASVsAll <- as.data.frame(t(ASVs_outta_ps(postUbiquity.ps))) #get ASVs from original and transpose so that ASVs are rows 
   # Create dataframe with everything of interest
   diffAbunDat <- merge(DeseqResults, ASVsAll, by= "row.names") #grab ASV tab info from only those samples that are differentially abundant
   diffAbunDat_tidy <- diffAbunDat %>% 
     pivot_longer(cols= 16:ncol(diffAbunDat), names_to= "SampleNumberID", values_to= "ASVabundance") %>% #has # of rows equal to # of forest ASVs x sample number
     merge(sampDat, by="SampleNumberID") #merge with the sampDat to get metadata variables of interest.
 colnames(diffAbunDat_tidy)[2] <- "ASV_name" #rename "Row.names" column to be "ASV_name".
- #View(diffAbunDat_tidy) this has 395,168 rows, which is equal to 233 (number of samples) x 1696 (number of diff abund ASVs)
+ #View(diffAbunDat_tidy) this has 420,099 rows, which is equal to 233 (number of samples) x 1,803 (number of diff abund ASVs)
  ##########
-
-# THIS BELOW DOESN'T WORK SO I'M GREYING OUT FOR NOW
-#diffAbunDat_wide <- diffAbunDat %>% 
-#  merge(sampDat, by="SampleNumberID") #merge with the sampDat to get metadata variables of interest.
-#colnames(diffAbunDat_wide)[2] <- "ASV_name" #rename "Row.names" column to be "ASV_name".
-  
 
 ##########################################################################
 # GET Z-SCORES OF EACH ASV WITHIN EU
 ##########################################################################
 # 1. Samples based on raw (i.e. not median) abundance
 # Prune samples to separate by EU and check to make sure each looks right
+# Each has 5219 ASVs (those left after applying ubiquity threshold of 40). However, not all are found in each EU
 EU_52_Soils.ps <- subset_samples(postUbiquity.ps, EU == "EU_52")
 unique(sample_data(EU_52_Soils.ps)$EU) #only EU 52
 EU_53N_Soils.ps <- subset_samples(postUbiquity.ps, EU == "EU_53N")
@@ -336,9 +332,9 @@ unique(sample_data(EU_10_Soils.ps)$EU)
 
 # 2. Make list of all of these ASV tables by EU:
 ASVtabByEU_List <- vector("list", 6) #make a list to hold the ASV tabs from each 
-# Fill each element in the list in by each EU (all currently have 4480 taxa, i.e. the whole dataset)
+# Fill each element in the list in by each EU (all currently have 5219 taxa, i.e. the whole dataset)
 # ASVs are columns, samples are rows; all have 4480 taxa
-ASVtabByEU_List[[1]] <- ASVs_outta_ps(EU_52_Soils.ps) #4480 taxa
+ASVtabByEU_List[[1]] <- ASVs_outta_ps(EU_52_Soils.ps) #5219 taxa
 dim(ASVtabByEU_List[[1]])
 ASVtabByEU_List[[2]] <- ASVs_outta_ps(EU_53N_Soils.ps)
 dim(ASVtabByEU_List[[2]])
@@ -356,7 +352,7 @@ for (j in 1:length(ASVtabByEU_List)) {
   ASVtabByEU_List[[j]] <- ASVtabByEU_List[[j]][ASVnamesDA] #pull out only diff abundant ASVs
   print(dim(ASVtabByEU_List[[j]]))
 }
-# shows that all now have only 1696 ASVs, or the differentially abundant ones
+# shows that all now have only 1,803 ASVs, or the differentially abundant ones
 
 # How many NAs, if any, exist at this step?
 length(which(is.na(ASVtabByEU_List))) #i think that this shows me what I want, but just in case:
@@ -366,6 +362,7 @@ which(is.na(ASVtabByEU_List[[3]]))
 which(is.na(ASVtabByEU_List[[4]]))
 which(is.na(ASVtabByEU_List[[5]]))
 which(is.na(ASVtabByEU_List[[6]]))
+# No NAs anywhere 
 
 ######### REMOVING ASVS THAT ARE ZERO IN A GIVEN EU... Removed and greyed out since we 
 # looking at all the EUs together, so ASVs that are zero in a given EU are valid. So commenting out for now##
@@ -421,32 +418,32 @@ for (k in 1:length(ASVtabByEU_List)){ #ASVtabByEU_List is a list of phyloseq obj
 # 
 # So this is where the NAs/NaNs are coming in
 # This is the Z-score function. Let's figure out where it's putting NAs or NaNs in
-EU_52_EUdf <- as.data.frame(t(ASVs_outta_ps(ASVtabByEU_List[[1]]))) #ASVs are rows, samples are columns
-which(is.na(EU_52_EUdf)) #none are NAs at this stage
+EU_52_df <- as.data.frame(t(ASVs_outta_ps(EU_52_Soils.ps))) #ASVs are rows, samples are columns
+which(is.na(EU_52_df)) #none are NAs at this stage
 # Now, pulling apart z score function to see what's going on
-  zScoreDftest <- matrix(NA, nrow=nrow(EU_52_EUdf), ncol=ncol(EU_52_EUdf)) #pre-allocate
-  colnames(zScoreDftest) <- colnames(EU_52_EUdf)
-  rownames(zScoreDftest) <- rownames(EU_52_EUdf)
-  for (i in 1:nrow(EU_52_EUdf)){
-    ASVmeanTest <- rowMeans(EU_52_EUdf[i,]) #if you change rowMeans to mean, could use with matrices. Or could build in if/else statement
-    ASVsdTest <- sd(EU_52_EUdf[i,])
-    for (j in 1:length(EU_52_EUdf[i,])) {
-      zScoreDftest[i,j] <- (EU_52_EUdf[i,j]-ASVmeanTest)/ASVsdTest # subtract row mean from value, then divide by standard deviation for z score
+  zScoreDftest <- matrix(NA, nrow=nrow(EU_52_df), ncol=ncol(EU_52_df)) #pre-allocate
+  colnames(zScoreDftest) <- colnames(EU_52_df)
+  rownames(zScoreDftest) <- rownames(EU_52_df)
+  for (i in 1:nrow(EU_52_df)){
+    ASVmeanTest <- rowMeans(EU_52_df[i,]) #if you change rowMeans to mean, could use with matrices. Or could build in if/else statement
+    ASVsdTest <- sd(EU_52_df[i,])
+    for (j in 1:length(EU_52_df[i,])) {
+      zScoreDftest[i,j] <- (EU_52_df[i,j]-ASVmeanTest)/ASVsdTest # subtract row mean from value, then divide by standard deviation for z score
     }
   }
 which(is.nan(zScoreDftest)) == which(is.na(zScoreDftest)) #these are the same. So is.na() finds NAs or NaNs?
-length(which(is.nan(zScoreDftest))) #342 NaNs why?
+length(which(is.nan(zScoreDftest))) #1064 NaNs why?
 EU52_NAsIndex <- which(is.nan(zScoreDftest))
 EU52_NAsIndexRowCols <- which(is.nan(zScoreDftest), arr.ind = TRUE)
 zScoreDftest[EU52_NAsIndexRowCols] #all these are NaNs
-EU_52_EUdf.mat <- as.matrix(EU_52_EUdf) #make matrix to use with index
-EU_52_EUdf.mat[EU52_NAsIndex] #so all the areas of zeros are where NaNs came in 
+EU_52_df.mat <- as.matrix(EU_52_df) #make matrix to use with index
+EU_52_df.mat[EU52_NAsIndex] #so all the areas of zeros are where NaNs came in 
 # Are there any places were zeros did NOT result in NaNs? YES!
-length(which(EU_52_EUdf.mat==0)) #yes
+length(which(EU_52_df.mat==0)) #yes #129033
 # Maybe it is just those areas where NONE of the samples in this dataset had at least one instance of this ASV.
-names(which(rowSums(EU_52_EUdf.mat)==0)) #these ASVs are not present in any sample in this EU
+names(which(rowSums(EU_52_df.mat)==0)) #these ASVs are not present in any sample in this EU
 # do these ASVs match up with those giving NaNs above?
-unique(rownames(EU52_NAsIndexRowCols)) == names(which(rowSums(EU_52_EUdf.mat)==0))
+unique(rownames(EU52_NAsIndexRowCols)) == names(which(rowSums(EU_52_df.mat)==0))
 unique(rownames(EU52_NAsIndexRowCols)) 
 ################################################
 
@@ -490,7 +487,7 @@ merge_1 <- merge(ASVtabByEU_List[[1]], ASVtabByEU_List[[2]], by= "row.names", al
 dim(ASVtabByEU_List[[1]])
 dim(ASVtabByEU_List[[2]])
 dim(merge_1) #1694, 78
-#View(merge_1) # now there are some NAs, but that should be okay for next step, I think
+#View(merge_1) # now there are some NAs
 merge_1 <- merge_1 %>% 
   column_to_rownames(var="Row.names")
 head(merge_1)
@@ -524,11 +521,10 @@ abundZscores_allEUs <- merge_5
 
 # How many NAs are there in the dataframe? NAs should be places where a particular sample
 # did not have that ASV present
-length(which(is.na(abundZscores_allEUs)))  #there are 1980 NAs across dataset 
+length(which(is.na(abundZscores_allEUs)))  #there are 2953 NAs across dataset 
 index <- which(is.na(abundZscores_allEUs))
 length(index)
-dim(abundZscores_allEUs) #1696  233
-1980/(1696*233) #0.5% of values are NAs
+dim(abundZscores_allEUs) #1803  233
 # another way of looking for NAs
 NAs <- sapply(abundZscores_allEUs, function(x) sum(is.na(x)))
 sum(NAs) #1980
@@ -630,9 +626,9 @@ length(ASVmeterAbunds)
 
 DeseqResultsMini <- DeseqResults[,c(8,14)]  #diff abund analysis: just ASV name (as rownames), phylum, and habitat 
 postUbiqTaxTab <- taxtable_outta_ps(postUbiquity.ps) #get full taxonomy table from post ubiquity dataset
-length(which(rownames(postUbiqTaxTab) %in% rownames(DeseqResultsMini) == TRUE)) #1696 
-length(which(rownames(postUbiqTaxTab) %in% rownames(DeseqResultsMini) == FALSE)) #2784 ASVs are NOT differentially abundant?
-false_index <- which(rownames(postUbiqTaxTab) %in% rownames(DeseqResultsMini) == FALSE) #also 2,784
+length(which(rownames(postUbiqTaxTab) %in% rownames(DeseqResultsMini) == TRUE)) #1803
+length(which(rownames(postUbiqTaxTab) %in% rownames(DeseqResultsMini) == FALSE)) #3416 ASVs are NOT differentially abundant?
+false_index <- which(rownames(postUbiqTaxTab) %in% rownames(DeseqResultsMini) == FALSE) #also 3416
 # Now, construct a dataframe with the taxa that were not differentially abundant 
 notDA_taxTab <- postUbiqTaxTab[false_index,] #get a taxonomy tab with ONLY the non-differentially abundant ASVs
 notDA_taxTab$Habitat <- "AremainingASVs" #make a habitat column that labels these as NOT differentially abundant. A in front so that would be first
@@ -643,36 +639,39 @@ notDA_taxTabMini <- notDA_taxTab[,c(2,8)] #keep only phylum and habitat to match
 DAphylumAll <- rbind(DeseqResultsMini, notDA_taxTabMini) #this has ASV name, phylum, and whether diff abundant for ALL ASVs in postUbiquity analysis
 # What are the phyla breakdown here?
 # so effectively, we want to get numbers in each phyla in each group. Should just be able to plot this?
-quartz()
-ggplot(DAphylumAll, aes(fill=Habitat, x=Phylum)) + 
+
+diffAbund_16S_stackedBarplotPhyla <- ggplot(DAphylumAll, aes(fill=Habitat, x=Phylum)) + 
   geom_bar(position="stack", stat="count") +
   scale_fill_manual(values=c("darkgrey","darkgreen","goldenrod"), name= "Differentially abundant in:", labels=c("not differentially abundant", "forest", "patch")) +
   theme(axis.text.x = element_text(angle = 90), legend.title= element_blank()) +
   scale_y_continuous(breaks=seq(0,1000,by=100)) +
   ylab("number of ASVs in phylum") +
   ggtitle("Differentially Abundant Bacterial and Archaeal ASVs")
+# quartz()
+diffAbund_16S_stackedBarplotPhyla
+# Below saved July 31, 2022 so that it can be added to a 2 paneled plot with fungal plot!
+# save(diffAbund_16S_stackedBarplotPhyla, file="RobjectsSaved/diffAbund_16S_stackedBarplotPhyla_plot")
 
 # A few checks to make sure that the counting above is working as expected
 # Acidobacteria
-length(which(DAphylumAll$Phylum=="Acidobacteria")) #930
+length(which(DAphylumAll$Phylum=="Acidobacteria")) #1043
 acido_index <- which(DAphylumAll$Phylum=="Acidobacteria")
 length(which(DAphylumAll[acido_index,]$Habitat=="forest")) #178 forest specialists within Acidobacteria
-length(which(DAphylumAll[acido_index,]$Habitat=="patch")) #207 patch specialists within Acidobacteria
-length(which(DAphylumAll[acido_index,]$Habitat=="AremainingASVs")) #545 remaining ASVs
-178+ 207 + 545 # =930
+length(which(DAphylumAll[acido_index,]$Habitat=="patch")) #222 patch specialists within Acidobacteria
+length(which(DAphylumAll[acido_index,]$Habitat=="AremainingASVs")) #643 remaining ASVs
+(178+ 222 + 643) == length(which(DAphylumAll$Phylum=="Acidobacteria"))
 
 # Firmicutes
-length(which(DAphylumAll$Phylum=="Firmicutes")) #18
+length(which(DAphylumAll$Phylum=="Firmicutes")) #23
 firmi_index <- which(DAphylumAll$Phylum=="Firmicutes")
 length(which(DAphylumAll[firmi_index,]$Habitat=="forest")) #0 forest specialists 
 length(which(DAphylumAll[firmi_index,]$Habitat=="patch")) #2 patch specialists
-length(which(DAphylumAll[firmi_index,]$Habitat=="AremainingASVs")) #16 remaining ASVs
+length(which(DAphylumAll[firmi_index,]$Habitat=="AremainingASVs")) #21 remaining ASVs
 
 #Chloroflexi
-length(which(DAphylumAll$Phylum=="Chloroflexi")) #18
+length(which(DAphylumAll$Phylum=="Chloroflexi")) #498
 chloro_index <- which(DAphylumAll$Phylum=="Chloroflexi")
 length(which(DAphylumAll[chloro_index,]$Habitat=="forest")) #4 forest specialists 
-length(which(DAphylumAll[chloro_index,]$Habitat=="patch")) #238 patch specialists
-length(which(DAphylumAll[chloro_index,]$Habitat=="AremainingASVs")) #180 remaining ASVs
-
-
+length(which(DAphylumAll[chloro_index,]$Habitat=="patch")) #274 patch specialists
+length(which(DAphylumAll[chloro_index,]$Habitat=="AremainingASVs")) #220 remaining ASVs
+(4+274+220) == length(which(DAphylumAll$Phylum=="Chloroflexi"))
