@@ -1,9 +1,9 @@
 # ITS_UbiquityMedianSetup.R (Set-up/data wrangling before downstream)
 # July 31, 2022 (begun)
 
-########@@@@@@@@@@ UPDATE DESCRIPTION#######
+#########
 # This script picks up where ITSExploratoryDataAnalysis.R leaves off,
-# applying a ubiquity filter of appearing in at least 45 samples
+# applying a ubiquity filter of appearing in at least 40 samples
 # to the samples (which have already been rarefied
 # and where I have removed ASVs that don't occur at least 50 times in dataset).
 # I also get the find the median abundance of each ASV in each EU (median over all four transects,
@@ -90,7 +90,7 @@ ITSASVubiquityAbund <- as.data.frame(cbind(ITSASVubiquity, abund))
 # should be due to removal of the controls
 dim(ITSASVubiquityAbund[which(ITSASVubiquityAbund$sampleOccurence >= 45),]) #Only 352 ASVs are found at least 45 times
 dim(ITSASVubiquityAbund[which(ITSASVubiquityAbund$sampleOccurence >= 40),]) #413 are found at least 40 times
-dim(ITSASVubiquityAbund[which(ITSASVubiquityAbund$sampleOccurence >= 30),]) #602 are found at least 40 times
+dim(ITSASVubiquityAbund[which(ITSASVubiquityAbund$sampleOccurence >= 35),]) #602 are found at least 40 times
 
 # Barplot showing ubiquity
 #quartz()
@@ -112,14 +112,14 @@ barplot(table(ITSASVubiquityEU[,7]), ylab="Number of ASVs", xlab= "Number of EUs
 # To be consistent with the 16S data, I will create a subset of the ASV table, based on ASVs that 
 # occur in at least 45 samples.
 
-# Only use ASVs that occur in at least 45 samples
-ITSnamesAll_45 <- names(which(ITSASVubiquity[,234] >= 45)) #this gives the names of the ASVs that occur at least
+# Only use ASVs that occur in at least 40 samples
+ITSnamesAll_40 <- names(which(ITSASVubiquity[,234] >= 40)) #this gives the names of the ASVs that occur at least
 # 45 times (i.e. in at least 45 samples)
-length(ITSnamesAll_45) #352, matches above
-ITSnamesAll_45
+length(ITSnamesAll_40) #413, matches above
+ITSnamesAll_40
 
 # Remove all of the ASVs from the phyloseq object that don't occur at least 45 times
-ITS_postUbiquity.ps <- prune_taxa(ITSnamesAll_45,trimmedITSjustsoils.ps) #352 taxa as expected!
+ITS_postUbiquity.ps <- prune_taxa(ITSnamesAll_40,trimmedITSjustsoils.ps) #352 taxa as expected!
 ITS_postUbiquity.ps
 
 # NMDS for post-ubiquity samples (Bray-Curtis dissimilarity)
@@ -239,9 +239,9 @@ colnames(otu_table(ITS_medianEU.ps))
 # necessarily need to be re-saved everytime this script is run)
 
 # 1. Phyloseq object after rarefying, removal of rares (rares= <50 reads across dataset 
-# AND THEN ubiquity < 45 samples across that dataset)
-#save(ITS_postUbiquity.ps, file= "ITS_postUbiquity.ps") #saved July 31, 2022
-#save(ITS_medianEU.ps, file = "ITS_medianEU.ps")
+# AND THEN ubiquity threshold removed < 40 samples across that dataset)
+save(ITS_postUbiquity.ps, file= "ITS_postUbiquity.ps") #saved July 31, 2022
+save(ITS_medianEU.ps, file = "ITS_medianEU.ps")
 
 
 ###################################################################
