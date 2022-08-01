@@ -1,11 +1,14 @@
 # UbiquityMedianSetup.R (Set-up/data wrangling before downstream)
-# November 9, 2021 (begun)
+# November 9, 2021 (begun); July 31, 2022: updated ubiquity 
+# filter to only be 40 samples threshold (instead of 45), to match 
+# ITS processing
 
 # This script picks up where 16SExploratoryDataAnalysisAug2021 leaves off,
-# applying a ubiquity filter to the samples (which have already been rarefied
+# applying a ubiquity filter of occuring in at least 40 samples to the dataset. 
+# At this point, dataset has already already been rarefied
 # and where I have removed ASVs that don't occur at least 50 times in dataset).
 # I also get the find the median abundance of each ASV in each EU (median over all four transects,
-# at each spot along the transect)
+# at each spot along the transect).
 
 # The output of this script should be fed into all downstream analyses (represented 
 # in scripts IdentifyEdgeEffectTaxa4 and some future version of DissimPatterns.R...
@@ -20,9 +23,7 @@ setwd("~/Desktop/CU_Research/SoilEdgeEffectsResearch/RobjectsSaved")
 
 # Read in libraries
 library("phyloseq")
-library("dplyr")        # filter and reformat data frames
-library("tibble")       # Needed for converting column to row names
-library("tidyr")
+library("tidyverse")
 library("vegan")
 library("ggplot2")
 
@@ -81,10 +82,10 @@ metadata_outta_ps <- function(physeq){ #input is a phyloseq object
 ###############################################################################
 #                   UBIQUITY FILTER
 ###############################################################################
-# MOST OF NEXT 50 LINES BELOW COPIED FROM IDENTIFYEDGEEFFECTTAXA3.R
+# MOST OF NEXT 50 LINES BELOW MODIFIED ROM IDENTIFYEDGEEFFECTTAXA3.R
 # In this section of the script, I take a look at the ASV ubiquity across samples
 # and across EUs to determine what ubiquity filter to impose (I chose that the 
-# ASVs need to occur in at least 45 samples). I use this to subset the ASV table.
+# ASVs need to occur in at least 40 samples). I use this to subset the ASV table.
 
 # 1. What is the ubiquity of ASVs (looking at all EUs)?
 ASVubiquity <- ASVsampOccurrence(trimmedJustsoils.ps)
@@ -112,16 +113,16 @@ barplot(table(ASVubiquityEU[,7]), ylab="Number of ASVs", xlab= "Number of EUs/si
 # This shows that the majority of ASVs occur in all of the EUs
 
 # Based on the figures above, I will create a subset of the ASV table, based on ASVs that 
-# occur in at least 45 samples.
+# occur in at least 40 samples.
 
-# Only use ASVs that occur in at least 45 samples
-namesAll_45 <- names(which(ASVubiquity[,234] >= 45)) #this gives the names of the ASVs that occur at least
-# 45 times (i.e. in at least 45 samples)
-length(namesAll_45) #4480 
-namesAll_45
+# Only use ASVs that occur in at least 40 samples
+namesAll_40 <- names(which(ASVubiquity[,234] >= 40)) #this gives the names of the ASVs that occur at least
+# 40 times (i.e. in at least 40 samples)
+length(namesAll_40) #5219
+namesAll_40
 
-# Remove all of the ASVs from the phyloseq object that don't occur at least 45 times
-postUbiquity.ps <- prune_taxa(namesAll_45,trimmedJustsoils.ps) #4480 taxa as expected!
+# Remove all of the ASVs from the phyloseq object that don't occur at least 40 times
+postUbiquity.ps <- prune_taxa(namesAll_40,trimmedJustsoils.ps) #4480 taxa as expected!
 postUbiquity.ps
 
 # NMDS for post-ubiquity samples (Bray-Curtis dissimilarity)
@@ -202,7 +203,7 @@ median(as.numeric(c(EU_53S_B10, EU_53S_R10, EU_53S_T10, EU_53S_L10))) == medAbun
 ###############################################################################
 # This phyloseq object will incorporate all the change thus far that I've made
 # to the dataset. 1) rarefied (now 233 samples), 2) only ASVs occuring at least
-# 50 times across dataset, 3) only ASVs that occur in at least 45/233 samples,
+# 50 times across dataset, 3) only ASVs that occur in at least 40/233 samples,
 # and 4) median abundances for each meter in each ASV (see above)
 
 # NEED three files for phyloseq: OTU table, taxonomy table, and metadata
@@ -261,9 +262,9 @@ medOrdPlot + geom_polygon(aes(fill=EU)) + geom_point(size=5)
 # necessarily need to be re-saved everytime this script is run)
 
 # 1. Phyloseq object after rarefying, removal of rares (rares= <50 reads across dataset 
-# AND THEN ubiquity < 45 samples across that dataset)
-save(postUbiquity.ps, file= "postUbiquity.ps") #re-saved March 2, 2022
-save(medianEU.ps, file = "medianEU.ps")
+# AND THEN ubiquity removes those ASVs occurring < 40 samples across that dataset)
+save(postUbiquity.ps, file= "postUbiquity.ps") #re-saved July 31, 2022
+save(medianEU.ps, file = "medianEU.ps") #re-saved July 31, 2022
 
 # 2. Phyloseq object made with postUbiquity.ps, BUT with median ASV counts at each meter
 # in each EU
@@ -326,24 +327,19 @@ top_99.5p_phyla
 # comprises at least 0.5% of the total abundance
 
 # Phyla comprising at least 0.5% of total abundance
-quartz()
 phylumPlot99.5percent <- ggplot(data=relabun.phylatop99.5, aes(x=Sample, y=Abundance, fill=Phylum)) + theme(axis.title.y = element_text(size = 14, face = "bold")) + theme(axis.title.x = element_blank()) + theme(axis.text.x = element_text(colour = "black", size = 12, face = "bold"))
+quartz()
 phylumPlot99.5percent + geom_bar(aes(), stat="identity", position="fill") +
   theme(legend.position="bottom") +
   guides(fill=guide_legend(nrow=4)) + theme(legend.text = element_text(colour="black", size = 10))  + ggtitle("Phyla comprising at least 0.5% of total abundance") +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
 
 # "Phyla comprising at least 1% of total abundance"
-quartz()
 phylumPlot.99percent <- ggplot(data=relabun.phylatop99, aes(x=Sample, y=Abundance, fill=Phylum)) + theme(axis.title.y = element_text(size = 14, face = "bold")) + theme(axis.title.x = element_blank()) + theme(axis.text.x = element_text(colour = "black", size = 8, face = "bold"))
+quartz()
 phylumPlot.99percent + geom_bar(aes(), stat="identity", position="fill") +
   theme(legend.position="bottom") +
   guides(fill=guide_legend(nrow=4)) + theme(legend.text = element_text(colour="black", size = 10))  + ggtitle("Phyla comprising at least 1% of total abundance")
-
-## Below is junk from earlier script... keep for easier manipulation later!
-# scale_fill_manual(values = c("#4575b4", "#d73027", "#fc8d59", "#fee090", "#91bfdb", "grey"), 
-#   name= "Phylum", breaks= c("D_1__Firmicutes", "D_1__Proteobacteria", "D_1__Bacteroidetes", "D_1__Actinobacteria", "D_1__Fusobacteria", "< 1% abund."), 
-#  labels =c("Firmicutes", "Proteobacteria", "Bacteroidetes", "Actinobacteria", "Fusobacteria", "< 1% abund.")) +
 
 # Get exact abundances of each phyla (top 99.5%):
 colnames(relabun.phylatop99.5)
