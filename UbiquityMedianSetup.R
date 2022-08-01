@@ -4,6 +4,9 @@
 # This script picks up where 16SExploratoryDataAnalysisAug2021 leaves off,
 # applying a ubiquity filter to the samples (which have already been rarefied
 # and where I have removed ASVs that don't occur at least 50 times in dataset).
+# I also get the find the median abundance of each ASV in each EU (median over all four transects,
+# at each spot along the transect)
+
 # The output of this script should be fed into all downstream analyses (represented 
 # in scripts IdentifyEdgeEffectTaxa4 and some future version of DissimPatterns.R...
 # UPDATE WITH NEW NAMES OF SCRIPTS!!!!!!!)
@@ -355,14 +358,15 @@ top_99.5p_phyla <- relabun.phylatop99.5 %>%
 
 ###############################################################################
 #         APPROACH 2: MEDIAN ASV ABUNDANCE BY METER ACROSS ALL EUS!
+# THIS BELOW CAN PROBABLY BE DROPPED, AS IT WAS NOT USED DOWNSTREAM
 ###############################################################################
 # This code gets median abundance for each ASV (median across 24 transects all EUs)
 # at each meter.
 # In other words, the EU is ignored, so the number of rows = number of ASVs in 
 # postUbiquity.ps (4480) * points along transect (10). =
 
-ASVsdf <- ASVs_outta_ps(postUbiquity.ps) #rows are samples, ASV abundance is columns 
-metaDf <- metadata_outta_ps(postUbiquity.ps) #rows are samples, columns are all of the rest of the 
+#ASVsdf <- ASVs_outta_ps(postUbiquity.ps) #rows are samples, ASV abundance is columns 
+#metaDf <- metadata_outta_ps(postUbiquity.ps) #rows are samples, columns are all of the rest of the 
 # metadata
 
 #  I DONT THINK THAT THIS CALCULATED THE MEDIAN ABUDNANCES, JUST TOOK OTHER VARIABLE MEDIANS (SUM OF OTU TABLE, SEE MAN PAGE)
@@ -372,129 +376,25 @@ metaDf <- metadata_outta_ps(postUbiquity.ps) #rows are samples, columns are all 
 #as.data.frame(otu_table(medianMeter_noEUs.ps))$ASV_1
 
 # Make a new column that combines info from meter and EU
-EUmeter <- rep(NA, nrow(metaDf)) #pre-allocate vector for new names, length is 268,800
-for (i in 1:nrow(metaDf)){
-  EUmeter[i] <- paste(c(metaDf[i,6], metaDf[i,9]), collapse="_")
-} #this should work, see example below, but is taking forever!
-EUmeter
+#EUmeter <- rep(NA, nrow(metaDf)) #pre-allocate vector for new names, length is 268,800
+#for (i in 1:nrow(metaDf)){
+ # EUmeter[i] <- paste(c(metaDf[i,6], metaDf[i,9]), collapse="_")
+#} #this should work, see example below, but is taking forever!
+#EUmeter
 
 # NEED TO DOUBLE CHECK THIS MANUALLY
-medAbundnoEU <- ASVsdf %>% #First, add columns of interest
-  mutate( #add columns
-    EU= metaDf$EU,#add EU column
-    Transect = metaDf$Transect, #add Transect column
-    Meter = metaDf$Meter,# meter column
-    EUmeter = EUmeter) %>% #EU and meter information
-  pivot_longer(
-    cols = c(1:ncol(ASVsdf)),
-    names_to = "ASVname"
-  ) %>% 
-  dplyr::group_by(Meter, ASVname) %>% 
-  dplyr::summarize(
-    medianMeter = median(value), #get median abundance for each ASV, with samples grouped by EU and meter (i.e. EU Meter)
-    n = n())  #n= how many samples at meter in that EU 
+#medAbundnoEU <- ASVsdf %>% #First, add columns of interest
+#  mutate( #add columns
+ #   EU= metaDf$EU,#add EU column
+  #  Transect = metaDf$Transect, #add Transect column
+   # Meter = metaDf$Meter,# meter column
+    #EUmeter = EUmeter) %>% #EU and meter information
+#  pivot_longer(
+ #   cols = c(1:ncol(ASVsdf)),
+  #  names_to = "ASVname"
+ # ) %>% 
+#  dplyr::group_by(Meter, ASVname) %>% 
+#  dplyr::summarize(
+ #   medianMeter = median(value), #get median abundance for each ASV, with samples grouped by EU and meter (i.e. EU Meter)
+ #   n = n())  #n= how many samples at meter in that EU 
 # View(medAbundnoEU)
-
-##################################################
-### The rest of this script uses Z-scores, and can probably be dropped at some point!
-medianZscore_noEU <- medAbundnoEU %>% 
-  group_by(ASVname) %>% 
-
-# 5. zScore function computes the z-score for a given vector of numbers
-# The function is broadly applicable, but ASVs should be rows for its usage in this script  
-zScoreMedian <- function(dat) { # input is dataframe
-  zScoreDf <- matrix(NA, nrow=nrow(dat), ncol=ncol(dat))
-  colnames(zScoreDf) <- colnames(dat)
-  rownames(zScoreDf) <- rownames(dat)
-  for (i in 1:nrow(dat)){
-    ASVmean <- rowMeans(dat[i,]) #if you change rowMeans to mean, could use with matrices. Or could build in if/else statement
-    ASVsd <- sd(dat[i,])
-    for (j in 1:length(dat[i,])) {
-      zScoreDf[i,j] <- (dat[i,j]-ASVmean)/ASVsd # subtract row mean from value, then divide by standard deviation for z score
-    }
-  }
-  return(zScoreDf)
-}
-
-# Proof/testing out zScore function to make sure that it works
-set.seed(19)
-dat <- rpois(n=100, lambda = 1) 
-# in cartoon example, as with real data above, ASVs are rows and samples are columns
-datmat <- matrix(dat, nrow=20, ncol=5) 
-datmat <- as.data.frame(datmat)
-# testing it out below, it seems to work
-test <- zScore(datmat)
-dim(test) == dim(datmat) #yes
-test[1,1] == (datmat[1,1] - rowMeans(datmat[1,]))/sd(datmat[1,])
-(datmat[3,4] - rowMeans(datmat[3,]))/sd(datmat[3,]) == test[3,4]
-(datmat[20,2] - rowMeans(datmat[20,]))/sd(datmat[20,]) == test[20,2]
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-###############################################################################
-#                          MAKE NEW PHYLOSEQ OBJECT
-###############################################################################
-# This phyloseq object will incorporate all the change thus far that I've made
-# to the dataset. 1) rarefied (now 233 samples), 2) only ASVs occuring at least
-# 50 times across dataset, 3) only ASVs that occur in at least 45/233 samples,
-# and 4) median abundances for each meter in each ASV (see above)
-
-# NEED three files for phyloseq: OTU table, taxonomy table, and metadata
-#### NEW OTU TABLE ####
-# For the OTU table, need ASV IDs as rows and sample IDs as columns
-# Make a new column that combines info from meter and EU
-
-# Reformat so that ASV IDs are rows and sample IDs are columns
-# 1.This will serve as the OTU table for the new phyloseq object 
-ASVtabMedian <- medAbund %>% 
-  ungroup %>% # necessary to remove columns
-  select(-c(n)) %>% #remove n
-  pivot_wider(names_from = ASVname, values_from= medianEUmeter) %>% # here, would be 4481 total columns (meter name and ASV name)
-  column_to_rownames("EUmeter") %>% 
-  t()
-# View(ASVtabMedian) #correct format and values!
-
-# 2. Taxonomy table -- ***GET THIS OUT OF PHYLOSEQ!!***
-taxTabMedian <- tax_table(postUbiquity.ps) #since we did not drop any ASVs when coding above,
-# this tax table should be the same as before 
-unique(sort(rownames(taxTabMedian)) == sort(rownames(ASVtabMedian))) #Statement above is true!!!
-taxTabMedian <- as(taxTabMedian, "matrix") #get this out of phyloseq
-class(taxTabMedian)
-
-# 3. Sample metadata
-postUbiquityMeta <- metadata_outta_ps(postUbiquity.ps)
-head(postUbiquityMeta)
-# Constructing this for now; will find a more elegant coding solution later
-EUmeterNames <- colnames(ASVtabMedian)
-EUmeterNames
-
-metaDatMedian <- as.data.frame(matrix(nrow = length(EUmeterNames), ncol=3))
-rownames(metaDatMedian) <- EUmeterNames
-colnames(metaDatMedian) <- c("EU", "meter", "Habitat")
-metaDatMedian[,1] <- c(rep("EU_10", 10), rep("EU_52", 10), rep("EU_53N", 10), rep("EU_53S", 10), rep("EU_54S", 10), rep("EU_8", 10))
-metaDatMedian[,2] <- rep(c(10, 100, 20, 30, 40, 50, 60, 70, 80, 90),6)
-metaDatMedian[,3] <- rep(c("patch", "forest", "patch", "patch", "patch", "edge", "forest", "forest", "forest", "forest"), 6)
-
-# Transform all of the above to phyloseq objects
-ASVtabMedianPS <- otu_table(ASVtabMedian, taxa_are_rows = TRUE)
-taxTabMedianPS <- tax_table(taxTabMedian)
-metaDatMedianPS <- sample_data(metaDatMedian)
-medianEU.ps <- phyloseq(ASVtabMedianPS, taxTabMedianPS, metaDatMedianPS)
-medianEU.ps #as expected, this has 4480 taxa and 60 samples!
-colnames(otu_table(medianEU.ps))
-
