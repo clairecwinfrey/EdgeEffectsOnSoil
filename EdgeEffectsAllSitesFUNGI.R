@@ -41,7 +41,7 @@ library("drc") # might use for log fit thing
 load("RobjectsSaved/ITS_postUbiquity.ps") #load phyloseq object that was made after 1) rarefying,
 # the 2) keeping only ASVs that occurred at least 50 times across the (rarefied), 
 # then 3) filtering out ASVs with a ubiquity of <40
-# R OBJECT MADE IN: UbiquityMedianSetup.R
+# R OBJECT MADE IN: UbiquitypostUbiqSetup.R
 
 ######
 
@@ -53,7 +53,7 @@ taxtable_outta_ps <- function(physeq){ #input is a phyloseq object
 }
 
 # 2. ASVsampOccurrence determines the number of samples that each ASV occurs in 
-# For proof that ASVsampOccurrence works, see UbiquityMedianSetup.R
+# For proof that ASVsampOccurrence works, see UbiquitypostUbiqSetup.R
 ASVsampOccurrence <- function(physeq) { #input is a phyloseq object
   OTU <- otu_table(physeq)
   ASVmat <- as(OTU, "matrix") # make phyloseq ASV table into a non-phyloseq matrix
@@ -322,9 +322,130 @@ colnames(diffAbunDat_tidy)[2] <- "ASV_name" #rename "Row.names" column to be "AS
 ##########
 
 ##########################################################################
+# STACKED BARCHART OF DIFFERENTIAL ABUNDANCE PHYLA NUMBER IN EACH CATEGORY
+##########################################################################
+
+DeseqResultsMini <- DeseqResults[,c(8,14)]  #diff abund analysis: just ASV name (as rownames), phylum, and habitat 
+postUbiqTaxTab <- taxtable_outta_ps(ITS_postUbiqASVsPlus1.ps) #get full taxonomy table from post ubiquity dataset
+length(which(rownames(postUbiqTaxTab) %in% rownames(DeseqResultsMini) == TRUE)) #287
+length(which(rownames(postUbiqTaxTab) %in% rownames(DeseqResultsMini) == FALSE)) #126 ASVs are NOT differentially abundant?
+false_index <- which(rownames(postUbiqTaxTab) %in% rownames(DeseqResultsMini) == FALSE) #also 126
+# Now, construct a dataframe with the taxa that were not differentially abundant 
+notDA_taxTab <- postUbiqTaxTab[false_index,] #get a taxonomy tab with ONLY the non-differentially abundant ASVs
+notDA_taxTab$Habitat <- "AremainingASVs" #make a habitat column that labels these as NOT differentially abundant. A in front so that would be first
+# in ggplot for ease.
+# View(notDA_taxTab)
+colnames(notDA_taxTab)
+notDA_taxTabMini <- notDA_taxTab[,c(2,8)] #keep only phylum and habitat to match DeseqResultsMini
+DAphylumAll <- rbind(DeseqResultsMini, notDA_taxTabMini) #this has ASV name, phylum, and whether diff abundant for ALL ASVs in postUbiquity analysis
+# What are the phyla breakdown here?
+# so effectively, we want to get numbers in each phyla in each group. Should just be able to plot this?
+
+diffAbund_ITS_stackedBarplotPhyla <- ggplot(DAphylumAll, aes(fill=Habitat, x=Phylum)) + 
+  geom_bar(position="stack", stat="count") +
+  scale_fill_manual(values=c("darkgrey","darkgreen","goldenrod"), name= "Differentially abundant in:", labels=c("not differentially abundant", "forest", "patch")) +
+  scale_x_discrete(labels=c("p__Ascomycota" = "Ascomycota", "p__Basidiomycota" = "Basidiomycota",
+                            "p__Calcarisporiellomycota" = "Calcarisporiellomycota",
+                            "p__Glomeromycota" = "Glomeromycota", "p__Mortierellomycota"="Mortierellomycota",
+                            "p__Mucoromycota" = "Mucoromycota", "p__Olpidiomycota"= "Olpidiomycota",
+                            "p__Rozellomycota" = "Rozellomycota")) +
+  theme(axis.text.x = element_text(angle = 90), legend.title= element_blank()) +
+  scale_y_continuous(breaks=seq(0,1000,by=100)) +
+  ylab("number of ASVs in phylum") +
+  ggtitle("Differentially Abundant Fungal ASVs") 
+# quartz()
+diffAbund_ITS_stackedBarplotPhyla
+
+# A few checks to make sure that the counting above is working as expected
+# Ascomycota
+length(which(DAphylumAll$Phylum=="p__Ascomycota")) #249
+asco_index <- which(DAphylumAll$Phylum=="p__Ascomycota")
+length(which(DAphylumAll[asco_index,]$Habitat=="forest")) #56 forest specialists within Ascomycota
+length(which(DAphylumAll[asco_index,]$Habitat=="patch")) #120 patch specialists within Ascomycota
+length(which(DAphylumAll[asco_index,]$Habitat=="AremainingASVs")) #73 remaining ASVs within Ascomycota
+(56+ 120 + 73) == length(which(DAphylumAll$Phylum=="p__Ascomycota"))
+# this looks correct on the plot too!
+
+# Construct two-paneled figure with 16S and ITS differentially abundant stacked barcharts side by side
+# Load in previously made 16S figure (made in "EdgeEffectsbyASV_allSites.R")
+load(file="RobjectsSaved/diffAbund_16S_stackedBarplotPhyla_plot")
+# quartz()
+grid.arrange(diffAbund_16S_stackedBarplotPhyla, diffAbund_ITS_stackedBarplotPhyla, nrow=2)
+
+##########################################################################
+# PLOT OF GLOMEROMYCOTA
+##########################################################################
+
+# Within the plot above, glomeromycota are among the most interesting groups.
+# Here, makes a plot of the different relative abundances of 
+
+# Phylum level (adopted from my code at:
+# https://github.com/clairecwinfrey/PhanBioMS_scripts/blob/master/R_scripts/figures/taxonomic_barplots.R)
+ITS_postUbiqNOEdge.ps <- subset_samples(ITS_postUbiquity.ps, Habitat != "edge") #remove edge so we can compare patch versus forest
+
+#ITS_postUbiqNOEdge.ps.phylum.glom <-  tax_glom(ITS_postUbiqNOEdge.ps, taxrank = "Phylum") 
+#tax_table(ITS_postUbiqNOEdge.ps.phylum.glom) #8 phyla
+#sample_data(ITS_postUbiqNOEdge.ps.phylum.glom)
+
+# TRANSFORM SAMPLE COUNTS ON JUST GLOMMED SAMPLES (UNLIKE WHAT WE DID AT FIRST)
+# relabunpostUbiqNOEdge.phyla.0 <- transform_sample_counts(ITS_postUbiqNOEdge.ps.phylum.glom, function(x) x / sum(x) )
+relabunpostUbiqNOEdge.allASVs <- transform_sample_counts(ITS_postUbiqNOEdge.ps, function(x) x / sum(x) )
+
+# MERGE SAMPLES so that we only have combined abundances for site and different kinds of controls
+relabunpostUbiqNOEdge.allASVs <- merge_samples(relabunpostUbiqNOEdge.allASVs, group = c("Habitat"))
+sample_data(relabunpostUbiqNOEdge.allASVs) #shows that we still have samples from each EU, biocrust, and extcontrol (water)
+# Meter did an averaging thing; can just ignore it
+
+# CONVERT TO PROPORTIONS AGAIN B/C TOTAL ABUNDANCE OF EACH SITE WILL EQUAL NUMBER OF SPECIES THAT WERE MERGED
+relabunpostUbiqNOEdge.allASVs.2 <- transform_sample_counts(relabunpostUbiqNOEdge.allASVs, function(x) x / sum(x))
+sample_data(relabunpostUbiqNOEdge.allASVs.2)
+
+# 
+relabunpostUbiqNOEdge.allASVs.df <-psmelt(relabunpostUbiqNOEdge.allASVs.2)
+head(relabunpostUbiqNOEdge.allASVs.df) #
+dim(relabunpostUbiqNOEdge.allASVs.df) #16, 33 (16 because 8 phyla times 2)
+
+glomero_index <- which(relabunpostUbiqNOEdge.allASVs.df$Phylum=="p__Glomeromycota")
+glomeroRelAbund <- relabunpostUbiqNOEdge.allASVs.df[glomero_index, ]
+View(glomeroRelAbund)
+colnames(glomeroRelAbund)[3] <- "Relative_abundance"
+colnames(glomeroRelAbund)[2] <- "Habitat_type"
+
+# View(relabunpostUbiqNOEdge.phyla.df)
+
+# Make boxplot of relative abundances of each ASV in the phylum
+glomeroBoxPlot <- ggplot(glomeroRelAbund, aes(x=Habitat_type, y=Relative_abundance, fill= Habitat_type)) +
+  geom_boxplot() +
+  scale_fill_manual(values=c("darkgreen", "goldenrod")) +
+  labs(title="Relative abundance of Glomeromycota ASVs", x="Habitat Type", y = "Relative abundance")
+quartz()
+glomeroBoxPlot
+
+# Get exact abundances of each phyla 
+#colnames(relabunpostUbiqNOEdge.phyla.df)
+#relabunpostUbiqNOEdge.phyla.df[,2] #Now just all patch and forest!
+
+
+
+# This plot is just to check that numbers look right!
+#relabunpostUbiqNOEdgePlot <- ggplot(data=relabunpostUbiqNOEdge.phyla.df, aes(x=Sample, y=Abundance, fill=Phylum)) + theme(axis.title.y = element_text(size = 14, face = "bold")) + theme(axis.title.x = element_blank()) + theme(axis.text.x = element_text(colour = "black", size = 12, face = "bold"))
+#quartz()
+relabunpostUbiqNOEdgePlot + geom_bar(aes(), stat="identity", position="fill") +
+  theme(legend.position="bottom") +
+  guides(fill=guide_legend(nrow=4)) + theme(legend.text = element_text(colour="black", size = 10))  + ggtitle("Fungal phyla comprising at least 0.5% of total abundance (median and post-ubiquity)") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
+
+#top_99.5p_phyla <- relabunpostUbiqNOEdge.phyla.df %>%
+  group_by(Sample, Phylum) %>%
+  summarize(Mean = mean(Abundance)) %>%
+  arrange(-Mean) 
+
+
+
+##########################################################################
 # GET Z-SCORES OF EACH ASV WITHIN EU
 ##########################################################################
-# 1. Samples based on raw (i.e. not median) abundance
+# 1. Samples based on raw (i.e. not postUbiq) abundance
 # Prune samples to separate by EU and check to make sure each looks right
 # Each has 5219 ASVs (those left after applying ubiquity threshold of 40). However, not all are found in each EU
 EU_52_Soils.ps <- subset_samples(ITS_postUbiqASVsPlus1.ps, EU == "EU_52")
@@ -542,6 +663,7 @@ sum(NAs) #1560
 abundZscores_allEUs_NAsIndexRowCols <- which(is.na(abundZscores_allEUs), arr.ind = TRUE)
 NonOverlappingASVs <- unique(rownames(abundZscores_allEUs_NAsIndexRowCols))
 NonOverlappingASVs #these ASVs have some NaNs associated with them
+
 ##########################################################################
 # LOGISTIC FIT FOR EACH ASV
 ##########################################################################
@@ -551,7 +673,7 @@ head(DeseqResults) #made earlier in this script
 sampDat # also made earlier in this script, has sample.ID, EU, Transect, Meter, SampleNumberID
 ### this repeats a lot of the script from earlier
 ### HERE IS WHERE WE CHANGE THINGS, SINCE WE DON'T NEED OR WANT SEPARATE DFS FOR FOREST AND PATCH
-ASVnamesDA <- rownames(DeseqResults) #1696 found
+ASVnamesDA <- rownames(DeseqResults) #287 found
 #ASVsAll <- as.data.frame(t(ASVs_outta_ps(ITS_postUbiquity.ps))) #get ASVs from original and transpose so that ASVs are rows (4,480 ASVs in OG)
 # Create dataframe with everything of interest
 diffAbun_ZDat <- merge(DeseqResults, abundZscores_allEUs, by= "row.names") #grab ASV tab info from only those samples that are differentially abundant
@@ -567,118 +689,77 @@ logFitList <- vector("list", length(ASVnamesDA)) #pre-allocate space for each AS
 names(ASVmeterAbunds) <- ASVnamesDA
 names(logFitList) <- ASVnamesDA
 for (i in 1:length(ASVmeterAbunds)){
-  tryCatch({
     ASVmeterAbunds[[i]] <- diffAbunDat_Z_tidy[which(diffAbunDat_Z_tidy$ASV_name==ASVnamesDA[i]),c(10,13, 17:21)] #keeps phylum, family, ASV abundance, sample ID, EU, transect, and meter
     ASVmeterAbunds[[i]] <- ASVmeterAbunds[[i]] %>% 
-      dplyr::arrange(Meter) #arrange by meter, in descending order
+    dplyr::arrange(Meter) %>%  #arrange by meter, in descending order 
+      tryCatch({
+    logFitList[[i]] <- log.fitdiffAbundFunct(y= ASVmeterAbunds[[i]]$ZabundASV, x= ASVmeterAbunds[[i]]$Meter, ASVnames=names(ASVmeterAbunds)[[i]])
   }, error=function(e){})
-}    
+}    # At the end of this for loop, in ASVmeterAbunds, there are as many dataframes as ASVs, with columns on phylum, family, Zscore, Sample.ID, EU, Transect, and Meter
+    # At the end of this for loop, in logFitList, should have as many dataframes as ASVs with c, a, k, and r-value in each.
+# Many seemed to not work here. Why?
+# Which are NULL in the resulting logFitList?
+nullList <- unlist(lapply(logFitList, is.null)) #make a vector of true/false values (for whether or not its null)
+length(which(nullList == TRUE)) #none of these were successfully fit (i.e. all 287 were NULL) Although, weirdly, about 30/287 were plotted with the line.
 
-# greying out for now for testing purposes
-#    logFitList[[i]] <- log.fitdiffAbundFunct(x=ASVmeterAbunds[[i]]$Meter, y=ASVmeterAbunds[[i]]$ASVabundance, ASVnames=ASVnamesDA) #errors are ignored so that those that fit can be fit
-# }, error=function(e){})
-# }
 
-# does this work?
-log.fitdiffAbundFunct(y= ASVmeterAbunds[[1]]$ZabundASV, x= ASVmeterAbunds[[1]]$Meter, ASVnames=names(ASVmeterAbunds)[[1]]) 
-#Error in qr.solve(QR.B, cc) : singular matrix 'a' in solve
-# don't know what this issue is, but this is it!!
-
-log.fitdiffAbundFunct(x=ASVmeterAbunds[[1]]$Meter, y=ASVmeterAbunds[[i]]$ASVabundance, ASVnames=ASVnamesDA)
-diffAbunDat_Z_tidy[which(diffAbunDat_Z_tidy$ASV_name==ASVnamesDA[1]),c(10,13, 17:21)]
-
-#### BUT!!!! WE MAY BE ABLE TO PLOT IT ANYWAY!!
-# THIS DIDNT WORK!!!
-plotVec <- rep(NA, length(ASVmeterAbunds)) #pre-allocate
-for (i in 1:length(length(ASVmeterAbunds))){
-  plotVec[i] <- plot(ASVmeterAbunds[[i]]$ZabundASV ~ ASVmeterAbunds[[i]]$Meter, main = paste("Logistic Function for", names(ASVmeterAbunds)[[i]]), xlab= "distance (m)", ylab= "ASV abundance")
+##### CAN WE SAVE THESE PLOTS ANYWAY?
+# BASE R PLOTTING DOES NOT SEEM TO WORK
+length(ASVnamesDA) == length(DA_ASVsplotList)
+length(ASVmeterAbunds) == length(DA_ASVsplotList)
+DA_ASVsplotList <- vector("list", length(ASVnamesDA)) #pre-allocate list to store all of these plots?
+for (i in 1:length(ASVmeterAbunds)){ #loop over all 287 ASVs
+  DA_ASVsplotList[[i]] <- plot(ASVmeterAbunds[[i]]$ZabundASV ~ ASVmeterAbunds[[i]]$Meter, main = paste("Logistic Function for", names(ASVmeterAbunds)[[i]]), xlab= "distance (m)", ylab= "ASV abundance Z-score")
 }
 
-for (i in 1:length(length(ASVmeterAbunds))){
-  plot(ASVmeterAbunds[[i]]$ZabundASV ~ ASVmeterAbunds[[i]]$Meter, main = paste("Logistic Function for", names(ASVmeterAbunds)[[i]]), xlab= "distance (m)", ylab= "ASV abundance")
+# GGPLOT2 SEEMS TO WORK, BUT GETTING SMOOTHED LINE IS HARD
+DA_ASVsplotList <- vector("list", length(ASVnamesDA)) #pre-allocate list to store all of these plots?
+for (i in 1:length(ASVmeterAbunds)){ #loop over all 287 ASVs
+  DA_ASVsplotList[[i]] <- ggplot(ASVmeterAbunds[[i]], aes(x=Meter, y=ZabundASV)) + 
+    geom_point(alpha=.5) +
+    stat_smooth(method="lm", se=FALSE,
+                col="red", lty=2) + ggtitle(paste("Linear Model for", names(ASVmeterAbunds)[[i]]))
 }
 
-
+# When I do this, I get the error: "Error in h(simpleError(msg, call)) : 
+# error in evaluating the argument 'x' in selecting a method for function 'plot': subscript out of bounds"
+plotVec <- vector("list", length(ASVnamesDA)) #pre-allocate list to store all of these plots?
 for (j in 1:length(length(ASVmeterAbunds))){
-  plotVec[i] <- plot(ASVmeterAbunds[[i]]$ZabundASV ~ ASVmeterAbunds[[i]]$Meter, main = paste("Logistic Function for", names(ASVmeterAbunds)[[i]]), xlab= "distance (m)", ylab= "ASV abundance")
-  print(plot(plotVec[i]))
+  plotVec[[i]] <- plot(ASVmeterAbunds[[i]]$ZabundASV ~ ASVmeterAbunds[[i]]$Meter, main = paste("Logistic Function for", names(ASVmeterAbunds)[[i]]), xlab= "distance (m)", ylab= "ASV abundance")
+  print(plot(plotVec[[i]]))
 }
 
-quartz()
-plot(ASVmeterAbunds[[1]]$ZabundASV ~ ASVmeterAbunds[[1]]$Meter, main = paste("Logistic Function for", names(ASVmeterAbunds)[[1]]), xlab= "distance (m)", ylab= "ASV abundance")
+try <- log.fitdiffAbundFunct(y= ASVmeterAbunds[[3]]$ZabundASV, x= ASVmeterAbunds[[3]]$Meter, ASVnames=names(ASVmeterAbunds)[[3]])
 
-quartz()
-plot(ASVmeterAbunds[[2]]$ZabundASV ~ ASVmeterAbunds[[2]]$Meter, main = paste("Logistic Function for", names(ASVmeterAbunds)[[2]]), xlab= "distance (m)", ylab= "ASV abundance")
+try <- log.fitdiffAbundFunct(y= ASVmeterAbunds[[1]]$ZabundASV, x= ASVmeterAbunds[[1]]$Meter, ASVnames=names(ASVmeterAbunds)[[1]])
 
-quartz()
-plot(ASVmeterAbunds[[100]]$ZabundASV ~ ASVmeterAbunds[[100]]$Meter, main = paste("Logistic Function for", names(ASVmeterAbunds)[[100]]), xlab= "distance (m)", ylab= "ASV abundance")
+# PLAYING WITH TOY EXAMPLES OF SPLINES
+n <- 10
+d <- data.frame(x = 1:n, y = rnorm(n))
+gg1 <- ggplot(d,aes(x,y)) + geom_point() + 
+  geom_line(data=data.frame(spline(d, n=n*10)))
+gg1
+# How to get values 
+ggplot_build(gg1)$data[[2]][,c("x","y")]
 
-quartz()
-plot(ASVmeterAbunds[[243]]$ZabundASV ~ ASVmeterAbunds[[243]]$Meter, main = paste("Logistic Function for", names(ASVmeterAbunds)[[243]]), xlab= "distance (m)", ylab= "ASV abundance")
+ggplot(data=ASVmeterAbunds[[1]], aes(x=Meter, y=ZabundASV)) + 
+  geom_point(alpha=.5) +
+  geom_line(data=data.frame(spline(x= ASVmeterAbunds[[1]]$Meter, y= ASVmeterAbunds[[1]]$ZabundASV))) + ggtitle(paste("Linear Model for", names(ASVmeterAbunds)[[1]]))
 
-quartz()
-plot(ASVmeterAbunds[[1000]]$ZabundASV ~ ASVmeterAbunds[[1000]]$Meter, main = paste("Logistic Function for", names(ASVmeterAbunds)[[1000]]), xlab= "distance (m)", ylab= "ASV abundance")
+# Last saved August 2, 2022
+# save(ITS_postUbiqASVsPlus1.ps, file="RobjectsSaved/ITS_postUbiqASVsPlus1_ps")
 
-quartz()
-plot(ASVmeterAbunds[[681]]$ZabundASV ~ ASVmeterAbunds[[681]]$Meter, main = paste("Logistic Function for", names(ASVmeterAbunds)[[681]]), xlab= "distance (m)", ylab= "ASV abundance")
+# SPLINE EXAMPLE (ANOTHER IDEA)
+require(graphics)
+plot(dist ~ speed, data = cars, main = "data(cars)  &  smoothing splines")
+cars.spl <- with(cars, smooth.spline(speed, dist))
+cars.spl
+## This example has duplicate points, so avoid cv = TRUE
 
-
-which(names(ASVmeterAbunds)=="ASV_1280")
-
-my_plot <- recordPlot()
-plot.new()  
-my_plot
-
-length(ASVmeterAbunds)
-
-##########################################################################
-# STACKED BARCHART OF DIFFERENTIAL ABUNDANCE PHYLA NUMBER IN EACH CATEGORY
-##########################################################################
-
-DeseqResultsMini <- DeseqResults[,c(8,14)]  #diff abund analysis: just ASV name (as rownames), phylum, and habitat 
-postUbiqTaxTab <- taxtable_outta_ps(ITS_postUbiqASVsPlus1.ps) #get full taxonomy table from post ubiquity dataset
-length(which(rownames(postUbiqTaxTab) %in% rownames(DeseqResultsMini) == TRUE)) #287
-length(which(rownames(postUbiqTaxTab) %in% rownames(DeseqResultsMini) == FALSE)) #126 ASVs are NOT differentially abundant?
-false_index <- which(rownames(postUbiqTaxTab) %in% rownames(DeseqResultsMini) == FALSE) #also 126
-# Now, construct a dataframe with the taxa that were not differentially abundant 
-notDA_taxTab <- postUbiqTaxTab[false_index,] #get a taxonomy tab with ONLY the non-differentially abundant ASVs
-notDA_taxTab$Habitat <- "AremainingASVs" #make a habitat column that labels these as NOT differentially abundant. A in front so that would be first
-# in ggplot for ease.
-# View(notDA_taxTab)
-colnames(notDA_taxTab)
-notDA_taxTabMini <- notDA_taxTab[,c(2,8)] #keep only phylum and habitat to match DeseqResultsMini
-DAphylumAll <- rbind(DeseqResultsMini, notDA_taxTabMini) #this has ASV name, phylum, and whether diff abundant for ALL ASVs in postUbiquity analysis
-# What are the phyla breakdown here?
-# so effectively, we want to get numbers in each phyla in each group. Should just be able to plot this?
-
-diffAbund_ITS_stackedBarplotPhyla <- ggplot(DAphylumAll, aes(fill=Habitat, x=Phylum)) + 
-  geom_bar(position="stack", stat="count") +
-  scale_fill_manual(values=c("darkgrey","darkgreen","goldenrod"), name= "Differentially abundant in:", labels=c("not differentially abundant", "forest", "patch")) +
-  scale_x_discrete(labels=c("p__Ascomycota" = "Ascomycota", "p__Basidiomycota" = "Basidiomycota",
-                              "p__Calcarisporiellomycota" = "Calcarisporiellomycota",
-                              "p__Glomeromycota" = "Glomeromycota", "p__Mortierellomycota"="Mortierellomycota",
-                              "p__Mucoromycota" = "Mucoromycota", "p__Olpidiomycota"= "Olpidiomycota",
-                              "p__Rozellomycota" = "Rozellomycota")) +
-  theme(axis.text.x = element_text(angle = 90), legend.title= element_blank()) +
-  scale_y_continuous(breaks=seq(0,1000,by=100)) +
-  ylab("number of ASVs in phylum") +
-  ggtitle("Differentially Abundant Fungal ASVs") 
-# quartz()
-diffAbund_ITS_stackedBarplotPhyla
-
-# A few checks to make sure that the counting above is working as expected
-# Ascomycota
-length(which(DAphylumAll$Phylum=="p__Ascomycota")) #249
-asco_index <- which(DAphylumAll$Phylum=="p__Ascomycota")
-length(which(DAphylumAll[asco_index,]$Habitat=="forest")) #56 forest specialists within Ascomycota
-length(which(DAphylumAll[asco_index,]$Habitat=="patch")) #120 patch specialists within Ascomycota
-length(which(DAphylumAll[asco_index,]$Habitat=="AremainingASVs")) #73 remaining ASVs within Ascomycota
-(56+ 120 + 73) == length(which(DAphylumAll$Phylum=="p__Ascomycota"))
-# this looks correct on the plot too!
-
-# Construct two-paneled figure with 16S and ITS differentially abundant stacked barcharts side by side
-# Load in previously made 16S figure (made in "EdgeEffectsbyASV_allSites.R")
-load(file="RobjectsSaved/diffAbund_16S_stackedBarplotPhyla_plot")
-# quartz()
-grid.arrange(diffAbund_16S_stackedBarplotPhyla, diffAbund_ITS_stackedBarplotPhyla, nrow=2)
+lines(cars.spl, col = "blue")
+ss10 <- smooth.spline(cars[,"speed"], cars[,"dist"], df = 10)
+lines(ss10, lty = 2, col = "red")
+legend(5,120,c(paste("default [C.V.] => df =",round(cars.spl$df,1)),
+               "s( * , df = 10)"), col = c("blue","red"), lty = 1:2,
+       bg = 'bisque')
 
