@@ -14,7 +14,7 @@
 # 2. Make a stacked barchart that shows number of differentially abundant ASVs in each  differential abundance breakdown by forest, patch,
 # and non-differentially abundant microbes 
 
-# IdentifyEdgeEffectTaxa5.R investigated linear fit and logisti model fit of the
+# IdentifyEdgeEffectTaxa5.R investigated linear fit and logistic model fit of the
 # the data, and found that logistic models were much better.
 
 ###################################################################################################
@@ -322,6 +322,99 @@ colnames(diffAbunDat_tidy)[2] <- "ASV_name" #rename "Row.names" column to be "AS
  ##########
 
 ##########################################################################
+# STACKED BARCHART OF DIFFERENTIAL ABUNDANCE PHYLA NUMBER IN EACH CATEGORY
+##########################################################################
+
+DeseqResultsMini <- DeseqResults[,c(8,14)]  #diff abund analysis: just ASV name (as rownames), phylum, and habitat 
+postUbiqTaxTab <- taxtable_outta_ps(postUbiqASVs16S_Plus1.ps) #get full taxonomy table from post ubiquity dataset
+length(which(rownames(postUbiqTaxTab) %in% rownames(DeseqResultsMini) == TRUE)) #2169
+length(which(rownames(postUbiqTaxTab) %in% rownames(DeseqResultsMini) == FALSE)) #3050 ASVs are NOT differentially abundant?
+false_index <- which(rownames(postUbiqTaxTab) %in% rownames(DeseqResultsMini) == FALSE) #also 3050
+# Now, construct a dataframe with the taxa that were not differentially abundant 
+notDA_taxTab <- postUbiqTaxTab[false_index,] #get a taxonomy tab with ONLY the non-differentially abundant ASVs
+notDA_taxTab$Habitat <- "AremainingASVs" #make a habitat column that labels these as NOT differentially abundant. A in front so that would be first
+# in ggplot for ease.
+# View(notDA_taxTab)
+colnames(notDA_taxTab)
+notDA_taxTabMini <- notDA_taxTab[,c(2,8)] #keep only phylum and habitat to match DeseqResultsMini
+DAphylumAll <- rbind(DeseqResultsMini, notDA_taxTabMini) #this has ASV name, phylum, and whether diff abundant for ALL ASVs in postUbiquity analysis
+# What are the phyla breakdown here?
+# so effectively, we want to get numbers in each phyla in each group. Should just be able to plot this?
+
+diffAbund_16S_stackedBarplotPhyla <- ggplot(DAphylumAll, aes(fill=Habitat, x=Phylum)) + 
+  geom_bar(position="stack", stat="count") +
+  scale_fill_manual(values=c("darkgrey","darkgreen","goldenrod"), name= "Differentially abundant in:", labels=c("not differentially abundant", "forest", "patch")) +
+  theme(axis.text.x = element_text(angle = 90), legend.title= element_blank()) +
+  scale_y_continuous(breaks=seq(0,1000,by=100)) +
+  ylab("number of ASVs in phylum") +
+  ggtitle("Differentially Abundant Bacterial and Archaeal ASVs")
+# quartz()
+diffAbund_16S_stackedBarplotPhyla
+# Below saved August 1, 2022 so that it can be added to a 2 paneled plot with fungal plot!
+# save(diffAbund_16S_stackedBarplotPhyla, file="RobjectsSaved/diffAbund_16S_stackedBarplotPhyla_plot")
+
+# A few checks to make sure that the counting above is working as expected
+# Acidobacteria
+length(which(DAphylumAll$Phylum=="Acidobacteria")) #1043
+acido_index <- which(DAphylumAll$Phylum=="Acidobacteria")
+length(which(DAphylumAll[acido_index,]$Habitat=="forest")) #342 forest specialists within Acidobacteria
+length(which(DAphylumAll[acido_index,]$Habitat=="patch")) #174 patch specialists within Acidobacteria
+length(which(DAphylumAll[acido_index,]$Habitat=="AremainingASVs")) #527 remaining ASVs
+(342+ 174 + 527) == length(which(DAphylumAll$Phylum=="Acidobacteria"))
+
+#Chloroflexi
+length(which(DAphylumAll$Phylum=="Chloroflexi")) #498
+chloro_index <- which(DAphylumAll$Phylum=="Chloroflexi")
+length(which(DAphylumAll[chloro_index,]$Habitat=="forest")) #17 forest specialists 
+length(which(DAphylumAll[chloro_index,]$Habitat=="patch")) #252 patch specialists
+length(which(DAphylumAll[chloro_index,]$Habitat=="AremainingASVs")) #229 remaining ASVs
+(17+252+229) == length(which(DAphylumAll$Phylum=="Chloroflexi"))
+
+##########################################################################
+# PLOT OF Chloroflexi
+##########################################################################
+
+# Within the plot above, Chloroflexi are among the most interesting groups.
+# Here, makes a plot of the different relative abundances of 
+
+# Phylum level (adopted from my code at:
+# https://github.com/clairecwinfrey/PhanBioMS_scripts/blob/master/R_scripts/figures/taxonomic_barplots.R)
+PostUbiq_16S_NOEdge.ps <- subset_samples(postUbiquity.ps, Habitat != "edge") #remove edge so we can compare patch versus forest
+
+# TRANSFORM SAMPLE COUNTS ON JUST GLOMMED SAMPLES (UNLIKE WHAT WE DID AT FIRST)
+# relabunpostUbiqNOEdge.phyla.0 <- transform_sample_counts(PostUbiq_16S_NOEdge.ps.phylum.glom, function(x) x / sum(x) )
+relabunpostUbiqNOEdge_16S.allASVs <- transform_sample_counts(PostUbiq_16S_NOEdge.ps, function(x) x / sum(x) )
+
+# MERGE SAMPLES so that we only have combined abundances for site and different kinds of controls
+relabunpostUbiqNOEdge.allASVs <- merge_samples(relabunpostUbiqNOEdge_16S.allASVs, group = c("Habitat"))
+sample_data(relabunpostUbiqNOEdge_16S.allASVs) #shows that we still have samples from each EU, biocrust, and extcontrol (water)
+# Meter did an averaging thing; can just ignore it
+
+# CONVERT TO PROPORTIONS AGAIN B/C TOTAL ABUNDANCE OF EACH SITE WILL EQUAL NUMBER OF SPECIES THAT WERE MERGED
+relabunpostUbiqNOEdge_16S.allASVs.2 <- transform_sample_counts(relabunpostUbiqNOEdge.allASVs, function(x) x / sum(x))
+sample_data(relabunpostUbiqNOEdge_16S.allASVs.2)
+
+# 
+relabunpostUbiqNOEdge_16S.allASVs.df <-psmelt(relabunpostUbiqNOEdge_16S.allASVs.2)
+head(relabunpostUbiqNOEdge_16S.allASVs.df) #
+dim(relabunpostUbiqNOEdge_16S.allASVs.df) #10438, 33 because 5219 taxa
+
+chloro_index <- which(relabunpostUbiqNOEdge_16S.allASVs.df$Phylum=="Chloroflexi")
+chloroRelAbund <- relabunpostUbiqNOEdge_16S.allASVs.df[chloro_index, ]
+#View(chloroRelAbund)
+colnames(chloroRelAbund)[3] <- "Relative_abundance"
+colnames(chloroRelAbund)[2] <- "Habitat_type"
+
+# Make boxplot of relative abundances of each ASV in the Chloroflexi
+chloroBoxPlot <- ggplot(chloroRelAbund, aes(x=Habitat_type, y=Relative_abundance, fill= Habitat_type)) +
+  geom_boxplot() +
+  scale_fill_manual(values=c("darkgreen", "goldenrod")) +
+  labs(title="Relative abundance of Chloroflexi ASVs", x="Habitat Type", y = "Relative abundance")
+quartz()
+chloroBoxPlot
+
+
+##########################################################################
 # GET Z-SCORES OF EACH ASV WITHIN EU
 ##########################################################################
 # 1. Samples based on raw (i.e. not median) abundance
@@ -552,8 +645,8 @@ head(DeseqResults) #made earlier in this script
 sampDat # also made earlier in this script, has sample.ID, EU, Transect, Meter, SampleNumberID
 ### this repeats a lot of the script from earlier
 ### HERE IS WHERE WE CHANGE THINGS, SINCE WE DON'T NEED OR WANT SEPARATE DFS FOR FOREST AND PATCH
-ASVnamesDA <- rownames(DeseqResults) #1696 found
-#ASVsAll <- as.data.frame(t(ASVs_outta_ps(postUbiquity.ps))) #get ASVs from original and transpose so that ASVs are rows (4,480 ASVs in OG)
+ASVnamesDA <- rownames(DeseqResults) #2169 found
+#ASVsAll <- as.data.frame(t(ASVs_outta_ps(postUbiquity.ps))) #get ASVs from original and transpose so that ASVs are rows 
 # Create dataframe with everything of interest
 diffAbun_ZDat <- merge(DeseqResults, abundZscores_allEUs, by= "row.names") #grab ASV tab info from only those samples that are differentially abundant
 #View(diffAbun_ZDat)
@@ -561,43 +654,46 @@ diffAbunDat_Z_tidy <- diffAbun_ZDat %>%
   pivot_longer(cols= 16:ncol(diffAbun_ZDat), names_to= "SampleNumberID", values_to= "ZabundASV") %>% #has # of rows equal to # of diff abund ASVs x sample number
   merge(sampDat, by="SampleNumberID") #merge with the sampDat to get metadata variables of interest.
 colnames(diffAbunDat_Z_tidy)[2] <- "ASV_name" #rename "Row.names" column to be "ASV_name".
+# View(diffAbunDat_Z_tidy)
 
 # 2. Get logistic fits for all of these ASVs!
 ASVmeterAbunds <- vector("list", length(ASVnamesDA)) #pre-allocate space for each ASV's abundance for each ASV
 logFitList <- vector("list", length(ASVnamesDA)) #pre-allocate space for each ASV's logistic fit info
 names(ASVmeterAbunds) <- ASVnamesDA
 names(logFitList) <- ASVnamesDA
+# ASVmeterAbunds for loop has Phylum, family, ZabundASV, Sample.ID (e.g. 53SD_B_10) EU, Transect, and Meter , with a separate dataframe for each ASV
 for (i in 1:length(ASVmeterAbunds)){
   tryCatch({
-    ASVmeterAbunds[[i]] <- diffAbunDat_Z_tidy[which(diffAbunDat_Z_tidy$ASV_name==ASVnamesDA[i]),c(10,13, 17:21)] #keeps phylum, family, ASV abundance, sample ID, EU, transect, and meter
+    # the next line loops over all of the differentially abundant ASVs 
+    ASVmeterAbunds[[i]] <- diffAbunDat_Z_tidy[which(diffAbunDat_Z_tidy$ASV_name==ASVnamesDA[i]),c(10,13, 17:21)] #keeps phylum, family, ASV abundance (Zscore), sample ID, EU, transect, and meter
     ASVmeterAbunds[[i]] <- ASVmeterAbunds[[i]] %>% 
-      dplyr::arrange(Meter) #arrange by meter, in descending order
+      dplyr::arrange(Meter) #arrange by meter, in increasing order (i.e. 10, 20, 30, etc. Places 100m where it goes!)
   }, error=function(e){})
 }    
+
 
 # greying out for now for testing purposes
 #    logFitList[[i]] <- log.fitdiffAbundFunct(x=ASVmeterAbunds[[i]]$Meter, y=ASVmeterAbunds[[i]]$ASVabundance, ASVnames=ASVnamesDA) #errors are ignored so that those that fit can be fit
 # }, error=function(e){})
 # }
 
-# does this work?
+# does this work? #YES
 log.fitdiffAbundFunct(y= ASVmeterAbunds[[1]]$ZabundASV, x= ASVmeterAbunds[[1]]$Meter, ASVnames=names(ASVmeterAbunds)[[1]]) 
   #Error in qr.solve(QR.B, cc) : singular matrix 'a' in solve
 # don't know what this issue is, but this is it!!
 
-log.fitdiffAbundFunct(x=ASVmeterAbunds[[1]]$Meter, y=ASVmeterAbunds[[i]]$ASVabundance, ASVnames=ASVnamesDA)
+
+log.fitdiffAbundFunct(x=ASVmeterAbunds[[1]]$Meter, y=ASVmeterAbunds[[i]]$ASVabundance, ASVnames=ASVnamesDA) # Error in if (any(nEQ <- vNms != make.names(vNms))) vNms[nEQ] <- paste0("`",  : missing value where TRUE/FALSE needed
 diffAbunDat_Z_tidy[which(diffAbunDat_Z_tidy$ASV_name==ASVnamesDA[1]),c(10,13, 17:21)]
 
 #### BUT!!!! WE MAY BE ABLE TO PLOT IT ANYWAY!!
-# THIS DIDNT WORK!!!
-plotVec <- rep(NA, length(ASVmeterAbunds)) #pre-allocate
-for (i in 1:length(length(ASVmeterAbunds))){
-  plotVec[i] <- plot(ASVmeterAbunds[[i]]$ZabundASV ~ ASVmeterAbunds[[i]]$Meter, main = paste("Logistic Function for", names(ASVmeterAbunds)[[i]]), xlab= "distance (m)", ylab= "ASV abundance")
+# THIS did not Work
+DA_ASVsplotList <- vector("list", length(ASVnamesDA)) #pre-allocate list to store all of these plots?
+for (i in 1:length(ASVnamesDA)){ #loop over all of the indicator ASVs
+  DA_ASVsplotList[[i]] <- plot(ASVmeterAbunds[[i]]$ZabundASV ~ ASVmeterAbunds[[i]]$Meter, main = paste("Logistic Function for", names(ASVmeterAbunds)[[i]]), xlab= "distance (m)", ylab= "ASV abundance")
 }
 
-for (i in 1:length(length(ASVmeterAbunds))){
-  plot(ASVmeterAbunds[[i]]$ZabundASV ~ ASVmeterAbunds[[i]]$Meter, main = paste("Logistic Function for", names(ASVmeterAbunds)[[i]]), xlab= "distance (m)", ylab= "ASV abundance")
-}
+plot(ASVmeterAbunds[[1]]$ZabundASV ~ ASVmeterAbunds[[1]]$Meter, main = paste("Logistic Function for", names(ASVmeterAbunds)[[1]]), xlab= "distance (m)", ylab= "ASV abundance")
 
 
 for (j in 1:length(length(ASVmeterAbunds))){
@@ -631,51 +727,4 @@ plot.new()
 my_plot
 
 length(ASVmeterAbunds)
-##########################################################################
-# STACKED BARCHART OF DIFFERENTIAL ABUNDANCE PHYLA NUMBER IN EACH CATEGORY
-##########################################################################
 
-DeseqResultsMini <- DeseqResults[,c(8,14)]  #diff abund analysis: just ASV name (as rownames), phylum, and habitat 
-postUbiqTaxTab <- taxtable_outta_ps(postUbiqASVs16S_Plus1.ps) #get full taxonomy table from post ubiquity dataset
-length(which(rownames(postUbiqTaxTab) %in% rownames(DeseqResultsMini) == TRUE)) #2169
-length(which(rownames(postUbiqTaxTab) %in% rownames(DeseqResultsMini) == FALSE)) #3050 ASVs are NOT differentially abundant?
-false_index <- which(rownames(postUbiqTaxTab) %in% rownames(DeseqResultsMini) == FALSE) #also 3050
-# Now, construct a dataframe with the taxa that were not differentially abundant 
-notDA_taxTab <- postUbiqTaxTab[false_index,] #get a taxonomy tab with ONLY the non-differentially abundant ASVs
-notDA_taxTab$Habitat <- "AremainingASVs" #make a habitat column that labels these as NOT differentially abundant. A in front so that would be first
-# in ggplot for ease.
-# View(notDA_taxTab)
-colnames(notDA_taxTab)
-notDA_taxTabMini <- notDA_taxTab[,c(2,8)] #keep only phylum and habitat to match DeseqResultsMini
-DAphylumAll <- rbind(DeseqResultsMini, notDA_taxTabMini) #this has ASV name, phylum, and whether diff abundant for ALL ASVs in postUbiquity analysis
-# What are the phyla breakdown here?
-# so effectively, we want to get numbers in each phyla in each group. Should just be able to plot this?
-
-diffAbund_16S_stackedBarplotPhyla <- ggplot(DAphylumAll, aes(fill=Habitat, x=Phylum)) + 
-  geom_bar(position="stack", stat="count") +
-  scale_fill_manual(values=c("darkgrey","darkgreen","goldenrod"), name= "Differentially abundant in:", labels=c("not differentially abundant", "forest", "patch")) +
-  theme(axis.text.x = element_text(angle = 90), legend.title= element_blank()) +
-  scale_y_continuous(breaks=seq(0,1000,by=100)) +
-  ylab("number of ASVs in phylum") +
-  ggtitle("Differentially Abundant Bacterial and Archaeal ASVs")
-# quartz()
-diffAbund_16S_stackedBarplotPhyla
-# Below saved August 1, 2022 so that it can be added to a 2 paneled plot with fungal plot!
-# save(diffAbund_16S_stackedBarplotPhyla, file="RobjectsSaved/diffAbund_16S_stackedBarplotPhyla_plot")
-
-# A few checks to make sure that the counting above is working as expected
-# Acidobacteria
-length(which(DAphylumAll$Phylum=="Acidobacteria")) #1043
-acido_index <- which(DAphylumAll$Phylum=="Acidobacteria")
-length(which(DAphylumAll[acido_index,]$Habitat=="forest")) #342 forest specialists within Acidobacteria
-length(which(DAphylumAll[acido_index,]$Habitat=="patch")) #174 patch specialists within Acidobacteria
-length(which(DAphylumAll[acido_index,]$Habitat=="AremainingASVs")) #527 remaining ASVs
-(342+ 174 + 527) == length(which(DAphylumAll$Phylum=="Acidobacteria"))
-
-#Chloroflexi
-length(which(DAphylumAll$Phylum=="Chloroflexi")) #498
-chloro_index <- which(DAphylumAll$Phylum=="Chloroflexi")
-length(which(DAphylumAll[chloro_index,]$Habitat=="forest")) #17 forest specialists 
-length(which(DAphylumAll[chloro_index,]$Habitat=="patch")) #252 patch specialists
-length(which(DAphylumAll[chloro_index,]$Habitat=="AremainingASVs")) #229 remaining ASVs
-(17+252+229) == length(which(DAphylumAll$Phylum=="Chloroflexi"))
