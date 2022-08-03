@@ -12,6 +12,7 @@ This repository contains the scripts used to process 16S and ITS data from soils
 2. ITS_ExploratoryDataAnalysis.R - This script explores the ITS sequencing data, roughly doing the same thing for ITS data as 16SExploratoryDataAnalysisAug2021.R. However, unlike in the 16S script, no differential abundance analysis is done at this stage to explore patch versus matrix.
 3. ITS_UbiquityMedianSetup.R- this script applies a ubiquity filter to the "trimmed" dataset made in ITS_ExploratoryDataAnalysis.R.
 4. EdgeEffectsAllSitesFUNGI.R-- see description above for EdgeEdgebyASV_allSites.R, but this script uses the ITS data.
+5. PostUbiqGraphics.R - makes NMDS ordinations and Bray-Curtis dissimilarities along the transect for dataset created in ITS_UbiquityMedianSetup.R (i.e. after removing rare ASVs and not very ubiquitous ones)
 
 
 **Scripts with additional analyses that probably won't make it into paper**
