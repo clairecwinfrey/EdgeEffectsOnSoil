@@ -91,3 +91,7 @@ set.seed(19) #set seed so that results are reproducible!
 postUbiq_16SPermanova <- adonis(postUbiq_16SBC ~ habitat, data=metaDatForVeg, permutations= 99999)
 # p < 0.001
 
+# Save PERMANOVA results
+# save(postUbiq_16SPermanova, file= "RobjectsSaved/postUbiq_16SPermanova") #last saved Aug 9, 2022
+
+
