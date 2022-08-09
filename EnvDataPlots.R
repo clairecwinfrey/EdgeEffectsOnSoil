@@ -119,7 +119,7 @@ pHEUMed_plot <- ggplot() +
 quartz()
 pHEUMed_plot
 
-# canopy cover
+# Canopy cover
 CanEU_plot <- ggplot() + 
   geom_line(data=pHCanVegMedEU[1:10,], aes(x=Meter, y=avgCanopyEu), color = "#d73027", size= 1.5) +
   geom_line(data=pHCanVegMedEU[11:20,], aes(x=Meter, y=avgCanopyEu), color = "#4575b4", size= 1.5) +
@@ -134,7 +134,7 @@ CanEU_plot <- ggplot() +
 quartz()
 CanEU_plot
 
-# vegetation cover
+# Vegetation cover
 vegEU_plot <- ggplot() + 
   geom_line(data=pHCanVegMedEU[1:10,], aes(x=Meter, y=avgVegCov, group = EU), color = "#d73027", size= 1.5) +
   geom_line(data=pHCanVegMedEU[11:20,], aes(x=Meter, y=avgVegCov, group = EU), color = "#4575b4", size= 1.5) +
@@ -153,6 +153,38 @@ vegEU_plot
 quartz()
 require(gridExtra)
 grid.arrange(pHEUMed_plot, CanEU_plot, vegEU_plot, ncol=3)
+
+####### CANOPY COVER "COLOR BARS" #########
+# Aug 9, 2022 (based on tutorial here: https://ggplot2.tidyverse.org/reference/guide_colourbar.html)
+########################
+df <- expand.grid(X1 = 1:10, X2 = 1:10)
+df$value <- df$X1 * df$X2
+
+pHCanVegMedEU[1:10,4] #just EU_10 canopy cover data
+pHCanVegMedEU[31:40,4] #just EU_53S canopy cover data
+
+canEU10_df <- expand.grid(X = 1:10, Y = 1:10) #make a 10 x 10 grid,
+# where X is the x-axis, and Y the y-axis
+dim(canEU10_df)
+canCoverVec10 <- pHCanVegMedEU$avgCanopyEu[1:10] #add  just the canopy cover data for EU 10
+canEU10_df$value <- rep(canCoverVec10, 10) #add canopy cover data
+# View(canEU10_df) #Now, each row in this 10 x 10 grid should be the same, and should be the mean canopy
+# cover across transect 10
+
+canCoverEU_10_grid <- ggplot(canEU10_df, aes(X, Y)) + geom_tile(aes(fill = value)) + 
+  ggtitle("Mean Canopy Cover EU 10") +
+  scale_fill_gradient(low = "white", high = "darkgreen")
+# Horizontal color bar legend
+quartz() # Horizontal color bar legend
+canCoverEU_10_grid + guides(fill = guide_colourbar(ticks=FALSE, label.position = "top", nbin = 100, title= "Canopy cover",
+                                        direction= "horizontal", barwidth = 6, barheight = 1.5)) + 
+  theme_bw()
+# Vertical color bar legend
+quartz() 
+canCoverEU_10_grid + guides(fill = guide_colourbar(ticks=FALSE, label.position = "left", nbin = 100, title= "Canopy cover",
+                                                   direction= "vertical", barwidth = 1.5, barheight = 6)) + 
+  theme_bw()
+
 
 # save pH, canopy cover, and vegetation data for transects
 # save(pHCanVegMedEU, file="pHCanVegMedEU")
