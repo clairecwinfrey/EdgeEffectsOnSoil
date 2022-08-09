@@ -16,5 +16,8 @@ This repository contains the scripts used to process 16S and ITS data from soils
 4. EdgeEffectsAllSitesFUNGI.R-- see description above for EdgeEdgebyASV_allSites.R, but this script uses the ITS data.
 5. PostUbiqGraphic_ITS.R - makes NMDS ordinations and Bray-Curtis dissimilarities along the transect for dataset created in ITS_UbiquityMedianSetup.R (i.e. after removing rare ASVs and not very ubiquitous ones). Also performs a PERMANOVA to test if samples segregate based on habitat type.
 
+**Other**
+1. EnvDataPlots.R -- this script makes plots of mean pH, canopy cover, and vegetation for all of the points along the transects sampled in the dataset.
+
 
 **Scripts with additional analyses that probably won't make it into paper**
