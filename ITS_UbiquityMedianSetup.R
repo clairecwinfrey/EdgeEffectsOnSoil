@@ -6,13 +6,15 @@
 # applying a ubiquity filter of appearing in at least 40 samples
 # to the samples (which have already been rarefied
 # and where I have removed ASVs that don't occur at least 50 times in dataset).
+# Next, it formats the OTU table in ITS_postUbiquity.ps for FUNGuild 
+# (see https://github.com/UMNFuN/FUNGuild). 
 # I also get the find the median abundance of each ASV in each EU (median over all four transects,
-# at each spot along the transect)
+# at each spot along the transect).
 
 ###################################################################################################
 
 # Set working directory
-setwd("~/Desktop/CU_Research/SoilEdgeEffectsResearch/RobjectsSaved")
+setwd("~/Desktop/CU_Research/SoilEdgeEffectsResearch")
 
 # Read in libraries
 library("phyloseq")       
@@ -21,7 +23,7 @@ library("vegan")
 library("ggplot2")
 
 # Load data
-load("trimmedITSjustsoils.ps") #load phyloseq object that was made after rarefying,
+load("RobjectsSaved/trimmedITSjustsoils.ps") #load phyloseq object that was made after rarefying,
 # and keeping only ASVs that occurred at least 50 times across the (rarefied) 
 # dataset (from ITS_ExploratoryDataAnalysis.R).
 
@@ -66,10 +68,10 @@ ASVs_outta_ps <- function(physeq){ #input is a phyloseq object
   return(as.data.frame(ASVTable))
 }
 
-# 4. # metadata_outta_ps takes the phyloseq metadata table and converts it to a dataframe
-metadata_outta_ps <- function(physeq){ #input is a phyloseq object
-  metaDat <- sample_data(physeq)
-  return(as.data.frame(metaDat))
+# 4. # taxtable_outta_ps takes the phyloseq ASV table and converts it to a dataframe
+taxtable_outta_ps <- function(physeq){ #input is a phyloseq object
+  taxTable <- tax_table(physeq)
+  return(as.data.frame(taxTable))
 }
 
 ###############################################################################
@@ -102,15 +104,12 @@ rownames(sample_data(pooledEU.ps)) #nice, this is by EU!
 ITSASVubiquityEU <- as.data.frame(ASVsampOccurrence(t(pooledEU.ps))) #not sure why I had to transpose this...
 dim(ITSASVubiquityEU) #dimensions are correct and is working after transposing
 # View(ITSASVubiquityEU) This shows how many times each ASV appears in each EU.
-View(ITSASVubiquityEU[which(ITSASVubiquityEU$sampleOccurence ==6),]) # 692 ASVs appeared in all of the EUs!
+# View(ITSASVubiquityEU[which(ITSASVubiquityEU$sampleOccurence ==6),]) # 692 ASVs appeared in all of the EUs!
 
 # Barplot showing ubiquity by EU- shows that vast majority of ASVs, after dropping off 
 # rare ones, are present in more than one site!
 barplot(table(ITSASVubiquityEU[,7]), ylab="Number of ASVs", xlab= "Number of EUs/sites Present in", main= "ASV Ubiquity in ITS Soils By Number of EUs" )
 # This shows that the majority of ASVs occur in all of the EUs
-
-# To be consistent with the 16S data, I will create a subset of the ASV table, based on ASVs that 
-# occur in at least 45 samples.
 
 # Only use ASVs that occur in at least 40 samples
 ITSnamesAll_40 <- names(which(ITSASVubiquity[,234] >= 40)) #this gives the names of the ASVs that occur at least
@@ -118,13 +117,41 @@ ITSnamesAll_40 <- names(which(ITSASVubiquity[,234] >= 40)) #this gives the names
 length(ITSnamesAll_40) #413, matches above
 ITSnamesAll_40
 
-# Remove all of the ASVs from the phyloseq object that don't occur at least 45 times
+# Remove all of the ASVs from the phyloseq object that don't occur at least 40 times
 ITS_postUbiquity.ps <- prune_taxa(ITSnamesAll_40,trimmedITSjustsoils.ps) #352 taxa as expected!
 ITS_postUbiquity.ps
 
 # NMDS for post-ubiquity samples (Bray-Curtis dissimilarity)
 ITS_postUbiq.ord <- ordinate(ITS_postUbiquity.ps, "NMDS", "bray")
 
+###############################################################################
+#         FORMATTING ITS_postUbiquity.ps FOR FUNGuild 
+###############################################################################
+# format is tsv, where first row should be OTU_IOTU_ID(tab)sample1(tab)sample2(tab)sample3(tab)taxonomy(return)
+# taxonomic levels should be separated by semicolons
+
+postUbiqITS_ASVtab <- t(ASVs_outta_ps(ITS_postUbiquity.ps)) #get ASV table out of phyloseq, ASVs are rows
+postUbiqITS_TaxTab <- taxtable_outta_ps(ITS_postUbiquity.ps) #get tax table out of phyloseq; ASVs are also rows!
+rownames(postUbiqITS_TaxTab) == rownames(postUbiqITS_ASVtab)
+FUNGuildTable1 <- merge(postUbiqITS_ASVtab, postUbiqITS_TaxTab, by= "row.names", all=TRUE)
+colnames(FUNGuildTable1)[1] <- "OTU_ID"
+# Collapse taxonomy into one column 
+FUNGuildTable1 <- tidyr::unite(FUNGuildTable1, sep=";",col= "taxonomy", Kingdom:Species)
+# View(FUNGuildTable1)
+# Remove all of the pesky stuff before taxonomy
+FUNGuildTable1$taxonomy <-gsub("k__","",as.character(FUNGuildTable1$taxonomy))
+FUNGuildTable1$taxonomy <-gsub("p__","",as.character(FUNGuildTable1$taxonomy))
+FUNGuildTable1$taxonomy <-gsub("c__","",as.character(FUNGuildTable1$taxonomy))
+FUNGuildTable1$taxonomy <-gsub("o__","",as.character(FUNGuildTable1$taxonomy))
+FUNGuildTable1$taxonomy <-gsub("f__","",as.character(FUNGuildTable1$taxonomy))
+FUNGuildTable1$taxonomy <-gsub("g__","",as.character(FUNGuildTable1$taxonomy))
+FUNGuildTable1$taxonomy <-gsub("s__","",as.character(FUNGuildTable1$taxonomy))
+# colnames(FUNGuildTable1)
+
+# Written to file Aug. 10, 2022
+write.table(FUNGuildTable1, file = "FUNGuildTable.txt", sep = "\t",
+            row.names = TRUE, col.names = TRUE)
+# ** Finally, remove any quotation marks that may appear in new file in a text editor (I used Atom)**
 
 ###############################################################################
 #         APPROACH 1: MEDIAN ASV ABUNDANCE BY METER PER EU
@@ -199,7 +226,7 @@ median(as.numeric(c(EU_10_L10, EU_10_T10, EU_10_R10, EU_10_B10))) == medAbund[1,
 # 1.This will serve as the OTU table for the new phyloseq object 
 ASVtabMedian <- medAbund[,1:3] %>% #remove n column 
   ungroup %>% # necessary to remove columns
-  pivot_wider(names_from = ASVname, values_from= medianEUmeter) %>% # here, would be 4481 total columns (meter name and ASV name)
+  pivot_wider(names_from = ASVname, values_from= medianEUmeter) %>% 
   column_to_rownames("EUmeter") %>% 
   t()
 # View(ASVtabMedian) #correct format and values!
@@ -240,8 +267,8 @@ colnames(otu_table(ITS_medianEU.ps))
 
 # 1. Phyloseq object after rarefying, removal of rares (rares= <50 reads across dataset 
 # AND THEN ubiquity threshold removed < 40 samples across that dataset)
-save(ITS_postUbiquity.ps, file= "ITS_postUbiquity.ps") #saved July 31, 2022
-save(ITS_medianEU.ps, file = "ITS_medianEU.ps")
+#save(ITS_postUbiquity.ps, file= "RobjectsSaved/ITS_postUbiquity.ps") #saved July 31, 2022
+#save(ITS_medianEU.ps, file = "RobjectsSaved/ITS_medianEU.ps")
 
 
 ###################################################################
