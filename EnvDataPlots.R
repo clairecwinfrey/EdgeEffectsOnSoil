@@ -1,4 +1,4 @@
-# Environemtnal and physicochemical data and plots
+# Environmental and physicochemical data and plots
 # December 8, 2021
 
 # This script creates plots for soil physiochemical and environmental data.
@@ -184,6 +184,105 @@ quartz()
 canCoverEU_10_grid + guides(fill = guide_colourbar(ticks=FALSE, label.position = "left", nbin = 100, title= "Canopy cover",
                                                    direction= "vertical", barwidth = 1.5, barheight = 6)) + 
   theme_bw()
+
+###########################################################
+### 53S
+canEU53S_df <- expand.grid(X = 1:10, Y = 1:10) #make a 10 x 10 grid,
+# where X is the x-axis, and Y the y-axis
+dim(canEU53S_df)
+canCoverVec53S <- pHCanVegMedEU$avgCanopyEu[31:40] #add  just the canopy cover data for EU 53S
+canEU53S_df$value <- rep(canCoverVec53S, 10) #add canopy cover data
+# View(canEU53S_df) #Now, each row in this 10 x 10 grid should be the same, and should be the mean canopy
+# cover across transect 53S
+
+canCoverEU_53S_grid <- ggplot(canEU53S_df, aes(X, Y)) + geom_tile(aes(fill = value)) + 
+  ggtitle("Mean Canopy Cover EU 53S") +
+  scale_fill_gradient(low = "white", high = "darkgreen")
+# Horizontal color bar legend
+quartz() # Horizontal color bar legend
+canCoverEU_53S_grid + guides(fill = guide_colourbar(ticks=FALSE, label.position = "top", nbin = 100, title= "Canopy cover",
+                                                    direction= "horizontal", barwidth = 6, barheight = 1.5)) + 
+  theme_bw()
+# Vertical color bar legend
+quartz() 
+canCoverEU_53S_grid + guides(fill = guide_colourbar(ticks=FALSE, label.position = "left", nbin = 100, title= "Canopy cover",
+                                                    direction= "vertical", barwidth = 1.5, barheight = 6)) + 
+  theme_bw()
+
+###########################################################
+### 54S
+canEU54S_df <- expand.grid(X = 1:10, Y = 1:10) #make a 10 x 10 grid,
+# where X is the x-axis, and Y the y-axis
+dim(canEU54S_df)
+canCoverVec54S <- pHCanVegMedEU$avgCanopyEu[41:50] #add  just the canopy cover data for EU 54S
+canEU54S_df$value <- rep(canCoverVec54S, 10) #add canopy cover data
+# View(canEU54S_df) #Now, each row in this 10 x 10 grid should be the same, and should be the mean canopy
+# cover across transect 54S
+
+canCoverEU_54S_grid <- ggplot(canEU54S_df, aes(X, Y)) + geom_tile(aes(fill = value)) + 
+  ggtitle("Mean Canopy Cover EU 54S") +
+  scale_fill_gradient(low = "white", high = "darkgreen")
+# Horizontal color bar legend
+quartz() # Horizontal color bar legend
+canCoverEU_54S_grid + guides(fill = guide_colourbar(ticks=FALSE, label.position = "top", nbin = 100, title= "Canopy cover",
+                                                    direction= "horizontal", barwidth = 6, barheight = 1.5)) + 
+  theme_bw()
+# Vertical color bar legend
+quartz() 
+canCoverEU_54S_grid + guides(fill = guide_colourbar(ticks=FALSE, label.position = "left", nbin = 100, title= "Canopy cover",
+                                                    direction= "vertical", barwidth = 1.5, barheight = 6)) + 
+  theme_bw()
+
+###########################################################
+### 53N
+canEU53N_df <- expand.grid(X = 1:10, Y = 1:10) #make a 10 x 10 grid,
+# where X is the x-axis, and Y the y-axis
+dim(canEU53N_df)
+canCoverVec53N <- pHCanVegMedEU$avgCanopyEu[21:30] #add  just the canopy cover data for EU 53N
+canEU53N_df$value <- rep(canCoverVec53N, 10) #add canopy cover data
+# View(canEU53N_df) #Now, each row in this 10 x 10 grid should be the same, and should be the mean canopy
+# cover across transect 53N
+
+canCoverEU_53N_grid <- ggplot(canEU53N_df, aes(X, Y)) + geom_tile(aes(fill = value)) + 
+  ggtitle("Mean Canopy Cover EU 53N") +
+  scale_fill_gradient(low = "white", high = "darkgreen")
+# Horizontal color bar legend
+quartz() # Horizontal color bar legend
+canCoverEU_53N_grid + guides(fill = guide_colourbar(ticks=FALSE, label.position = "top", nbin = 100, title= "Canopy cover",
+                                                    direction= "horizontal", barwidth = 6, barheight = 1.5)) + 
+  theme_bw()
+# Vertical color bar legend
+quartz() 
+canCoverEU_53N_grid + guides(fill = guide_colourbar(ticks=FALSE, label.position = "left", nbin = 100, title= "Canopy cover",
+                                                    direction= "vertical", barwidth = 1.5, barheight = 6)) + 
+  theme_bw()
+
+###########################################################
+### 52
+canEU52_df <- expand.grid(X = 1:10, Y = 1:10) #make a 10 x 10 grid,
+# where X is the x-axis, and Y the y-axis
+dim(canEU52_df)
+canCoverVec52 <- pHCanVegMedEU$avgCanopyEu[11:20] #add  just the canopy cover data for EU 52
+canEU52_df$value <- rep(canCoverVec52, 10) #add canopy cover data
+# View(canEU52_df) #Now, each row in this 10 x 10 grid should be the same, and should be the mean canopy
+# cover across transect 52
+
+canCoverEU_52_grid <- ggplot(canEU52_df, aes(X, Y)) + geom_tile(aes(fill = value)) + 
+  ggtitle("Mean Canopy Cover EU 52") +
+  scale_fill_gradient(low = "white", high = "darkgreen")
+# Horizontal color bar legend
+quartz() # Horizontal color bar legend
+canCoverEU_52_grid + guides(fill = guide_colourbar(ticks=FALSE, label.position = "top", nbin = 100, title= "Canopy cover",
+                                                   direction= "horizontal", barwidth = 6, barheight = 1.5)) + 
+  theme_bw()
+# Vertical color bar legend
+quartz() 
+canCoverEU_52_grid + guides(fill = guide_colourbar(ticks=FALSE, label.position = "left", nbin = 100, title= "Canopy cover",
+                                                   direction= "vertical", barwidth = 1.5, barheight = 6)) + 
+  theme_bw()
+
+
+
 
 
 # save pH, canopy cover, and vegetation data for transects
