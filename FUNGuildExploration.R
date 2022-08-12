@@ -124,3 +124,16 @@ FUNGuild_stackedBarplotTrophic <- ggplot(fungResultsDA, aes(fill=Habitat, x=Trop
 
 #quartz()
 FUNGuild_stackedBarplotTrophic
+
+# Make a stacked bar plot of different in different habitat types
+FUNGuild_stackedBarplotGuild <- ggplot(fungResultsDA, aes(fill=Habitat, x=Guild)) + 
+  geom_bar(position="stack", stat="count") +
+  scale_fill_manual(values=c("darkgrey","darkgreen","goldenrod"), name= "Differentially abundant in:", labels=c("not differentially abundant", "forest", "patch")) +
+  theme(axis.text.x = element_text(angle = 90), legend.title= element_blank()) +
+  ylab("number of ASVs") +
+  xlab("Guild") +
+  ggtitle("Guilds from FUNGuild") 
+
+#quartz()
+FUNGuild_stackedBarplotGuild
+View(fungResultsDA)
