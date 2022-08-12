@@ -18,6 +18,7 @@ library("ggplot2")
 load("RobjectsSaved/ITS_postUbiquity.ps") #load phyloseq object that was made after rarefying,
 # and keeping only ASVs that occurred at least 50 times across the (rarefied) 
 # dataset (from ITS_UbiquityMedianSetup.R).
+load("RobjectsSaved/diffAbunDat_tidy") #differential abundance results made in EdgeEffectsAllSitesFUNGI.R
 
 # FUNCTIONS DEFINED IN THIS SCRIPT:
 # 1. taxtable_outta_ps takes the phyloseq ASV table and converts it to a dataframe
@@ -79,6 +80,47 @@ write.table(FUNGuildTable1, file = "FUNGuildTable.txt", sep = "\t",
 ###############################################################################
 
 # load file:
-fungResults <- read.delim(file= "~/Desktop/CU_Research/SoilEdgeEffectsResearch/FUNGuildTable.guilds_matched.txt", header = T)
-# View(fungResults) #has X in front of all the sample names, but this should be okay!
-# Out of the
+rawFungResults <- read.delim(file= "~/Desktop/CU_Research/SoilEdgeEffectsResearch/FUNGuildTable.guilds_matched.txt", header = T)
+# View(rawFungResults) #has X in front of all the sample names, but this should be okay!
+# Out of the 413 ASVs that were fed in, 257 had a hit!
+colnames(rawFungResults)[1] <- "ASV_name"
+
+# Get only those ASVs with probable or highly probable results (i.e. NO possibly)
+highProbIndex <- which(rawFungResults$Confidence.Ranking == "Highly Probable") #80 highly probable
+probIndex <- which(rawFungResults$Confidence.Ranking == "Probable") #151 probable
+fungAssignedIndex <- c(highProbIndex, probIndex)
+fungResults <- rawFungResults[fungAssignedIndex,]
+# View(fungResults)   #231 out of 257 were probable or highly probable! 
+
+# This first for loop makes it so that ASVs are either labeled differentially abundant or not
+diffAbunASVs <- unique(diffAbunDat_tidy$ASV_name)
+for (i in 1:nrow(fungResults)) {
+  if (fungResults$ASV_name[i] %in% diffAbunASVs) { #so this gives the positions in fungResults$OTU_ID
+    # where one of the ASVs in diffAbunASVs is 
+    fungResults$DiffAbund[i] <- "DiffAbund"
+  } else {
+    fungResults$DiffAbund[i] <- "notDiffAbund"
+  }
+}
+
+# Join with differentially abundant data!
+fungResultsDA <- left_join(x=fungResults, y=diffAbunDat_tidy[,c(2,8,10:16)], by="ASV_name")
+fungResultsDA <- fungResultsDA %>% dplyr::distinct() #remove duplicate rows
+#View(fungResultsDA)
+NAindex <- which(is.na(fungResultsDA$Habitat))
+fungResultsDA$Habitat[NAindex] <- "notDiffAbund" #make those not diff abund in patch or forest labeled as such!
+
+unique(fungResultsDA$Guild)
+unique(fungResultsDA$Trophic.Mode)
+
+# Make a stacked bar plot of trophic modes in different habitat types
+FUNGuild_stackedBarplotTrophic <- ggplot(fungResultsDA, aes(fill=Habitat, x=Trophic.Mode)) + 
+  geom_bar(position="stack", stat="count") +
+  scale_fill_manual(values=c("darkgrey","darkgreen","goldenrod"), name= "Differentially abundant in:", labels=c("not differentially abundant", "forest", "patch")) +
+  theme(axis.text.x = element_text(angle = 90), legend.title= element_blank()) +
+  ylab("number of ASVs") +
+  xlab("Trophic mode") +
+  ggtitle("Trophic Modes from FUNGuild") 
+
+#quartz()
+FUNGuild_stackedBarplotTrophic
