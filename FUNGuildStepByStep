@@ -1,0 +1,16 @@
+FUNGuild for SRS Edge Effect Project ITS dataset
+August 10, 2022
+
+Description, tutorial, and source code for FUNGuild can be found here:
+https://github.com/UMNFuN/FUNGuild
+
+1. Exported ASV table from ITS_UbiquityMedianSetup.R (see notes within).
+
+2. Opened file in Atom, removed all quotation marks
+
+3. Opened this modified file in Excel, removed all but header from first column (which was just 1-413, rownames from R)
+
+4. Ran the following code in Terminal on personal MacBook (where working directory was ~/Desktop/CU_Research/SoilEdgeEffectsResearch/FUNGuild, where Python script is stored)
+ python3 Guilds_v1.1.py -otu /Users/clairewinfrey/Desktop/CU_Research/SoilEdgeEffectsResearch/FUNGuildTable.txt -m -db fungi
+
+5. Table containing functional information for 257/413 ASVs was created, named FUNGuildTable.guilds_matched.txt
