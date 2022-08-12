@@ -6,8 +6,6 @@
 # applying a ubiquity filter of appearing in at least 40 samples
 # to the samples (which have already been rarefied
 # and where I have removed ASVs that don't occur at least 50 times in dataset).
-# Next, it formats the OTU table in ITS_postUbiquity.ps for FUNGuild 
-# (see https://github.com/UMNFuN/FUNGuild). 
 # I also get the find the median abundance of each ASV in each EU (median over all four transects,
 # at each spot along the transect).
 
@@ -123,35 +121,6 @@ ITS_postUbiquity.ps
 
 # NMDS for post-ubiquity samples (Bray-Curtis dissimilarity)
 ITS_postUbiq.ord <- ordinate(ITS_postUbiquity.ps, "NMDS", "bray")
-
-###############################################################################
-#         FORMATTING ITS_postUbiquity.ps FOR FUNGuild 
-###############################################################################
-# format is tsv, where first row should be OTU_IOTU_ID(tab)sample1(tab)sample2(tab)sample3(tab)taxonomy(return)
-# taxonomic levels should be separated by semicolons
-
-postUbiqITS_ASVtab <- t(ASVs_outta_ps(ITS_postUbiquity.ps)) #get ASV table out of phyloseq, ASVs are rows
-postUbiqITS_TaxTab <- taxtable_outta_ps(ITS_postUbiquity.ps) #get tax table out of phyloseq; ASVs are also rows!
-rownames(postUbiqITS_TaxTab) == rownames(postUbiqITS_ASVtab)
-FUNGuildTable1 <- merge(postUbiqITS_ASVtab, postUbiqITS_TaxTab, by= "row.names", all=TRUE)
-colnames(FUNGuildTable1)[1] <- "OTU_ID"
-# Collapse taxonomy into one column 
-FUNGuildTable1 <- tidyr::unite(FUNGuildTable1, sep=";",col= "taxonomy", Kingdom:Species)
-# View(FUNGuildTable1)
-# Remove all of the pesky stuff before taxonomy
-FUNGuildTable1$taxonomy <-gsub("k__","",as.character(FUNGuildTable1$taxonomy))
-FUNGuildTable1$taxonomy <-gsub("p__","",as.character(FUNGuildTable1$taxonomy))
-FUNGuildTable1$taxonomy <-gsub("c__","",as.character(FUNGuildTable1$taxonomy))
-FUNGuildTable1$taxonomy <-gsub("o__","",as.character(FUNGuildTable1$taxonomy))
-FUNGuildTable1$taxonomy <-gsub("f__","",as.character(FUNGuildTable1$taxonomy))
-FUNGuildTable1$taxonomy <-gsub("g__","",as.character(FUNGuildTable1$taxonomy))
-FUNGuildTable1$taxonomy <-gsub("s__","",as.character(FUNGuildTable1$taxonomy))
-# colnames(FUNGuildTable1)
-
-# Written to file Aug. 10, 2022
-write.table(FUNGuildTable1, file = "FUNGuildTable.txt", sep = "\t",
-            row.names = TRUE, col.names = TRUE)
-# ** Finally, remove any quotation marks that may appear in new file in a text editor (I used Atom)**
 
 ###############################################################################
 #         APPROACH 1: MEDIAN ASV ABUNDANCE BY METER PER EU
