@@ -51,11 +51,17 @@ ord_16S <- ordinate(postUbiquity.ps, method = "NMDS", distance = "bray", trymax 
 HabitatNMDS_16S_postUbiq <- phyloseq::plot_ordination(postUbiquity.ps, ord_16S, type= "samples", color= "Habitat")
 HabitatNMDS_16S_postUbiq <- HabitatNMDS_16S_postUbiq +
   scale_color_manual(values=c("purple", "darkgreen", "goldenrod")) + #change color of points
-  geom_point(size=3) + ggtitle("(Prokaryote) NMDS based on Bray-Curtis Dissimilarities") +
+  geom_point(size=3) + ggtitle("Bacteria and Archaea") +
   theme_bw() +
-  guides(color = guide_legend(override.aes = list(size = 7))) + #change size of legend and title
+  theme(plot.title = element_text(size=22)) +
+  guides(color = guide_legend(override.aes = list(size = 7))) + 
+  theme(axis.ticks = element_blank(),
+        axis.text = element_blank())
 #quartz()
 HabitatNMDS_16S_postUbiq #cool, you can see that the forest and the patch separate out, with edge somewhat in between!
+
+# save plot
+save(HabitatNMDS_16S_postUbiq, file="RobjectsSaved/HabitatNMDS_16S_postUbiq") #saved Aug. 13, 2022
 
 # Ordination based on EU (just to show that they are different!)
 EU_NMDS_16S_postUbiq <- phyloseq::plot_ordination(postUbiquity.ps, ord_16S, type= "samples", color= "EU")
