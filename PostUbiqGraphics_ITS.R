@@ -50,22 +50,31 @@ ord_ITS <- ordinate(ITS_postUbiquity.ps, method = "NMDS", distance = "bray", try
 HabitatNMDS_ITS_postUbiq <- phyloseq::plot_ordination(ITS_postUbiquity.ps, ord_ITS, type= "samples", color= "Habitat")
 HabitatNMDS_ITS_postUbiq <- HabitatNMDS_ITS_postUbiq +
    scale_color_manual(values=c("purple", "darkgreen", "goldenrod")) + #change color of points
-   geom_point(size=3) + ggtitle("(Fungal) NMDS based on Bray-Curtis Dissimilarities") +
+   geom_point(size=3) + ggtitle("Fungi") +
   theme_bw() +
+  theme(plot.title = element_text(size=22)) +
   guides(color = guide_legend(override.aes = list(size = 7))) + #change size of legend and title
+  theme(axis.ticks = element_blank(), #remove x and y axis labels and tick marks
+        axis.text = element_blank())
+
 quartz()
 HabitatNMDS_ITS_postUbiq #cool, you can see that the forest and the patch separate out, with edge somewhat in between!
 
 # Save the plot made above (saved Aug. 6, 2022) so that we can make a two paneled figure with ITS stuff
-save(HabitatNMDS_ITS_postUbiq, file="RobjectsSaved/diffAbund_ITS_stackedBarplotPhyla_plot")
+#save(HabitatNMDS_ITS_postUbiq, file="RobjectsSaved/diffAbund_ITS_stackedBarplotPhyla_plot")
+
+### MAKEA TWO PANELED PLOT WITH THIS AND FUNGAL ORDINATION PLOT SIDE BY SIDE #####
+# LOAD 16S plot made in PostUbiqGraphics_16S.R
+load(file="RobjectsSaved/HabitatNMDS_16S_postUbiq")
+#quartz()
+grid.arrange(HabitatNMDS_16S_postUbiq, HabitatNMDS_ITS_postUbiq, ncol=2)
+# Note: reflected the fungal NMDS plot in PowerPoint to make patch and forest on the same side! 
 
 # Ordination based on EU (just to show that they are different!)
 EU_NMDS_ITS_postUbiq <- phyloseq::plot_ordination(ITS_postUbiquity.ps, ord_ITS, type= "samples", color= "EU")
 EU_NMDS_ITS_postUbiq <- EU_NMDS_ITS_postUbiq + geom_polygon(aes(fill=EU)) + geom_point(size=3) + ggtitle("NMDS based on Bray-Curtis Dissimilarities")
 EU_NMDS_ITS_postUbiq #cool, you can see that the forest and the patch separate out, with edge somewhat in between!
 
-#quartz()
-grid.arrange(EU_NMDS_ITS_postUbiq, HabitatNMDS_ITS_postUbiq, ncol=2)
 
 #########################################################################
 # PERMANOVA TO TEST FOR THE EFFECT OF HABITAT TYPE ON THE DISTRIBUTIONS
