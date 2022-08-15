@@ -94,6 +94,7 @@ fungResults <- rawFungResults[fungAssignedIndex,]
 
 # This first for loop makes it so that ASVs are either labeled differentially abundant or not
 diffAbunASVs <- unique(diffAbunDat_tidy$ASV_name)
+length(diffAbunASVs)
 for (i in 1:nrow(fungResults)) {
   if (fungResults$ASV_name[i] %in% diffAbunASVs) { #so this gives the positions in fungResults$OTU_ID
     # where one of the ASVs in diffAbunASVs is 
@@ -102,6 +103,11 @@ for (i in 1:nrow(fungResults)) {
     fungResults$DiffAbund[i] <- "notDiffAbund"
   }
 }
+
+length(which(fungResults$ASV_name %in% diffAbunASVs == T)) #159 out of the 287 differentially abundant taxa are probable or highly probable
+# 231/413 (all in the post ubiquity dataset were differentially abundant)
+231/413*100
+
 
 # Join with differentially abundant data!
 fungResultsDA <- left_join(x=fungResults, y=diffAbunDat_tidy[,c(2,8,10:16)], by="ASV_name")
@@ -134,6 +140,29 @@ FUNGuild_stackedBarplotGuild <- ggplot(fungResultsDA, aes(fill=Habitat, x=Guild)
   xlab("Guild") +
   ggtitle("Guilds from FUNGuild") 
 
-#quartz()
+# quartz()
 FUNGuild_stackedBarplotGuild
-View(fungResultsDA)
+# View(fungResultsDA)
+
+# Make a stacked barplot with only the EMF and AMF represented by habitat type (added to ESA 2022 presentation)
+  # 1. Get indices of both
+# Get only arbuscular mycorrhizal 
+arbMycoIndex <- which(fungResultsDA$Guild == "Arbuscular Mycorrhizal")
+length(arbMycoIndex) #19
+arbMycoIndex
+# Get only EMF
+EMFIndex <- which(fungResultsDA$Guild == "Ectomycorrhizal")
+length(EMFIndex) #48
+AM_EMFindex <- c(arbMycoIndex, EMFIndex)
+
+   # 2. Plot!
+FUNGuild_stackedBarplotAM_EMF <- ggplot(fungResultsDA[AM_EMFindex,], aes(fill=Habitat, x=Guild)) + 
+  geom_bar(position="stack", stat="count") +
+  scale_fill_manual(values=c("darkgrey","darkgreen","goldenrod"), name= "Differentially abundant in:", labels=c("not differentially abundant", "forest", "patch")) +
+  theme(axis.text.x = element_text(angle = 90), legend.title= element_blank()) +
+  ylab("number of ASVs") +
+  xlab("Guild") +
+  ggtitle("Guilds from FUNGuild") 
+
+# quartz()
+FUNGuild_stackedBarplotAM_EMF
