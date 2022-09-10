@@ -13,7 +13,7 @@ This repository contains the scripts used to process 16S and ITS data from soils
 1. SRS_ITS_Bioinformatics.R- This script demultiplexes raw ITS rDNA reads from the MiSeq, uses dada2 to trim, denoise, dereplicate, and merge reads, and assigns bacterial/archaeal taxonomy (using UNITE database, Oct. 5, 2021 release).
 2. ITS_ExploratoryDataAnalysis.R - This script explores the ITS sequencing data, roughly doing the same thing for ITS data as 16SExploratoryDataAnalysisAug2021.R. However, unlike in the 16S script, no differential abundance analysis is done at this stage to explore patch versus matrix.
 3. ITS_UbiquityMedianSetup.R- this script applies a ubiquity filter to the "trimmed" dataset made in ITS_ExploratoryDataAnalysis.R. Also creates a dataset where ASV abundance is now median (values are across 4 transects at a given meter location within each EU). Finally, this script formats an ASV table for compatibility with FUNGuild.
-4. EdgeEffectsAllSitesFUNGI.R-- see description above for EdgeEdgebyASV_allSites.R, but this script uses the ITS data.
+4. DiffAbundFungi.R-- this script performs a differential abundance test to see which ASVs differ between the forested matrix and the savanna patch, and saves these results (which are loaded in the following script). It also makes visualizations of these results.
 5. PostUbiqGraphic_ITS.R - makes NMDS ordinations and Bray-Curtis dissimilarities along the transect for dataset created in ITS_UbiquityMedianSetup.R (i.e. after removing rare ASVs and not very ubiquitous ones). Also performs a PERMANOVA to test if samples segregate based on habitat type.
 
 **Other**
@@ -21,3 +21,4 @@ This repository contains the scripts used to process 16S and ITS data from soils
 
 
 **Scripts with additional analyses that probably won't make it into paper**
+1. EdgeEffectsAllSitesFUNGI.R-- see description above for EdgeEdgebyASV_allSites.R, but this script uses the ITS data. Was replaced with DiffAbundFungi.R.
