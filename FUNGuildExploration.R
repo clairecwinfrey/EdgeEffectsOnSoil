@@ -118,6 +118,9 @@ fungResultsDA$Habitat[NAindex] <- "notDiffAbund" #make those not diff abund in p
 
 unique(fungResultsDA$Guild)
 unique(fungResultsDA$Trophic.Mode)
+View(fungResultsDA)
+
+save(fungResultsDA, file="RobjectsSaved/fungResultsDA") #saved Sept 14, 2022
 
 # Make a stacked bar plot of trophic modes in different habitat types
 FUNGuild_stackedBarplotTrophic <- ggplot(fungResultsDA, aes(fill=Habitat, x=Trophic.Mode)) + 
@@ -139,6 +142,8 @@ FUNGuild_stackedBarplotGuild <- ggplot(fungResultsDA, aes(fill=Habitat, x=Guild)
   ylab("number of ASVs") +
   xlab("Guild") +
   ggtitle("Guilds from FUNGuild") 
+quartz()
+FUNGuild_stackedBarplotGuild
 
 # quartz()
 FUNGuild_stackedBarplotGuild
