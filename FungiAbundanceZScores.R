@@ -28,6 +28,7 @@ setwd("~/Desktop/CU_Research/SoilEdgeEffectsResearch")
 load("RobjectsSaved/diffAbunDat_tidy_FUNGI") #saved Aug 14, 2022 in EdgeEffectsByASVByEU_FUNGI.R (and DiffAbunFungi.R, I think)
 
 library("tidyverse")
+library("growthcurver")
 
 ##########################################################################
 # 1.  Z-SCORES OF EACH ASV WITHIN EACH EU 
@@ -413,59 +414,156 @@ zScoresEU_10_646$z_60 == (mean_EU_10_646_60m - mean_10_646)/st_10_646 #These are
 mean_EU_10_646_80m <- mean(info_10_646$ASVabundance[which(info_10_646$Meter==80)])
 zScoresEU_10_646$z_80 == (mean_EU_10_646_80m - mean_10_646)/st_10_646 #These are both NaNs, so this is working!
 
+# save(zScores_allEUs, file="RobjectsSaved/zScores_allEUs") #save it all (last saved Sept 13, 2022)
 
 ##########################################################################
 # 3.  FITTING LOGISTIC CURVES
 ##########################################################################
+# This section is largely based on the explanation for the growthcurver package,
+# found here: https://rpubs.com/angelov/growthcurver ######
 
-##### Trying a new following explanation here: https://rpubs.com/angelov/growthcurver ######
-# First, because these are growth plots, add a 1 to all of the z-scores for correct fit
-ZscoresEUs_ASV23_longerPlus1 <- ZscoresEUs_ASV23_longer
-ZscoresEUs_ASV23_longerPlus1$abundZ_score <- ZscoresEUs_ASV23_longer$abundZ_score + 1
-ggplot(ZscoresEUs_ASV23_longerPlus1, aes(x = Meter, y = abundZ_score)) + geom_point(alpha=0.7) +
-  theme_bw()
+# Make this in long form so that it works below:
+zScores_allEUs_FUNGI_longer <- zScores_allEUs %>% 
+  pivot_longer(cols=z_10:z_100, names_to="Meter", values_to = "abundZ_score")
+#  weirdly, adding this code here makes the dataframe a list so we'll do it below instead
+# lapply(gsub, pattern = "z_", replacement = "", fixed = TRUE) #remove "z_"s so that meter is numeric" 
 
+zScores_allEUs_FUNGI_longer[] <- lapply(zScores_allEUs_FUNGI_longer, gsub, pattern = "z_", replacement = "", fixed = TRUE) #remove "z_"s so that meter is numeric" %>% 
+# Make various meters numeric
+zScores_allEUs_FUNGI_longer$ASV_EUmean <- as.numeric(zScores_allEUs_FUNGI_longer$ASV_EUmean)
+zScores_allEUs_FUNGI_longer$ASV_EUsd <- as.numeric(zScores_allEUs_FUNGI_longer$ASV_EUsd)
+zScores_allEUs_FUNGI_longer$Meter <- as.numeric(zScores_allEUs_FUNGI_longer$Meter)
+zScores_allEUs_FUNGI_longer$abundZ_score <- as.numeric(zScores_allEUs_FUNGI_longer$abundZ_score)
+
+head(zScores_allEUs_FUNGI_longer) #looks good!
+
+save(zScores_allEUs_FUNGI_longer, file= "RobjectsSaved/zScores_allEUs_FUNGI_longer") #saved September 13, 2022
+
+# What is minimum z-score? (to use the function below, everything needs to be positive)
 for (i in 1:10){
   print(min(zScores_allEUs[,i], na.rm=TRUE))
 }
+#minimum Z-score is -1.104, at meter 30. So adding 1.5 to everything should make everything positive
+# (and since the minimum Z-score for the prokaryotic data is -1.442465, which occurs at meter 10, 
+# this should work for both)
 
-modelASV23plus1.f <- growthcurver::SummarizeGrowth(data_t=ZscoresEUs_ASV23_longerPlus1$Meter, data_n=ZscoresEUs_ASV23_longerPlus1$abundZ_score, bg_correct = "none")
-modelASV23plus1.f$vals #gives all of the values
-predict(modelASV23plus1.f$model) # gives you the predicted abundance values (according to the model)
-str(modelASV23plus1.f)
-modelASV23plus1.f$vals$r #this is growth rate constant NOT r-squared
-modelASV23plus1.f$vals$sigma #0.4644079 -- the smaller the better!
+# First, because these are growth plots, add a 1 to all of the z-scores for correct fit
+zScores_allEUs_FUNGI_longerPlus1.5 <- zScores_allEUs_FUNGI_longer
+zScores_allEUs_FUNGI_longerPlus1.5$abundZ_score <- zScores_allEUs_FUNGI_longer$abundZ_score + 1.5
+
+# Plot them (raw, i.e. not plus 1)
+z_plot1 <- ggplot(zScores_allEUs_FUNGI_longer, aes(x = Meter, y = abundZ_score)) + geom_point(alpha=0.7) +
+  theme_bw() + ggtitle("Fungi: All ASV abundance Z_scores (raw)")
+quartz()
+z_plot1
+
+# Plot plus 1
+z_plus1_plot <- ggplot(zScores_allEUs_FUNGI_longerPlus1.5, aes(x = Meter, y = abundZ_score, color=EU)) + geom_point(alpha=0.7) +
+  theme_bw() + ggtitle("Fungi: All ASV abundance Z_scores (plus 1.5)")
+quartz()
+z_plus1_plot
+
+# Making the model (just on one ASV for now!)
+ASV_87_df <- zScores_allEUs_FUNGI_longerPlus1.5 %>% filter(ASV_name=="ASV_87")
+View(ASV_87_df)
+
+modelASV87plus1mod <- growthcurver::SummarizeGrowth(data_t=ASV_87_df$Meter, data_n=ASV_87_df$abundZ_score, bg_correct = "none")
+modelASV87plus1mod$vals #gives all of the values
+predict(modelASV87plus1mod$model) # gives you the predicted abundance values (according to the model)
+str(modelASV87plus1mod)
+modelASV87plus1mod$vals$r #this is growth rate constant NOT r-squared
+modelASV87plus1mod$vals$sigma #0.4782246 -- the smaller the better!
 # sigma is a measure of the goodnesss of fit of the parameters of the logistic equation for the data; 
 # it is the residual standard error from the nonlinear regression model. Smaller sigma values indicate
 # a better fit of the logistic curve to the data than larger values.
-plot(predict(modelASV23plus1.f$model) )
-plot(modelASV23plus1.f$model$m$fitted())
-modelASV23plus1.f$model$m$fitted()
+quartz()
+plot(predict(modelASV87plus1mod$model))
+quartz()
+plot(modelASV87plus1mod$model$m$fitted())
+modelASV87plus1mod$model$m$fitted()
 
 ### Plotting ##
 # Base R
-plot(modelASV23plus1.f) #ugly!
+plot(modelASV87plus1mod) #ugly!
 
 # ggplot
-diffAbunDat_tidy_FUNGI[2,] #getting info for ASV_23 to add to ggtitle
-modelASV23plus1.f$vals$t_mid #inflection point
-modelASV23plus1.f$vals$sigma #0.4772041
-p1 <- ggplot(ZscoresEUs_ASV23_longerPlus1, aes(x = Meter, y = abundZ_score)) + geom_point(alpha=1.3) + theme_bw()
-p1
+unique(ASV_87_df[,c(5:9)]) #get taxonomic information for below
+modelASV87plus1mod$vals$t_mid #inflection point = -21.50041
+ASV87plus1mod_plot1 <- ggplot(ASV_87_df, aes(x = Meter, y = abundZ_score)) + geom_point(alpha=1.3) + theme_bw()
+ASV87plus1mod_plot1
 # Adding predicted values
-ASV_23_EU_10_tidyTest_1 #look for name for below
-df.predicted <- data.frame(Meter = ZscoresEUs_ASV23_longerPlus1$Meter, pred.Zabund = modelASV23plus1.f$model$m$fitted())
-p2 <- p1 + geom_line(data=df.predicted, aes(y=pred.Zabund), color="red", size= 4) + ggtitle("Russula subsulphurea (Basidiomycota)") +
-  #geom_point(x=modelASV23plus1.f$vals$t_mid, y = 0.78, color= "red", size=6) + #Here I just guessed a y based on how it looked!
+ASV_87_df.predicted <- data.frame(Meter = ASV_87_df$Meter, pred.Zabund = modelASV87plus1mod$model$m$fitted())
+ASV87plus1mod_plot2 <- ASV87plus1mod_plot1 + geom_line(data=ASV_87_df.predicted, aes(y=pred.Zabund), color="red", size= 2) + ggtitle("Cortinarius sp. (Basidiomycota)") +
+  #geom_point(x=modelASV87plus1mod$vals$t_mid, y = 0.78, color= "red", size=6) + #Here I just guessed y based on how it looked! but inflection point is off the page!
   geom_vline(xintercept = 50, linetype= "dashed", color= "darkgrey", size=2) +
   scale_x_continuous(breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100)) #make it so all meters show on x-axis!
 quartz()
-p2
+ASV87plus1mod_plot2
 
 
-
-df.predicted[c(1:10),] == df.predicted[c(11:20),] #this data frame is longer than it needs to be, but that's okay!
-df.predicted[which(df.predicted$Meter==10),2]  # At 10 meters, abundance prediction (+ 1) is 0.4173783 on the y-axis
+ASV_87_df.predicted[c(1:10),] == ASV_87_df.predicted[c(11:20),] #this data frame is longer than it needs to be, but that's okay!
+ASV_87_df.predicted[which(ASV_87_df.predicted$Meter==10),2]  # At 10 meters, abundance prediction (+ 1.5) is 1.266708 on the y-axis
 # Depth = 80% of distance between edge and abundance at end point, or 
-modelASV23plus1.f$vals$t_mid - 10 
+modelASV87plus1mod$vals$t_mid - 10 
+
+# Making the model for all ASVs
+
+#Get the summary metrics for the entire plate of sample data provided
+#with the Growthcurver package
+
+#First, load the example data provided with Growthcurver. Note that there is
+#a column named "time" -- this is necessary for Growthcurver to know which
+#column contains the time measurements. In this dataset, the repeated
+#measurements from a single well in a plate are given in a column of data.
+
+myPlate <- growthdata
+names(myPlate)
+head(myPlate)
+
+#Next, do the analysis for all the columns.
+summary_plate <- SummarizeGrowthByPlate(plate = myPlate)
+
+#The output is a data frame that contains the information on the best
+#fit for each column of data.
+head(summary_plate) 
+?SummarizeGrowthByPlate
+
+
+head(zScores_allEUs_FUNGI_longerPlus1.5)
+zScores_allEUs_FUNGI_plate <- zScores_allEUs_FUNGI_longerPlus1.5 %>% 
+  pivot_wider(names_from = ASV_name, values_from=abundZ_score) #make dataframe
+  # "wider" so that there are columns for every ASV_name (analogous to samples in myPlate example) 
+colnames(zScores_allEUs_FUNGI_plate)
+
+zScores_allEUs_FUNGI_plate2 <- zScores_allEUs_FUNGI_plate[, c(10, 11:129, 1:9)] #re-order so meter is first
+#View(zScores_allEUs_FUNGI_plate2)
+colnames(zScores_allEUs_FUNGI_plate2)[1] <- "time" #make time to be able to use the SummarizeGrowthByPlate function
+zScores_allEUs_FUNGI_plate_shorter <- zScores_allEUs_FUNGI_plate[,1:120]
+View(zScores_allEUs_FUNGI_plate_shorter)
+
+# Attempt #1 - DOES NOT WORK!
+SummarizeGrowthByPlate(zScores_allEUs_FUNGI_plate_shorter, bg_correct="none", plot_file= "RobjectsSaved/fungiDiffAbundGrowthCurver")
+
+# Another way?
+zScores_allEUs_FUNGI_plate_shorter2 <- zScores_allEUs_FUNGI_longerPlus1.5[,c(1,4,11:12)] %>% 
+pivot_wider(names_from = ASV_name, values_from=abundZ_score) #make dataframe
+colnames(zScores_allEUs_FUNGI_plate_shorter2)
+zScores_allEUs_FUNGI_plate_shorter2 <- zScores_allEUs_FUNGI_plate_shorter2[, c(2, 3:121, 1)] #re-order so meter is first
+colnames(zScores_allEUs_FUNGI_plate_shorter2)[1] <- "time" #make time to be able to use the SummarizeGrowthByPlate function
+zScores_allEUs_FUNGI_plate_shorter2_noEU <- zScores_allEUs_FUNGI_plate_shorter2[,1:120]
+zScores_allEUs_FUNGI_plate_shorter2_noEU <- zScores_allEUs_FUNGI_plate_shorter2_noEU %>% 
+  mutate_all(function(x) ifelse(is.nan(x), NA, x)) #make all NaNs into NAs for function below
+head(zScores_allEUs_FUNGI_plate_shorter2_noEU)
+#View(zScores_allEUs_FUNGI_plate_shorter2_noEU)
+
+# Attempt #2 -- THIS WORKED!!!!!!!!!!
+fungLogFits <- SummarizeGrowthByPlate(zScores_allEUs_FUNGI_plate_shorter2_noEU, bg_correct="none", plot_file= "RobjectsSaved/fungiDiffAbundGrowthCurver")
+str(fungLogFits)
+# 13/119 could not be fit, probably because of NAs/NaNs. Will try to run these separately on their own later!
+
+colnames(fungLogFits)[1] <- "ASV_name" #re-name this ASV_name
+
+# Get taxonomic information by merging with another data frame! Not working so far....
+fungLogFitsTaxa <- merge(fungLogFits, unique(zScores_allEUs_FUNGI_longerPlus1.5[,4:9]), by="ASV_name", all.x= FALSE, all.y= FALSE)
+View(fungLogFitsTaxa)
 
