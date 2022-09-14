@@ -136,7 +136,7 @@ diffAbund_ITS_stackedBarplotPhyla <- ggplot(DAphylumAll, aes(fill=Habitat, x=Phy
                             "p__Calcarisporiellomycota" = "Calcarisporiellomycota",
                             "p__Glomeromycota" = "Glomeromycota", "p__Mortierellomycota"="Mortierellomycota",
                             "p__Mucoromycota" = "Mucoromycota", "p__Olpidiomycota"= "Olpidiomycota",
-                            "p__Rozellomycota" = "Rozellomycota")) +
+                            "p__Rozellomycota" = "Rozellomycota")) + 
   theme(axis.text.x = element_text(angle = 90), legend.title= element_blank()) +
   scale_y_continuous(breaks=seq(0,1000,by=100)) +
   ylab("number of ASVs in phylum") +
@@ -210,12 +210,12 @@ quartz()
 glomeroBoxPlot
 
 # Get exact abundances of each phyla 
-#colnames(relabunpostUbiqNOEdge.phyla.df)
+colnames(relabunpostUbiqNOEdge.phyla.df)
 #relabunpostUbiqNOEdge.phyla.df[,2] #Now just all patch and forest!
 
 
 # This plot is just to check that numbers look right!
-#relabunpostUbiqNOEdgePlot <- ggplot(data=relabunpostUbiqNOEdge.phyla.df, aes(x=Sample, y=Abundance, fill=Phylum)) + theme(axis.title.y = element_text(size = 14, face = "bold")) + theme(axis.title.x = element_blank()) + theme(axis.text.x = element_text(colour = "black", size = 12, face = "bold"))
+relabunpostUbiqNOEdgePlot <- ggplot(data=relabunpostUbiqNOEdge.phyla.df, aes(x=Sample, y=Abundance, fill=Phylum)) + theme(axis.title.y = element_text(size = 14, face = "bold")) + theme(axis.title.x = element_blank()) + theme(axis.text.x = element_text(colour = "black", size = 12, face = "bold"))
 #quartz()
 relabunpostUbiqNOEdgePlot + geom_bar(aes(), stat="identity", position="fill") +
   theme(legend.position="bottom") +
@@ -226,3 +226,4 @@ relabunpostUbiqNOEdgePlot + geom_bar(aes(), stat="identity", position="fill") +
 group_by(Sample, Phylum) %>%
   summarize(Mean = mean(Abundance)) %>%
   arrange(-Mean) 
+
