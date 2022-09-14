@@ -465,7 +465,7 @@ z_plus1_plot
 
 # Making the model (just on one ASV for now!)
 ASV_87_df <- zScores_allEUs_FUNGI_longerPlus1.5 %>% filter(ASV_name=="ASV_87")
-View(ASV_87_df)
+#View(ASV_87_df)
 
 modelASV87plus1mod <- growthcurver::SummarizeGrowth(data_t=ASV_87_df$Meter, data_n=ASV_87_df$abundZ_score, bg_correct = "none")
 modelASV87plus1mod$vals #gives all of the values
@@ -476,9 +476,9 @@ modelASV87plus1mod$vals$sigma #0.4782246 -- the smaller the better!
 # sigma is a measure of the goodnesss of fit of the parameters of the logistic equation for the data; 
 # it is the residual standard error from the nonlinear regression model. Smaller sigma values indicate
 # a better fit of the logistic curve to the data than larger values.
-quartz()
+#quartz()
 plot(predict(modelASV87plus1mod$model))
-quartz()
+#quartz()
 plot(modelASV87plus1mod$model$m$fitted())
 modelASV87plus1mod$model$m$fitted()
 
@@ -497,7 +497,7 @@ ASV87plus1mod_plot2 <- ASV87plus1mod_plot1 + geom_line(data=ASV_87_df.predicted,
   #geom_point(x=modelASV87plus1mod$vals$t_mid, y = 0.78, color= "red", size=6) + #Here I just guessed y based on how it looked! but inflection point is off the page!
   geom_vline(xintercept = 50, linetype= "dashed", color= "darkgrey", size=2) +
   scale_x_continuous(breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100)) #make it so all meters show on x-axis!
-quartz()
+#quartz()
 ASV87plus1mod_plot2
 
 
@@ -542,7 +542,7 @@ zScores_allEUs_FUNGI_plate_shorter <- zScores_allEUs_FUNGI_plate[,1:120]
 View(zScores_allEUs_FUNGI_plate_shorter)
 
 # Attempt #1 - DOES NOT WORK!
-SummarizeGrowthByPlate(zScores_allEUs_FUNGI_plate_shorter, bg_correct="none", plot_file= "RobjectsSaved/fungiDiffAbundGrowthCurver")
+#SummarizeGrowthByPlate(zScores_allEUs_FUNGI_plate_shorter, bg_correct="none", plot_file= "RobjectsSaved/fungiDiffAbundGrowthCurver")
 
 # Another way?
 zScores_allEUs_FUNGI_plate_shorter2 <- zScores_allEUs_FUNGI_longerPlus1.5[,c(1,4,11:12)] %>% 
@@ -563,7 +563,144 @@ str(fungLogFits)
 
 colnames(fungLogFits)[1] <- "ASV_name" #re-name this ASV_name
 
-# Get taxonomic information by merging with another data frame! Not working so far....
+# Get taxonomic information by merging with another data frame! 
 fungLogFitsTaxa <- merge(fungLogFits, unique(zScores_allEUs_FUNGI_longerPlus1.5[,4:9]), by="ASV_name", all.x= FALSE, all.y= FALSE)
-View(fungLogFitsTaxa)
+# View(fungLogFitsTaxa)
+
+# Now, make a plot showing how taxonomy is affected by the "edge" == t_mid???!
+head(fungLogFitsTaxa)
+fungLogFits_edgePlot <- ggplot(fungLogFitsTaxa, aes(x=t_mid, fill=Phylum)) +
+  geom_histogram(binwidth = 5) +
+  theme(axis.text.x = element_text(angle = 90), legend.title= element_blank()) +
+  #scale_y_continuous(breaks=seq(0,1000,by=100)) +
+  ylab("number of ASVs in phylum") +
+  #xlab("edge (as inflection point)") +
+  ggtitle("Functional Edges of Differentially Abundant Fungal ASVs")
+# quartz()
+  fungLogFits_edgePlot
+
+fungLogFits_edgePlot <- ggplot(DAphylumAll, aes(fill=Habitat, x=Phylum)) +
+  geom_bar(position="stack", stat="count") +
+  scale_fill_manual(values=c("darkgrey","darkgreen","goldenrod"), name= "Differentially abundant in:", labels=c("not differentially abundant", "forest", "patch")) +
+  scale_x_discrete(labels=c("p__Ascomycota" = "Ascomycota", "p__Basidiomycota" = "Basidiomycota",
+                            "p__Calcarisporiellomycota" = "Calcarisporiellomycota",
+                            "p__Glomeromycota" = "Glomeromycota", "p__Mortierellomycota"="Mortierellomycota",
+                            "p__Mucoromycota" = "Mucoromycota", "p__Olpidiomycota"= "Olpidiomycota",
+                            "p__Rozellomycota" = "Rozellomycota")) +
+  theme(axis.text.x = element_text(angle = 90), legend.title= element_blank()) +
+  scale_y_continuous(breaks=seq(0,1000,by=100)) +
+  ylab("number of ASVs in phylum") +
+  ggtitle("Differentially Abundant Fungal ASVs")
+# quartz()
+diffAbund_ITS_stackedBarplotPhyla
+
+
+fungLogFitsTaxaLess200 <- fungLogFitsTaxa[which(fungLogFitsTaxa$t_mid <= 200),]
+dim(fungLogFitsTaxaLess200)
+fungLogFitsTaxaEdgeOver200m <- fungLogFitsTaxa[which(fungLogFitsTaxa$t_mid >= 200),] #15 are over 100 meters
+View(fungLogFitsTaxaEdgeOver200m)
+
+questionable_index1 <- which(fungLogFitsTaxa$note=="questionable fit"|fungLogFitsTaxa$note== "cannot fit data") #62 long
+questionableFit <- fungLogFitsTaxa[questionable_index1, ]
+nrow(questionableFit)  #62
+which(questionableFit$t_mid >200)
+length(which(questionableFit$t_mid < 0)) #46
+
+questionable_index <- which(fungLogFitsTaxaLess200$note=="questionable fit"|fungLogFitsTaxaLess200$note== "cannot fit data") #62 long
+fungLogFitsTaxaLess200onlyGood <- fungLogFitsTaxaLess200[-questionable_index,]
+dim(fungLogFitsTaxaLess200onlyGood) #only 37 taxa! :/
+
+cannotFit_index <- which(fungLogFitsTaxaLess200$note== "cannot fit data") #16 long
+fungLogFitsTaxaLess200_onlyFit <- fungLogFitsTaxaLess200[-cannotFit_index,]
+
+fungLogFits_edgePlotLess200onlyGood <- ggplot(fungLogFitsTaxaLess200onlyGood, aes(x=t_mid, fill=Phylum, color=Phylum)) +
+  geom_histogram(binwidth = 5) +
+  theme(axis.text.x = element_text(angle = 90), legend.title= element_blank()) +
+  #scale_y_continuous(breaks=seq(0,1000,by=100)) +
+  ylab("number of ASVs in phylum") +
+  xlab("edge (as inflection point)") +
+  ggtitle("Functional Edges of Differentially Abundant Fungal ASVs (n=37)")
+# quartz()
+fungLogFits_edgePlotLess200onlyGood
+
+
+fungLogFits_edgePlotLess200onlyFitPhylum <- ggplot(fungLogFitsTaxaLess200_onlyFit, aes(x=t_mid, fill=Phylum, color=Phylum)) +
+  geom_histogram(binwidth = 5) +
+  theme(axis.text.x = element_text(angle = 90), legend.title= element_blank()) +
+  #scale_y_continuous(breaks=seq(0,1000,by=100)) +
+  ylab("number of ASVs in phylum") +
+  xlab("edge (as inflection point)") +
+  ggtitle("Functional Edges of Differentially Abundant Fungal ASVs (n=83)")
+# quartz()
+fungLogFits_edgePlotLess200onlyFitPhylum
+
+fungLogFits_edgePlotLess200onlyFitClass <- ggplot(fungLogFitsTaxaLess200_onlyFit, aes(x=t_mid, fill=Class, color=Class)) +
+  geom_histogram(binwidth = 5) +
+  theme(axis.text.x = element_text(angle = 90), legend.title= element_blank()) +
+  #scale_y_continuous(breaks=seq(0,1000,by=100)) +
+  ylab("number of ASVs in phylum") +
+  xlab("edge (as inflection point)") +
+  ggtitle("Functional Edges of Differentially Abundant Fungal ASVs (n=83)")
+# quartz()
+fungLogFits_edgePlotLess200onlyFitClass
+
+
+
+fungLogFits_edgePlotLess200onlyGood_Class <- ggplot(fungLogFitsTaxaLess200onlyGood, aes(x=t_mid, fill=Class, color=Class)) +
+  geom_histogram(binwidth = 5) +
+  theme(axis.text.x = element_text(angle = 90), legend.title= element_blank()) +
+  #scale_y_continuous(breaks=seq(0,1000,by=100)) +
+  ylab("number of ASVs in phylum") +
+  xlab("edge (as inflection point)") +
+  ggtitle("Functional Edges of Differentially Abundant Fungal ASVs (n=37)")
+# quartz()
+fungLogFits_edgePlotLess200onlyGood_Class
+
+fungLogFits_edgePlotLess200onlyGood_Order <- ggplot(fungLogFitsTaxaLess200onlyGood, aes(x=t_mid, fill=Order, color=Order)) +
+  geom_histogram(binwidth = 5) +
+  theme(axis.text.x = element_text(angle = 90), legend.title= element_blank()) +
+  #scale_y_continuous(breaks=seq(0,1000,by=100)) +
+  ylab("number of ASVs in phylum") +
+  xlab("edge (as inflection point)") +
+  ggtitle("Functional Edges of Differentially Abundant Fungal ASVs (n=37)")
+# quartz()
+fungLogFits_edgePlotLess200onlyGood_Order
+
+fungLogFits_edgePlotLess200onlyGood_Family <- ggplot(fungLogFitsTaxaLess200onlyGood, aes(x=t_mid, fill=Family, color=Family)) +
+  geom_histogram(binwidth = 5) +
+  theme(axis.text.x = element_text(angle = 90), legend.title= element_blank()) +
+  #scale_y_continuous(breaks=seq(0,1000,by=100)) +
+  ylab("number of ASVs in phylum") +
+  xlab("edge (as inflection point)") +
+  ggtitle("Functional Edges of Differentially Abundant Fungal ASVs (n=37)")
+# quartz()
+fungLogFits_edgePlotLess200onlyGood_Family
+
+
+# Bring in FUNGuild info! (from FUNGuildExploration.R)
+load("RobjectsSaved/fungResultsDA")
+fungLogFitsTaxaFungGuildLess200onlyFit <- merge(fungLogFitsTaxaLess200_onlyFit, fungResultsDA[,c(1, 238:242)], by="ASV_name", all.x= TRUE, all.y= FALSE)
+# View(fungLogFitsTaxaFungGuildLess200onlyFit)
+
+fungLogFitsFungGuildLess200onlyFit_trophic_plot <- ggplot(fungLogFitsTaxaFungGuildLess200onlyFit, aes(x=t_mid, fill=Trophic.Mode, color=Trophic.Mode)) +
+  geom_histogram(binwidth = 5) +
+  theme(axis.text.x = element_text(angle = 90), legend.title= element_blank()) +
+  #scale_y_continuous(breaks=seq(0,1000,by=100)) +
+  ylab("number of ASVs in trophic mode") +
+  xlab("edge (as inflection point)") +
+  ggtitle("Functional Edges of Differentially Abundant Fungal ASVs (n=83)")
+# quartz()
+fungLogFitsFungGuildLess200onlyFit_trophic_plot
+
+fungLogFitsFungGuildLess200onlyFit_guild_plot <- ggplot(fungLogFitsTaxaFungGuildLess200onlyFit, aes(x=t_mid, fill=Guild, color=Guild)) +
+  geom_histogram(binwidth = 5) +
+  theme(axis.text.x = element_text(angle = 90), legend.title= element_blank()) +
+  #scale_y_continuous(breaks=seq(0,1000,by=100)) +
+  ylab("number of ASVs in guild") +
+  xlab("edge (as inflection point)") +
+  ggtitle("Functional Edges of Differentially Abundant Fungal ASVs (n=83)")
+# quartz()
+fungLogFitsFungGuildLess200onlyFit_guild_plot
+
+
 
