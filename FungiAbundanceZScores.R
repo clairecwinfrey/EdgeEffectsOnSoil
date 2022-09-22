@@ -374,12 +374,12 @@ zScoresEU_8_all <- cbind(zScoresEU_8, EU_8_ASVs_df[,11:20])
 # View(zScoresEU_8_all)
 
 #########################################
-# 2. MERGE ALL TOGETHER AND DOUBLE CHECK SOME FALUES
+# 2. MERGE ALL TOGETHER AND DOUBLE CHECK SOME VALUES
 #########################################
 
 # rbind all of these from above together for just one dataframe
-zScores_allEUs <- rbind(zScoresEU_10_all, zScoresEU_52_all, zScoresEU_53N_all, zScoresEU_53S_all, zScoresEU_54S_all, zScoresEU_8_all)
-# View(zScores_allEUs)
+fungi_zScores_allEUs <- rbind(zScoresEU_10_all, zScoresEU_52_all, zScoresEU_53N_all, zScoresEU_53S_all, zScoresEU_54S_all, zScoresEU_8_all)
+# View(fungi_zScores_allEUs)
 
 # 1. Double check a few:
 # i. a few meters in EU 53N, ASV 414
@@ -414,7 +414,11 @@ zScoresEU_10_646$z_60 == (mean_EU_10_646_60m - mean_10_646)/st_10_646 #These are
 mean_EU_10_646_80m <- mean(info_10_646$ASVabundance[which(info_10_646$Meter==80)])
 zScoresEU_10_646$z_80 == (mean_EU_10_646_80m - mean_10_646)/st_10_646 #These are both NaNs, so this is working!
 
-# save(zScores_allEUs, file="RobjectsSaved/zScores_allEUs") #save it all (last saved Sept 13, 2022)
+# save(fungi_zScores_allEUs, file="RobjectsSaved/fungi_zScores_allEUs") #save it all (last saved Sept 13, 2022)
+# Save all of the ASV means used to calculate z-scores
+
+fungiASVmeans_AllEUs <- rbind(EU_10_ASVs_df, EU_52_ASVs_df, EU_53N_ASVs_df, EU_53S_ASVs_df, EU_54S_ASVs_df, EU_8_ASVs_df)
+# save(fungiASVmeans_AllEUs, file="RobjectsSaved/fungiASVmeans_AllEUs") #save it all (last saved Sept 21, 2022)
 
 ##########################################################################
 # 3.  FITTING LOGISTIC CURVES
