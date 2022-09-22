@@ -104,8 +104,15 @@ diffAbunDat_tidy_PROKARYOTES <- diffAbunDat %>%
 colnames(diffAbunDat_tidy_PROKARYOTES)[2] <- "ASV_name" #rename "Row.names" column to be "ASV_name".
 #View(diffAbunDat_tidy_PROKARYOTES) this has 505,377 rows, which is equal to 233 (number of samples) x 2,169 (number of diff abund ASVs)
 
-save(diffAbunDat_tidy_PROKARYOTES, file= "RobjectsSaved/diffAbunDat_tidy_PROKARYOTES") #last saved September 13, 2022
+#save(diffAbunDat_tidy_PROKARYOTES, file= "RobjectsSaved/diffAbunDat_tidy_PROKARYOTES") #last saved September 13, 2022
 ##########
+
+# Re-make phyloseq object with just the differentially abundant taxa for ease of working with it in the future!
+diffAbundProkaryotesNames <- as.character(unique(diffAbunDat_tidy_PROKARYOTES$ASV_name)) #added as character because at first it had "AsIs" attribute
+prokaryotesDiffAbund.ps <- phyloseq::prune_taxa(diffAbundProkaryotesNames, postUbiquity.ps)
+otu_table(prokaryotesDiffAbund.ps)
+
+# save(prokaryotesDiffAbund.ps, file= "RobjectsSaved/prokaryotesDiffAbund.ps") #saved September 21, 2022
 
 ##########################################################################
 # STACKED BARCHART OF DIFFERENTIAL ABUNDANCE PHYLA NUMBER IN EACH CATEGORY
