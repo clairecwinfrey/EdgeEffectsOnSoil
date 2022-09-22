@@ -109,6 +109,12 @@ colnames(diffAbunDat_tidy_FUNGI)[2] <- "ASV_name" #rename "Row.names" column to 
 
 #save(diffAbunDat_tidy_FUNGI, file= "RobjectsSaved/diffAbunDat_tidy_FUNGI") #saved Sept 9, 2022
 
+# Re-make phyloseq object with just the differentially abundant taxa for ease of working with it in the future!
+diffAbundFungiNames <- as.character(unique(diffAbunDat_tidy_FUNGI$ASV_name)) #added as character because at first it had "AsIs" attribute
+fungiDiffAbund.ps <- phyloseq::prune_taxa(diffAbundFungiNames, ITS_postUbiquity.ps)
+otu_table(fungiDiffAbund.ps)
+
+# save(fungiDiffAbund.ps, file= "RobjectsSaved/fungiDiffAbund.ps") #saved September 21, 2022
 ##########################################################################
 # 2. STACKED BARCHART OF DIFFERENTIAL ABUNDANCE PHYLA NUMBER IN EACH CATEGORY
 ##########################################################################
@@ -226,4 +232,12 @@ relabunpostUbiqNOEdgePlot + geom_bar(aes(), stat="identity", position="fill") +
 group_by(Sample, Phylum) %>%
   summarize(Mean = mean(Abundance)) %>%
   arrange(-Mean) 
+
+
+
+ITS_postUbiquity.ps
+tax_table(ITS_postUbiquity.ps)
+
+View(tax_table(ITS_postUbiquity.ps))
+
 
