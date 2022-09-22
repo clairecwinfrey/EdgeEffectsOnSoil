@@ -30,6 +30,7 @@ load("RobjectsSaved/diffAbunDat_tidy_PROKARYOTES") #from DiffAbundProkaryotes.R 
 # EdgeEdgebyASV_allSites.R)
 
 library("tidyverse")
+library("growthcurver")
 
 ##########################################################################
 # 1.  Z-SCORES OF EACH ASV WITHIN EACH EU 
@@ -380,13 +381,13 @@ dim(zScoresEU_8_all)
 #########################################
 
 # rbind all of these from above together for just one dataframe
-zScores_allEUs <- rbind(zScoresEU_10_all, zScoresEU_52_all, zScoresEU_53N_all, zScoresEU_53S_all, zScoresEU_54S_all, zScoresEU_8_all)
-# View(zScores_allEUs)
-nrow(zScores_allEUs) == 1121*6 #as long as expected.
+prok_zScores_allEUs <- rbind(zScoresEU_10_all, zScoresEU_52_all, zScoresEU_53N_all, zScoresEU_53S_all, zScoresEU_54S_all, zScoresEU_8_all)
+# View(prok_zScores_allEUs)
+nrow(prok_zScores_allEUs) == 1121*6 #as long as expected.
 
 # 1. Double check a few:
 # i. a few meters in EU 53N, ASV 1025 -- ALL CORRECT
-zScoresEU_53N_1025 <- filter(zScores_allEUs, ASV_name=="ASV_1025" & EU == "EU_53N")
+zScoresEU_53N_1025 <- filter(prok_zScores_allEUs, ASV_name=="ASV_1025" & EU == "EU_53N")
 info_53N_1025 <- filter(da_tidy_prokary_forest_ByEU$EU_53N, ASV_name =="ASV_1025")
 mean_53N_1025 <- mean(info_53N_1025$ASVabundance)
 st_53N_1025 <- sd(info_53N_1025$ASVabundance)
@@ -398,7 +399,7 @@ mean_53N_1025_100m <- mean(info_53N_1025$ASVabundance[which(info_53N_1025$Meter=
 zScoresEU_53N_1025$z_100 == (mean_53N_1025_100m - mean_53N_1025)/st_53N_1025 #TRUE!
 
 # ii. a few meters in EU 8, ASV 4320-- all correct!
-zScoresEU_8_4320 <- filter(zScores_allEUs, ASV_name=="ASV_4320" & EU == "EU_8")
+zScoresEU_8_4320 <- filter(prok_zScores_allEUs, ASV_name=="ASV_4320" & EU == "EU_8")
 info_8_4320 <- filter(da_tidy_prokary_forest_ByEU$EU_8, ASV_name =="ASV_4320")
 mean_8_4320 <- mean(info_8_4320$ASVabundance)
 st_8_4320 <- sd(info_8_4320$ASVabundance)
@@ -408,7 +409,7 @@ mean_EU_8_4320_40m <- mean(info_8_4320$ASVabundance[which(info_8_4320$Meter==40)
 zScoresEU_8_4320$z_40 == (mean_EU_8_4320_40m - mean_8_4320)/st_8_4320 #TRUE!
 
 # iii. a few meters in EU 10, ASV 99 - all correct!
-zScoresEU_10_99 <- filter(zScores_allEUs, ASV_name=="ASV_99" & EU == "EU_10")
+zScoresEU_10_99 <- filter(prok_zScores_allEUs, ASV_name=="ASV_99" & EU == "EU_10")
 info_10_99 <- filter(da_tidy_prokary_forest_ByEU$EU_10, ASV_name =="ASV_99")
 mean_10_99 <- mean(info_10_99$ASVabundance)
 st_10_99 <- sd(info_10_99$ASVabundance)
@@ -417,6 +418,12 @@ zScoresEU_10_99$z_60 == (mean_EU_10_99_60m - mean_10_99)/st_10_99 #These are bot
 mean_EU_10_99_80m <- mean(info_10_99$ASVabundance[which(info_10_99$Meter==80)])
 zScoresEU_10_99$z_80 == (mean_EU_10_99_80m - mean_10_99)/st_10_99 #These are both NaNs, so this is working!
 
+# save(prok_zScores_allEUs, file="RobjectsSaved/prok_zScores_allEUs") #save it all (last saved Sept 21, 2022)
+
+# Save all of the ASV means used to calculate z-scores
+prokaryotesASVmeans_AllEUs <- rbind(EU_10_ASVs_df, EU_52_ASVs_df, EU_53N_ASVs_df, EU_53S_ASVs_df, EU_54S_ASVs_df, EU_8_ASVs_df)
+# save(prokaryotesASVmeans_AllEUs, file="RobjectsSaved/prokaryotesASVmeans_AllEUs") #save it all (last saved Sept 21, 2022)
+
 
 ##########################################################################
 # 3.  FITTING LOGISTIC CURVES
@@ -424,5 +431,5 @@ zScoresEU_10_99$z_80 == (mean_EU_10_99_80m - mean_10_99)/st_10_99 #These are bot
 
 # What is minimum z-score (so we know what to add to make positive)
 for (i in 1:10){
-  print(min(zScores_allEUs[,i], na.rm=TRUE)) #-1.442465, which occurs at meter 10. So we should be able to add 1.5 or 2.
+  print(min(zScores_allEUs[,i], na.rm=TRUE)) #-1.442465, which occurs at meter 10. So we should be able to add 1.5.
 }
