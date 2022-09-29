@@ -73,12 +73,8 @@ setwd("~/Desktop/CU_Research/SoilEdgeEffectsResearch")
 
 # Read in libraries
 library("phyloseq")
-library("ggplot2")      #graphics
 library("readxl")       #necessary to import the data from Excel file
-library("dplyr")        #filter and reformat data frames
-library("tibble")       #Needed for converting column to row names
-library("tidyr")
-library("mctoolsr")
+library("tidyverse")
 library("vegan")
 library("gridExtra")    #allows you to make multiple plots on the same page with ggplot
 library("DESeq2") #for differential abundance analysis
@@ -99,10 +95,6 @@ seqtab <- read.table("Bioinformatics/seqtab_final.txt", header=T)
 dim(seqtab) #38,255 ASVs and 270 samples (soil samples, controls, etc.)
 #View(seqtab)
 
-tax_final.txt <- read.table("Bioinformatics/tax_final.txt")
-str(tax_final.txt)
-#View(tax_final.txt)
-
 #### LOAD FILES IN FOR PHYLOSEQ #####
 # 1. OTU table: ASVs/OTUs as rows, samples as columns. This is "seqtab"
 otu_mat <- seqtab
@@ -111,26 +103,25 @@ otu_mat <- otu_mat %>%
   tibble::column_to_rownames("X") #make it so that "X"(which is column with ASV names is the rownames columnn!)
 colnames(otu_mat)
 rownames(otu_mat)
-#View(otu_mat)
+#View(otu_mat) #ASVs are rows; samples (with weird X in front of number) are columns
 
 # 2. OTU taxonomy
 # This is basically the same as the first and last columns of seqtab_wTax_mctoolsr
 # So none of the guts that are essentially the ASV table
-dim(seqtab_wTax_mctoolsr)
+#View(seqtab_wTax_mctoolsr) #271 columns, labeled V1 through V271. V1 is bascially "rownames", ie. each ASV ID, V2:V270 are samples; V271 is taxonomy info.
 colnames(seqtab_wTax_mctoolsr) #samples
 head(seqtab_wTax_mctoolsr$V1) #THE ASV names!
 head(seqtab_wTax_mctoolsr$V271) #the taxonomy!
-step1 <- cbind(seqtab_wTax_mctoolsr$V1, seqtab_wTax_mctoolsr$V271)
+step1 <- cbind(seqtab_wTax_mctoolsr$V1, seqtab_wTax_mctoolsr$V271) #this gets just the ASV names and the taxonomy associated with each
 head(step1)
 colnames(step1) <- step1[1,] #make ASV_ID and taxonomy the column names
+step1 <- step1[-1,] #get rid of first row which is now same as column names
 head(step1)
-dim(step1)
-step1 <- step1[-1,] #get rid of first row which is same as column names
 str(step1)
 #View(step1)
 # as.data.frame(step1) #This didn't work so I foreced it below
 
-# Make new columns based on the ";" separator
+# Make new columns based on the ";" separator to separate out taxonomy
 require(tidyr)
 tax_sep <- separate(as.data.frame(step1), col = taxonomy, into= c("Kingdom", "Phylum", "Class", 
                                                                   "Order", "Family", "Genus", "Species"),
@@ -139,12 +130,12 @@ tax_sep <- separate(as.data.frame(step1), col = taxonomy, into= c("Kingdom", "Ph
 # View(tax_sep)
 str(tax_sep)
 all.equal(tax_sep$`#ASV_ID`, tax_sep$Species) #Yep
-# tax_final.txt shows that no species in this data set, which was a choice made in the bioinformatics script
 colnames(tax_sep)
-tax_sep$Species <- NA
+#tax_sep$Species <- NA
+tax_sep <- tax_sep[,1:7] #get rid of species column, which is the same as ASV_ID anyway
 #View(tax_sep)
 
-# IDEM for tax sep
+# Format tax_sep for phyloseq by making ASV ID the rownames
 tax_mat <- tax_sep %>%
   tibble::column_to_rownames("#ASV_ID")
 
@@ -154,9 +145,9 @@ metadata <- read.csv("Bioinformatics/SRS_AllMetadataAug17.csv") #this new csv ha
 # View(metadata)
 colnames(metadata)
 rownames(metadata)
-metadata$X <- NULL #dunno whatX is but it's not important 
+metadata <- metadata[,-1] #get rid of weird X column that is the same as the rownames
 samples_df <- metadata %>%
-  tibble::column_to_rownames("MappingSampID")
+  tibble::column_to_rownames("MappingSampID") #rownames/sample ID should be the mapping sample IDs!
 str(samples_df)
 rownames(samples_df)
 colnames(samples_df)
@@ -201,7 +192,7 @@ sample_variables(SRS_16S_raw.ps)
 SRS_taxTable <- taxtable_outta_ps(SRS_16S_raw.ps)
 #View(SRS_taxTable)
 
-# These lines below (lines 274-281) are technically not needed, since I found a way to do it with phyloseq
+# These lines below (lines 199-207) are technically not needed, since I found a way to do it with phyloseq
 # tax_noeuksorNAs is no longer used, but serves as a good check to make sure that phyloseq
 # is doing what I want it to. 
 # Remove chloroplasts, mitochondria, and all eukaryotes:
@@ -280,20 +271,22 @@ barplot(seqsperctrl_simple, main="Controls: Total Sequences Per Sample",
                                     ylab= "Number of Sequences", xlab= "Sample Number", cex.names=0.35)
 
 ######## RAREFACTION ##########
+names(seqspersample) #shows the order of all the samples, and the ones to pull out bel
 # What is the minimum for the non-control samples?
 min(seqspersample[1:243]) #1224
 max(seqspersample[1:243]) #157741
 mean(seqspersample[1:243]) # 26730.58
 
+# What does all the spread look like for ALL samples?
 min(seqspersample) #77
 max(seqspersample) #157741
 mean(seqspersample) # 24435.77
 sd(seqspersample) #13421.05
 
 min(seqspersample[244:length(seqspersample)]) #77
-max(seqspersample[244:length(seqspersample)]) #157870
-mean(seqspersample[244:length(seqspersample)]) # 3015.692
-sd(seqspersample[244:length(seqspersample)])
+max(seqspersample[244:length(seqspersample)]) #15769
+mean(seqspersample[244:length(seqspersample)]) # 2988.115
+sd(seqspersample[244:length(seqspersample)]) #5276.02
 
 # Plot this:
 #quartz()
@@ -375,15 +368,15 @@ top_99.5p_phyla
 # comprises at least 0.5% of the total abundance
 
 # Phyla comprising at least 0.5% of total abundance
-quartz()
 phylumPlot99.5percent <- ggplot(data=relabun.phylatop99.5, aes(x=Sample, y=Abundance, fill=Phylum)) + theme(axis.title.y = element_text(size = 14, face = "bold")) + theme(axis.title.x = element_blank()) + theme(axis.text.x = element_text(colour = "black", size = 12, face = "bold"))
+quartz()
 phylumPlot99.5percent + geom_bar(aes(), stat="identity", position="fill") +
  theme(legend.position="bottom") +
   guides(fill=guide_legend(nrow=4)) + theme(legend.text = element_text(colour="black", size = 10))  + ggtitle("Phyla comprising at least 0.5% of total abundance")
 
 # "Phyla comprising at least 1% of total abundance"
-quartz()
 phylumPlot.99percent <- ggplot(data=relabun.phylatop99, aes(x=Sample, y=Abundance, fill=Phylum)) + theme(axis.title.y = element_text(size = 14, face = "bold")) + theme(axis.title.x = element_blank()) + theme(axis.text.x = element_text(colour = "black", size = 12, face = "bold"))
+quartz()
 phylumPlot.99percent + geom_bar(aes(), stat="identity", position="fill") +
   theme(legend.position="bottom") +
   guides(fill=guide_legend(nrow=4)) + theme(legend.text = element_text(colour="black", size = 10))  + ggtitle("Phyla comprising at least 1% of total abundance")
@@ -443,12 +436,11 @@ top_95p_class <- unique(relabun.classtop95$Class)
 top_95p_class
 
 # Phyla comprising at least 5% of total abundance
-quartz()
 classPlot.95pt <- ggplot(data=relabun.classtop95, aes(x=Sample, y=Abundance, fill=Class)) + theme(axis.title.y = element_text(size = 14, face = "bold")) + theme(axis.title.x = element_blank()) + theme(axis.text.x = element_text(colour = "black", size = 12, face = "bold"))
+quartz()
 classPlot.95pt + geom_bar(aes(), stat="identity", position="fill") +
   theme(legend.position="bottom") +
   guides(fill=guide_legend(nrow=4)) + theme(legend.text = element_text(colour="black", size = 5.5))  + ggtitle("Classes comprising at least 5% of total abundance")
-
 
 # Ignore the lines below... not currently using them
 # Bray-Curtis dissimilarities based on square-root transformed data
@@ -467,19 +459,19 @@ set.seed(19)
 ord <- ordinate(rarefied.ps, method = "NMDS", distance = "bray", trymax = 100)
 
 # With no black outline around points
-quartz()
 rarefiedBrayNMDS <- phyloseq::plot_ordination(rarefied.ps, ord, type= "samples", color= "EU")
+quartz()
 rarefiedBrayNMDS + geom_polygon(aes(fill=EU)) + geom_point(size=3) + ggtitle("NMDS based on Bray-Curtis Dissimilarities")
 
 # With black outline around points:
-quartz()
 rarefiedBrayNMDSoutlined <-rarefiedBrayNMDS + geom_polygon(aes(fill=EU)) + geom_point(aes(fill=EU),color="black",pch=21, size=3) + ggtitle("NMDS based on Bray-Curtis Dissimilarities")
+quartz()
 rarefiedBrayNMDSoutlined
 
 # With transect included as shape:
 # This plot is not very informative!
-quartz()
 rarefiedBrayNMDStran <- rrarefiedBrayNMDS <- phyloseq::plot_ordination(rarefied.ps, ord, type= "samples", color= "EU", shape= "Transect")
+quartz()
 rarefiedBrayNMDStran + geom_polygon(aes(fill=EU)) + geom_point(size=3) + ggtitle("NMDS based on Bray-Curtis Dissimilarities")
 
 # Now, remove biocrust and controls from ordination:
@@ -490,13 +482,13 @@ sample_names(justsoils.ps) #another check to show that we have only soils!
 # Ordination plot of just soils:
 set.seed(19)
 ordSoils <- ordinate(justsoils.ps, method = "NMDS", distance = "bray", trymax = 100)
-quartz()
 soilsrarefiedBrayNMDS <- phyloseq::plot_ordination(justsoils.ps, ordSoils, type= "samples", color= "EU")
+quartz()
 soilsrarefiedBrayNMDS + geom_polygon(aes(fill=EU)) + geom_point(size=3) + ggtitle("NMDS based on Bray-Curtis Dissimilarities")
 
 # Add in labels to figure out what weird samples are
+soilsrarefiedBrayNMDS <- phyloseq::plot_ordination(justsoils.ps, ordSoils, type= "samples", color= "EU", shape= "Habitat", label = "Sample.ID")
 quartz()
-soilsrarefiedBrayNMDS <- phyloseq::plot_ordination(justsoils.ps, ordSoils, type= "samples", color= "EU", label = "Sample.ID")
 soilsrarefiedBrayNMDS + geom_polygon(aes(fill=EU)) + geom_point(size=3) + ggtitle("NMDS based on Bray-Curtis Dissimilarities")
 
 # Visible outliers: (going clockwise from the top left on the ordination plot above):
@@ -724,7 +716,7 @@ classtrimmedPlot.95pt + geom_bar(aes(), stat="identity", position="fill") +
   guides(fill=guide_legend(nrow=4)) + theme(legend.text = element_text(colour="black", size = 5.5))  + ggtitle("Classes comprising at least 5% of total abundance")
 
 # Make new phyloseq object by removing biocrust and controls before ordination:
-trimmedJustsoils.ps <- subset_samples(TrimmedSRS_16S.ps, Type != "BioCrust" & Type != "ExtContWater")
+trimmedJustsoils.ps <- phyloseq::subset_samples(TrimmedSRS_16S.ps, Type != "BioCrust" & Type != "ExtContWater")
 unique(sample_data(trimmedJustsoils.ps)[,27]) #only soils
 sample_names(trimmedJustsoils.ps) #another check to show that we have only soils!
 
