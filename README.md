@@ -18,8 +18,9 @@ This repository contains the scripts used to process 16S and ITS data from soils
 5. FungiAbundanceZscores.R - same as ProkaryotesAbundanceZScores.R except with fungi.
 6. PostUbiqGraphic_ITS.R - makes NMDS ordinations and Bray-Curtis dissimilarities along the transect for dataset created in ITS_UbiquityMedianSetup.R (i.e. after removing rare ASVs and not very ubiquitous ones). Also performs a PERMANOVA to test if samples segregate based on habitat type.
 
-**Other**
+**16S and ITS together or other miscellaneous**
 1. EnvDataPlots.R -- this script makes plots of mean pH, canopy cover, and vegetation for all of the points along the transects sampled in the dataset.
+2. DissimAcrossTransectDiffAbundOnly.R -- this script looks at Bray-Curtis dissimilarities across the transect within each EU, focusing only on ASVs found to be differentially abundant (in DiffAbundProkaryotes.R and DiffAbundFungi.R).
 
 
 **Scripts with additional analyses that probably won't make it into paper**
