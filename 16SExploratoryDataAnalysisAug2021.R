@@ -266,7 +266,7 @@ simple <- c("ExtB1", "ExtB2", "ExtB3", "ExtW1", "ExtW10", "ExtW11", "ExtW12",
 "ExtW5","ExtW6","ExtW7","ExtW8", "ExtW9", "PCRNTC")
 seqsperctrl_simple <- setNames(seqsperctrl, simple)
 
-#quartz()
+##quartz()
 barplot(seqsperctrl_simple, main="Controls: Total Sequences Per Sample",
                                     ylab= "Number of Sequences", xlab= "Sample Number", cex.names=0.35)
 
@@ -289,7 +289,7 @@ mean(seqspersample[244:length(seqspersample)]) # 2988.115
 sd(seqspersample[244:length(seqspersample)]) #5276.02
 
 # Plot this:
-#quartz()
+##quartz()
 seqsPerExSamp <- seqspersample[1:243]
 SeqNumberPlotExSamp <- barplot(seqsPerExSamp, main="Soils: Total Sequences Per Sample",
                                     ylab= "Number of Sequences", xlab= "Sample Number", cex.names=0.4)
@@ -369,14 +369,14 @@ top_99.5p_phyla
 
 # Phyla comprising at least 0.5% of total abundance
 phylumPlot99.5percent <- ggplot(data=relabun.phylatop99.5, aes(x=Sample, y=Abundance, fill=Phylum)) + theme(axis.title.y = element_text(size = 14, face = "bold")) + theme(axis.title.x = element_blank()) + theme(axis.text.x = element_text(colour = "black", size = 12, face = "bold"))
-quartz()
+#quartz()
 phylumPlot99.5percent + geom_bar(aes(), stat="identity", position="fill") +
  theme(legend.position="bottom") +
   guides(fill=guide_legend(nrow=4)) + theme(legend.text = element_text(colour="black", size = 10))  + ggtitle("Phyla comprising at least 0.5% of total abundance")
 
 # "Phyla comprising at least 1% of total abundance"
 phylumPlot.99percent <- ggplot(data=relabun.phylatop99, aes(x=Sample, y=Abundance, fill=Phylum)) + theme(axis.title.y = element_text(size = 14, face = "bold")) + theme(axis.title.x = element_blank()) + theme(axis.text.x = element_text(colour = "black", size = 12, face = "bold"))
-quartz()
+#quartz()
 phylumPlot.99percent + geom_bar(aes(), stat="identity", position="fill") +
   theme(legend.position="bottom") +
   guides(fill=guide_legend(nrow=4)) + theme(legend.text = element_text(colour="black", size = 10))  + ggtitle("Phyla comprising at least 1% of total abundance")
@@ -437,7 +437,7 @@ top_95p_class
 
 # Phyla comprising at least 5% of total abundance
 classPlot.95pt <- ggplot(data=relabun.classtop95, aes(x=Sample, y=Abundance, fill=Class)) + theme(axis.title.y = element_text(size = 14, face = "bold")) + theme(axis.title.x = element_blank()) + theme(axis.text.x = element_text(colour = "black", size = 12, face = "bold"))
-quartz()
+#quartz()
 classPlot.95pt + geom_bar(aes(), stat="identity", position="fill") +
   theme(legend.position="bottom") +
   guides(fill=guide_legend(nrow=4)) + theme(legend.text = element_text(colour="black", size = 5.5))  + ggtitle("Classes comprising at least 5% of total abundance")
@@ -460,18 +460,18 @@ ord <- ordinate(rarefied.ps, method = "NMDS", distance = "bray", trymax = 100)
 
 # With no black outline around points
 rarefiedBrayNMDS <- phyloseq::plot_ordination(rarefied.ps, ord, type= "samples", color= "EU")
-quartz()
+#quartz()
 rarefiedBrayNMDS + geom_polygon(aes(fill=EU)) + geom_point(size=3) + ggtitle("NMDS based on Bray-Curtis Dissimilarities")
 
 # With black outline around points:
 rarefiedBrayNMDSoutlined <-rarefiedBrayNMDS + geom_polygon(aes(fill=EU)) + geom_point(aes(fill=EU),color="black",pch=21, size=3) + ggtitle("NMDS based on Bray-Curtis Dissimilarities")
-quartz()
+#quartz()
 rarefiedBrayNMDSoutlined
 
 # With transect included as shape:
 # This plot is not very informative!
 rarefiedBrayNMDStran <- rrarefiedBrayNMDS <- phyloseq::plot_ordination(rarefied.ps, ord, type= "samples", color= "EU", shape= "Transect")
-quartz()
+#quartz()
 rarefiedBrayNMDStran + geom_polygon(aes(fill=EU)) + geom_point(size=3) + ggtitle("NMDS based on Bray-Curtis Dissimilarities")
 
 # Now, remove biocrust and controls from ordination:
@@ -483,12 +483,12 @@ sample_names(justsoils.ps) #another check to show that we have only soils!
 set.seed(19)
 ordSoils <- ordinate(justsoils.ps, method = "NMDS", distance = "bray", trymax = 100)
 soilsrarefiedBrayNMDS <- phyloseq::plot_ordination(justsoils.ps, ordSoils, type= "samples", color= "EU")
-quartz()
+#quartz()
 soilsrarefiedBrayNMDS + geom_polygon(aes(fill=EU)) + geom_point(size=3) + ggtitle("NMDS based on Bray-Curtis Dissimilarities")
 
 # Add in labels to figure out what weird samples are
 soilsrarefiedBrayNMDS <- phyloseq::plot_ordination(justsoils.ps, ordSoils, type= "samples", color= "EU", shape= "Habitat", label = "Sample.ID")
-quartz()
+#quartz()
 soilsrarefiedBrayNMDS + geom_polygon(aes(fill=EU)) + geom_point(size=3) + ggtitle("NMDS based on Bray-Curtis Dissimilarities")
 
 # Visible outliers: (going clockwise from the top left on the ordination plot above):
@@ -518,7 +518,6 @@ dim(rare_ASVtab) #33,878 ASVs
 # View(rare_ASVtab)
 
 # Most are rare! 
-quartz()
 plot(rare_ASVtab$Abundance)
 length(which(rare_ASVtab$Abundance <= 50)) #23,903 ASVs have 50 or fewer occurrences across the rarefied data set 
 length(which(rare_ASVtab$Abundance <= 35)) #20,882 ASVs have 30 or fewer occurrences across the rarefied data set
@@ -532,13 +531,13 @@ max(keptASVsindex) # last row to keep is 15719 (but not all before are kept prob
 rare_ASVtab$Abundance[15719] #has exactly fifty 
 
 ASVsTrimmed <- rare_ASVtab[keptASVsindex,] #keep only rows of the index, and all columns (i.e. all samples)
-dim(ASVsTrimmed) #10257 ASVs across 239 samples, as expected 
+#View(ASVsTrimmed) #10137 ASVs across 235 samples, as expected 
 plot(ASVsTrimmed$Abundance) # tail is still long, because most ASVs are still rare
 # relative to the most abundant ASVs
 
-length(which(ASVsTrimmed$Abundance == 50)) # 153 ASVs were right at cut off!
-range(ASVsTrimmed$Abundance) #50 75046
-length(which(ASVsTrimmed$Abundance >= 1000)) #only 517 ASVs appear more than 1000 times
+length(which(ASVsTrimmed$Abundance == 50)) # 161 ASVs were right at cut off!
+range(ASVsTrimmed$Abundance) #50 74724
+length(which(ASVsTrimmed$Abundance >= 1000)) #only 513 ASVs appear more than 1000 times
 # across the data set, which is in average of about 4 times per sample!
 
 # Get TAXONOMIC TABLE that matches the ASV table above using function we defined earlier
@@ -561,11 +560,13 @@ rownames(ASVsTrimmed[!(apply(ASVsTrimmed, 1, function(y) any(y == 0))),])
 ASVsinAllindex <- c(1, 3, 4, 10, 15)
 rownames(ASVsTrimmed)[ASVsinAllindex] # yes, this matches above
 # What are these ASVs?
-rare_taxTab[ASVsinAllindex,]
-rowMeans(ASVsTrimmed)[ASVsinAllindex]
+rare_taxTab[ASVsinAllindex,] #Candidatus_Udaeobacter ASV, Mycobacterium ASV, ASV within family Xanthobacteraceae, Bradyrhizobium ASV, another ASV within family Xanthobacteraceae
+rowMeans(ASVsTrimmed)[ASVsinAllindex] #decent average amount in each sample
+# ASV_1     ASV_3     ASV_4    ASV_12    ASV_17 
+# 633.25424 279.06780 258.35593 107.32203  87.07627 
 
 coreASVs <- cbind.data.frame(rare_taxTab[ASVsinAllindex,], rowMeans(ASVsTrimmed)[ASVsinAllindex])
-colnames(coreASVs)[8] <- "meanAbundancePerSample"
+colnames(coreASVs)[7] <- "meanAbundancePerSample"
 #View(coreASVs)
 
 # Merge trimmed ASV tables and taxonomy tables to get something that is formatted like
@@ -573,7 +574,7 @@ colnames(coreASVs)[8] <- "meanAbundancePerSample"
 seqtab_wTax_trimmed <- cbind.data.frame(ASVsTrimmed, taxTrimmed)
 seqtab_wTax_trimmed[,239]
 
-# Make Excel files of this!
+# Make Excel files of this! #last re-written Sept., 29, 2022
 #write.csv(ASVsTrimmed[,-239], "SRSMay2021_16S_cleanedASVtable.csv")
 #write.csv(taxTrimmed, "SRSMay2021_16S_cleanedTaxTable.csv") 
 #write.csv(seqtab_wTax_trimmed[,-239], "SRSMay2021_16S_seqtab_wtax_trimmed.csv")
@@ -598,7 +599,7 @@ OTU = otu_table(otu_mat, taxa_are_rows = TRUE)
 TAX = tax_table(tax_mat)
 samples = sample_data(samples_df)
 TrimmedSRS_16S.ps <- phyloseq(OTU, TAX, samples)
-TrimmedSRS_16S.ps
+TrimmedSRS_16S.ps #10137 taxa and 235 samples!
 colnames(otu_table(TrimmedSRS_16S.ps))
 
 #####################
@@ -646,14 +647,14 @@ trimmedTop_99.5p_phyla
 # comprises at least 0.5% of the total abundance
 
 # Phyla comprising at least 0.5% of total abundance
-quartz()
+#quartz()
 phylumtrimmedPlot99.5percent <- ggplot(data=relabunTrimmed.phylatrimmedTop99.5, aes(x=Sample, y=Abundance, fill=Phylum)) + theme(axis.title.y = element_text(size = 14, face = "bold")) + theme(axis.title.x = element_blank()) + theme(axis.text.x = element_text(colour = "black", size = 12, face = "bold"))
 phylumtrimmedPlot99.5percent + geom_bar(aes(), stat="identity", position="fill") +
   theme(legend.position="bottom") +
   guides(fill=guide_legend(nrow=4)) + theme(legend.text = element_text(colour="black", size = 10))  + ggtitle("Phyla comprising at least 0.5% of total abundance")
 
 # "Phyla comprising at least 1% of total abundance"
-quartz()
+#quartz()
 phylumtrimmedPlot.99percent <- ggplot(data=relabunTrimmed.phylatrimmedTop99, aes(x=Sample, y=Abundance, fill=Phylum)) + theme(axis.title.y = element_text(size = 14, face = "bold")) + theme(axis.title.x = element_blank()) + theme(axis.text.x = element_text(colour = "black", size = 12, face = "bold"))
 phylumtrimmedPlot.99percent <- phylumtrimmedPlot.99percent + geom_bar(aes(), stat="identity", position="fill") +
   theme(legend.position="bottom") +
@@ -709,7 +710,7 @@ trimmedTop_95p_class <- unique(relabunTrimmed.classtrimmedTop95$Class)
 trimmedTop_95p_class
 
 # Phyla comprising at least 5% of total abundance
-quartz()
+#quartz()
 classtrimmedPlot.95pt <- ggplot(data=relabunTrimmed.classtrimmedTop95, aes(x=Sample, y=Abundance, fill=Class)) + theme(axis.title.y = element_text(size = 14, face = "bold")) + theme(axis.title.x = element_blank()) + theme(axis.text.x = element_text(colour = "black", size = 12, face = "bold"))
 classtrimmedPlot.95pt + geom_bar(aes(), stat="identity", position="fill") +
   theme(legend.position="bottom") +
@@ -726,13 +727,13 @@ set.seed(19)
 trimOrd <- ordinate(trimmedJustsoils.ps, method = "NMDS", distance = "bray", trymax = 100) 
 
 # With no black outline around points
-quartz()
 trimmedBrayNMDS <- phyloseq::plot_ordination(trimmedJustsoils.ps, trimOrd, type= "samples", color= "EU")
+#quartz()
 trimmedBrayNMDS + geom_polygon(aes(fill=EU)) + geom_point(size=3) + ggtitle("NMDS based on Bray-Curtis Dissimilarities (Trimmed)")
 
 # Add in labels to figure out what weird samples are
-quartz()
 labeledTrimmedBrayNMDS <- phyloseq::plot_ordination(trimmedJustsoils.ps, trimOrd, type= "samples", color= "EU", label = "Sample.ID")
+#quartz()
 labeledTrimmedBrayNMDS + geom_polygon(aes(fill=EU)) + geom_point(size=3) + ggtitle("NMDS based on Bray-Curtis Dissimilarities")
 
 
@@ -821,12 +822,12 @@ outliers.phylumTop_95p <- unique(outliers.phylumTop95$Phylum)
 outliers.phylumTop_95p #"Acidobacteria"   "Proteobacteria"  "Verrucomicrobia" "Chloroflexi"     "Planctomycetes"  "Actinobacteria"  "Firmicutes"      "Bacteroidetes"
 
 # Phyla comprising at least 5% of total abundance
-quartz()
 outliers.phylumPlot.95pt <- ggplot(data=outliers.phylumTop95, aes(x=Sample, y=Abundance, fill=Phylum)) + theme(axis.title.y = element_text(size = 14, face = "bold")) + theme(axis.title.x = element_blank()) + theme(axis.text.x = element_text(colour = "black", size = 12, face = "bold"))
 outliers.phylumPlot.95pt <- outliers.phylumPlot.95pt + geom_bar(aes(), stat="identity", position="fill") +
   scale_fill_manual(values = c("#999999", "#f781bf", "#a65628", "#ffff33", "#ff7f00", "#984ea3", "#4daf4a", "#377eb8", "#e41a1c")) +
   theme(legend.position="bottom") +
   guides(fill=guide_legend(nrow=4)) + theme(legend.text = element_text(colour="black", size = 6))  + ggtitle("Outliers: Phyla at least 5% of total abundance")
+#quartz()
 outliers.phylumPlot.95pt
 
 # Compare this with soils aggregated by site/EU (trimmed, so aftr removing rare taxa):
@@ -860,15 +861,15 @@ justsoils.phyla.Top99$Phylum[justsoils.phyla.Top99$Abundance < 0.01] <- "< 1% ab
 # Plot 
 # Phyla comprising at least 1% of total abundance 
 # Colors are different for easier comparison with outliers in next section
-quartz()
 justsoils.phylaPlot.95percent <- ggplot(data=justsoils.phyla.Top95, aes(x=Sample, y=Abundance, fill=Phylum)) + theme(axis.title.y = element_text(size = 14, face = "bold")) + theme(axis.title.x = element_blank()) + theme(axis.text.x = element_text(colour = "black", size = 12, face = "bold"))
 justsoils.phylaPlot.95percent <- justsoils.phylaPlot.95percent + geom_bar(aes(), stat="identity", position="fill") + 
   scale_fill_manual(values = c("#999999", "#f781bf", "#a65628", "#ff7f00", "#4daf4a", "#377eb8", "#e41a1c")) +
   theme(legend.position="bottom") +
   guides(fill=guide_legend(nrow=4)) + theme(legend.text = element_text(colour="black", size = 6))  + ggtitle("Rarefied Soils: Phyla at least 5% of total abundance")
+#quartz()
 justsoils.phylaPlot.95percent 
 
-quartz()
+#quartz()
 grid.arrange(outliers.phylumPlot.95pt, justsoils.phylaPlot.95percent, nrow=1)
 # You can see here that overall the outliers look pretty similar to the regular soil samples, with the exception of 
 # Sample 11, which has a lot of Bacteroides and Firmicutes. 
@@ -913,15 +914,16 @@ outlierASVs <- t(outlierASVs) # make ASVs rows and outlier versus no outlier col
 
 # Merge dataframes so that abundance in outlier and non outlier is present, then rename columns 
 outlierSigtab <- left_join(rownames_to_column(outlierSigtab), rownames_to_column(as.data.frame(outlierASVs)), by="rowname")
-colnames(outlierSigtab)[15] <- "notOutlierAbundance"
-colnames(outlierSigtab)[16] <- "outlierAbundance"
+# View(outlierSigtab)
+colnames(outlierSigtab)[14] <- "notOutlierAbundance"
+colnames(outlierSigtab)[15] <- "outlierAbundance"
 # Add in mean abundance in each category
-outlierSigtab$meanPercentNotOutlier <- outlierSigtab[15]/sum(outlierASVs[,1])*100 #this is divided by total number of counts in the forest samples (after rarefying)
-outlierSigtab$meanPercentOutlier <- outlierSigtab[16]/sum(outlierASVs[,2])*100 #this is divided by total number of counts in the patch samples (after rarefying)
+outlierSigtab$meanPercentNotOutlier <- outlierSigtab[14]/sum(outlierASVs[,1])*100 #this is divided by total number of counts in the forest samples (after rarefying)
+outlierSigtab$meanPercentOutlier <- outlierSigtab[15]/sum(outlierASVs[,2])*100 #this is divided by total number of counts in the patch samples (after rarefying)
 #View(outlierSigtab)
 
 # Plot 
-quartz()
+#quartz()
 theme_set(theme_bw())
 scale_fill_discrete <- function(palname = "Set1", ...) {
   scale_fill_brewer(palette = palname, ...)
@@ -934,14 +936,14 @@ outlierSigtab$Phylum = factor(as.character(outlierSigtab$Phylum), levels=names(x
 x = tapply(outlierSigtab$log2FoldChange, outlierSigtab$Genus, function(x) max(x))
 x = sort(x, TRUE)
 outlierSigtab$Genus = factor(as.character(outlierSigtab$Genus), levels=names(x))
-63+
+
 # point size does not vary
-quartz()
+#quartz()
 ggplot(outlierSigtab, aes(x=Genus, y=log2FoldChange, color=Phylum)) + geom_point(size=6) + 
   theme(axis.text.x = element_text(angle = -90, hjust = 0, vjust=0.5)) + ggtitle("Log2Fold Change between Outliers and non-outliers") + ylab("Log2FoldChange (Relative to Outliers)")
 
 # point size varies based on baseMean (i.e. average of the normalized count values, dividing by size factors, taken over all samples)
-quartz()
+#quartz()
 ggplot(outlierSigtab, aes(x=Genus, y=log2FoldChange, color=Phylum)) + geom_point(aes(size = baseMean)) + 
   theme(axis.text.x = element_text(angle = -90, hjust = 0, vjust=0.5)) + ggtitle("Log2Fold Change between Outliers and non-outliers") + ylab("Log2FoldChange (Relative to Outliers)")
 
@@ -959,7 +961,7 @@ ggplot(outlierSigtab, aes(x=Genus, y=log2FoldChange, color=Phylum)) + geom_point
 #################
 
 # Added "habitat" column to metadata in Excel, re-ran whole script
-quartz()
+#quartz()
 HabitatBrayNMDS <- phyloseq::plot_ordination(trimmedJustsoils.ps, trimOrd, type= "samples", color= "Habitat")
 HabitatBrayNMDS <- HabitatBrayNMDS + geom_polygon(aes(fill=Habitat)) + geom_point(size=3) + ggtitle("NMDS based on Bray-Curtis Dissimilarities")
 HabitatBrayNMDS 
@@ -971,13 +973,14 @@ HabitatBrayNMDS
 sample_data(trimmedJustsoils.ps)$Habitat
 # Remove edge for now, since I'm not sure how it fits into the dichotomy of forest v soil and it'll complicate
 # differential abundance analysis 
-soil_noedge.ps <- subset_samples(trimmedJustsoils.ps, Habitat != "edge")
+soil_noedge.ps <- subset_samples(trimmedJustsoils.ps, Habitat != "edge") #210 samples remaining
 colnames(sample_data(soil_noedge.ps))
 
 # Note, if error with "Rcpp" package version here, but version is okay, re-install Rcpp
 # and then restart R.
 soilDeseq1 <- phyloseq_to_deseq2(soil_noedge.ps, ~ Habitat)
 # Note: uses default Benjamini-Hochberg correction 
+set.seed(19)
 soilDeseqtested <- DESeq(soilDeseq1, test="Wald", fitType = "parametric")
 
 # Good explanation of results is here: https://support.illumina.com/help/BS_App_RNASeq_DE_OLH_1000000071939/Content/Source/Informatics/Apps/DESeq2ResultFile_swBS.htm#:~:text=baseMean%E2%80%94The%20average%20of%20the,factors%2C%20taken%20over%20all%20samples.&text=log2FoldChange%E2%80%93The%20effect%20size%20estimate,the%20comparison%20and%20control%20groups.
@@ -987,8 +990,8 @@ sigtab <- DeSeq_res[which(DeSeq_res$padj < alpha), ]
 sigtab <- cbind(as(sigtab, "data.frame"), as(tax_table(soil_noedge.ps)[rownames(sigtab), ], "matrix"))
 head(sigtab)
 dim(sigtab) #1,846 ASVs out of the 10,257 that we had, had a p value less than 0.001, forests and meadows are super different!
-
 # BaseMean is the The average of the normalized count values, dividing by size factors, taken over all samples
+sigtab <- rownames_to_column(sigtab) #make these rownames a column so that the merge below with habitatASVs can be done
 
 # Add in abundance for forest or patch
 # How many forest and patch samples?
@@ -998,23 +1001,25 @@ length(which(sample_data(soil_noedge.ps)$Habitat=="forest")) #116
 length(which(sample_data(soil_noedge.ps)$Habitat=="patch")) #94
 
 # make new phyloseq object where samples are averaged together (ASV counts are summed) across Habitat type (here just forest and patch)
-habitat.ps <- merge_samples(soil_noedge.ps, "Habitat")
+habitat.ps <- merge_samples(soil_noedge.ps, "Habitat") #10137 ASVs and 2 samples
 
 habitatASVs <- ASVs_outta_ps(habitat.ps)
-habitatASVs <- t(habitatASVs)
-dim(habitatASVs)
+dim(habitatASVs) #rows are samples (i.e. forest and patch), columns are each ASV
+habitatASVs <- t(habitatASVs) #now ASVs are rows
+# class(habitatASVs)
 
 # Merge dataframes so that abundance in forest and patch is present, then rename columns 
-sigtab <- left_join(rownames_to_column(sigtab), rownames_to_column(as.data.frame(habitatASVs)), by="rowname")
-colnames(sigtab)[15] <- "forestAbundance"
-colnames(sigtab)[16] <- "patchAbundance"
+sigtab <- left_join(sigtab, rownames_to_column(as.data.frame(habitatASVs)), by="rowname")
+#View(sigtab)
+colnames(sigtab)[14] <- "forestAbundance"
+colnames(sigtab)[15] <- "patchAbundance"
 # Add in mean abundance in each category
-sigtab$meanPercentForest <- sigtab[15]/sum(habitatASVs[,1])*100 #this is divided by total number of counts in the forest samples (after rarefying)
-sigtab$meanPercentPatch <- sigtab[16]/sum(habitatASVs[,2])*100 #this is divided by total number of counts in the patch samples (after rarefying)
+sigtab$meanPercentForest <- sigtab[14]/sum(habitatASVs[,1])*100 #this is divided by total number of counts in the forest samples (after rarefying)
+sigtab$meanPercentPatch <- sigtab[15]/sum(habitatASVs[,2])*100 #this is divided by total number of counts in the patch samples (after rarefying)
 #View(sigtab)
 
 # Plot 
-quartz()
+#quartz()
 theme_set(theme_bw())
 scale_fill_discrete <- function(palname = "Set1", ...) {
   scale_fill_brewer(palette = palname, ...)
@@ -1029,12 +1034,12 @@ x = sort(x, TRUE)
 sigtab$Genus = factor(as.character(sigtab$Genus), levels=names(x))
 
 # point size does not vary
-quartz()
+#quartz()
 ggplot(sigtab, aes(x=Genus, y=log2FoldChange, color=Phylum)) + geom_point(size=6) + 
   theme(axis.text.x = element_text(angle = -90, hjust = 0, vjust=0.5)) + ggtitle("Log2Fold Change between Forest and Patch Soils-Genera") + ylab("Log2FoldChange (Relative to Patch)")
 
 # point size varies based on baseMean (i.e. average of the normalized count values, dividing by size factors, taken over all samples)
-quartz()
+#quartz()
 ggplot(sigtab, aes(x=Genus, y=log2FoldChange, color=Phylum)) + geom_point(aes(size = baseMean)) + 
   theme(axis.text.x = element_text(angle = -90, hjust = 0, vjust=0.5)) + ggtitle("Log2Fold Change between Forest and Patch Soils-Genera") + ylab("Log2FoldChange (Relative to Patch)")
 
@@ -1050,7 +1055,7 @@ x2 = sort(x2, TRUE)
 sigtab$Family = factor(as.character(sigtab$Family), levels=names(x2))
 
 # point size varies based on baseMean (i.e. average of the normalized count values, dividing by size factors, taken over all samples)
-quartz()
+#quartz()
 ggplot(sigtab, aes(x=Family, y=log2FoldChange, color=Phylum)) + geom_point(aes(size = baseMean)) + 
   theme(axis.text.x = element_text(angle = -90, hjust = 0, vjust=0.5)) + ggtitle("Log2Fold Change between Forest and Patch Soils-Families") + ylab("Log2FoldChange (Relative to Patch)")
 
@@ -1110,7 +1115,7 @@ m100_comp10 <- ASVBrayDist.mat[m100, m10]
 ######## MAKE BOXPLOTS ######## 
 bold_a <- expression(bold("Dissimilarity Relative to 10m (patch)"))
 bold_b <- expression(bold("Dissimilarity Relative to 100m (forest)"))
-quartz()
+#quartz()
 par(mfrow=c(1,2))
 patch_box <- boxplot(list(m10_comp10, m10_comp20, m10_comp30, m10_comp40,
                           m10_comp50, m10_comp60, m10_comp70,
@@ -1137,11 +1142,13 @@ mtext(text=bold_b, side=3, adj = -0.065, line = 2)
 # SAVE ALL OF THESE FOR EASY ACCESS
 ##################################
 
-#resaved March 2 2022
+# all resaved Sept 29, 2022:
 #save(rarefied.ps, samples_df, ASVsTrimmed, taxTrimmed, trimmedJustsoils.ps, trimOrd, outliersTrimmed, outliersASVtax, file = "RobjectsSaved/EDA16SAug2021")
 #save(trimmedJustsoils.ps, file= "RobjectsSaved/trimmedJustSoils.ps") 
 #soils_noEuks <- ASVs_outta_ps(noeuksorNAs_ps) #this is the dataset pre-rarefaction, but after removing eukaryotes and ASVs not assigned at least to phylum.
 #soils_noEuksTaxTable <- taxtable_outta_ps(noeuksorNAs_ps)
-#write.csv(soils_noEuks, file = "RobjectsSaved/SRSsoilsNoEuks.csv") #saved April 25, 2022 and sent to Josep R.
+#write.csv(soils_noEuks, file = "RobjectsSaved/SRSsoilsNoEuks.csv") 
+
+# last saved April 25, 2022:
 #write.csv(soils_noEuksTaxTable, file= "RobjectsSaved/SRSsoilsNoEuksTaxTable.csv") #saved April 25, 2022 and sent to Josep R.
 #write.csv(samples_df, file= "RobjectsSaved/SRS_soilsFinalMetadata.csv") #saved April 25, 2022 and sent to Josep R.
