@@ -9,10 +9,6 @@
 # 1. Performs differential abundance analyses on all EUs together (working on the 
 # dataset after removing v rare taxa and applying a ubiquity threshold 
 # (i.e. postUbiquity.ps)).
-# 2. Creates data frame with z-score (of ASV abundance) for each ASV within each EU 
-# 3. Fits logistic curves to each one of the differentially abundant ASVs:
-# -- i. gets Z-score (of ASV abundance) for each ASV within each EU 
-# -- ii. for each ASV, then fits logistic models to THIS
 # 2. Make a stacked barchart that shows number of differentially abundant ASVs in each  differential abundance breakdown by forest, patch,
 # and non-differentially abundant microbes 
 
@@ -211,7 +207,7 @@ chloroBoxPlot <- ggplot(chloroRelAbund, aes(x=Habitat_type, y=Relative_abundance
   geom_boxplot() +
   scale_fill_manual(values=c("darkgreen", "goldenrod")) +
   labs(title="Relative abundance of Chloroflexi ASVs", x="Habitat Type", y = "Relative abundance")
-quartz()
+#quartz()
 chloroBoxPlot
 
 #######################################################################################################
@@ -289,20 +285,7 @@ without53N_index_indexF <- which(without53N_index==FALSE)
 onlyIf53Nexcluded <- ASVnamesDA_no53N[without53N_index_indexF] #this shows those ASVs that are only differentially abundant if 53N is EXCLUDED
 intersect(onlyIfWith53N, onlyIf53Nexcluded) #shows that these two objects are distinct
 
-# How do just the forest taxa overlap?
-with53NforestNames <- rownames(DAphylumAll[which(DAphylumAll$Habitat=="forest"),]) #1121 ASVs!
-without53NforestNames <- rownames(DAphylumAll_no53N[which(DAphylumAll_no53N$Habitat=="forest"),]) #1,099 ASVs!
-length(intersect(with53NforestNames, without53NforestNames)) #1059
 
-with53N_indexForest <- (with53NforestNames %in% without53NforestNames) #shows the with53Nforest names that do or do not in without53NforestNames
-with53N_indexForest_F <- which(with53N_indexForest==FALSE) #these are the rows of those that occur with53N_indexForest but NOT in without53NforestNames
-onlyIfWith53N_forest <- with53NforestNames[with53N_indexForest_F] #this shows those ASVs that are only differentially abundant if 53N is included
-length(onlyIfWith53N_forest) #62
-
-withOUT53N_indexForest <- (without53NforestNames %in% with53NforestNames) #shows the without53NforestNames names that do or do not in with53Nforest 
-withOUT53N_indexForest_F <- which(withOUT53N_indexForest==FALSE) #these are the rows of those that occur in without53NforestNames but NOT in  with53N_indexForest 
-onlyIfWithout53N_forest <- without53NforestNames[withOUT53N_indexForest_F] #this shows those ASVs that are only differentially abundant if 53N is EXCLUDED
-length(onlyIfWithout53N_forest) #40
 
 #save(diffAbunDat_no53N_tidy_PROKARYOTES, file= "RobjectsSaved/diffAbunDat_no53N_PROKARYOTES") #last saved Oct. 1, 2022
 ##########
@@ -362,3 +345,5 @@ length(which(DAphylumAll_no53N[chloro_index_no53N,]$Habitat=="forest")) #18 fore
 length(which(DAphylumAll_no53N[chloro_index_no53N,]$Habitat=="patch")) #254 patch specialists
 length(which(DAphylumAll_no53N[chloro_index_no53N,]$Habitat=="AremainingASVs")) #226 remaining ASVs
 (18+254+226) == length(which(DAphylumAll_no53N$Phylum=="Chloroflexi"))
+
+# MORE about how How do the original analysis and that without 53N compare
