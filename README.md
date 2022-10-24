@@ -21,6 +21,7 @@ This repository contains the scripts used to process 16S and ITS data from soils
 **16S and ITS together or other miscellaneous**
 1. EnvDataPlots.R -- this script makes plots of mean pH, canopy cover, and vegetation for all of the points along the transects sampled in the dataset.
 2. DissimAcrossTransectDiffAbundOnly.R -- this script looks at Bray-Curtis dissimilarities across the transect within each EU, focusing only on ASVs found to be differentially abundant (in DiffAbundProkaryotes.R and DiffAbundFungi.R).
+3. AbundanceZscores_no53N.R -- This script calculates Z-scores, with EU 53N removed from analysis.
 
 
 **Scripts with additional analyses that probably won't make it into paper**
