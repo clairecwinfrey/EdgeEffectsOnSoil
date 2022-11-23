@@ -171,3 +171,8 @@ FUNGuild_stackedBarplotAM_EMF <- ggplot(fungResultsDA[AM_EMFindex,], aes(fill=Ha
 
 # quartz()
 FUNGuild_stackedBarplotAM_EMF
+
+View(fungResultsDA)
+
+# saved Nov. 22, 2022
+save(fungResultsDA, file= "RobjectsSaved/fungResultsDA")
