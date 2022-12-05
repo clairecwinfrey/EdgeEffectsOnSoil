@@ -57,6 +57,12 @@ ASVs_outta_ps <- function(physeq){ #input is a phyloseq object
   return(as.data.frame(ASVTable))
 }
 
+# 3. # metadata_outta_ps takes the phyloseq metadata table and converts it to a dataframe
+metadata_outta_ps <- function(physeq){ #input is a phyloseq object
+  metaDat <- sample_data(physeq)
+  return(as.data.frame(metaDat))
+}
+
 #######################################################################################################
 # PART 1: ALL EUS CONSIDERED
 #######################################################################################################
@@ -294,6 +300,8 @@ intersect(onlyIfWith53N, onlyIf53Nexcluded) #shows that these two objects are di
 diffAbund_no53N_ProkaryotesNames <- as.character(unique(diffAbunDat_no53N_tidy_PROKARYOTES$ASV_name)) #added as character because at first it had "AsIs" attribute
 prokaryotes_no53N_DiffAbund.ps <- phyloseq::prune_taxa(diffAbund_no53N_ProkaryotesNames, postUbiq16Sno53N.ps)
 otu_table(prokaryotes_no53N_DiffAbund.ps)
+tax_table(prokaryotes_no53N_DiffAbund.ps)
+sample_data(prokaryotes_no53N_DiffAbund.ps)
 
 # save(prokaryotes_no53N_DiffAbund.ps, file= "RobjectsSaved/prokaryotes_no53N_DiffAbund.ps") #saved Oct. 1, 2022
 
@@ -346,4 +354,94 @@ length(which(DAphylumAll_no53N[chloro_index_no53N,]$Habitat=="patch")) #254 patc
 length(which(DAphylumAll_no53N[chloro_index_no53N,]$Habitat=="AremainingASVs")) #226 remaining ASVs
 (18+254+226) == length(which(DAphylumAll_no53N$Phylum=="Chloroflexi"))
 
-# MORE about how How do the original analysis and that without 53N compare
+#View(DAphylumAll_no53N)
+
+#######################
+# Differentially abundant taxa along the transect
+#######################
+# This part makes a stacked barplot which has the percentage of reads that are forest, patch, or non-specialists at each point along the transect
+
+# 1. First, need to get the median ASV abundance at each point along the transect, averaging across all EUs
+# (borrow code from near end of UbiquityMedianSetup.R)
+
+# This code gets median abundance for each ASV (median across 24 transects all EUs)
+# at each meter.
+# In other words, the EU is ignored, so the number of rows = number of ASVs in 
+
+# This code gets median abundance for each ASV at each meter along the transect (regardless of EU)
+postUbiq16Sno53NASVsdf <- ASVs_outta_ps(postUbiq16Sno53N.ps) #rows are samples, ASV abundance is columns 
+postUbiq16Sno53NmetaDf <- metadata_outta_ps(postUbiq16Sno53N.ps) #rows are samples, columns are all of the rest of the metadata
+postUbiq16Sno53NmetaDf <- as.data.frame(as.matrix(postUbiq16Sno53NmetaDf)) #make format nicer
+postUbiq16Sno53NmetaDf$Meter <- as.numeric(postUbiq16Sno53NmetaDf$Meter) #make meter numeric
+unique(rownames(postUbiq16Sno53NASVsdf) == rownames(postUbiq16Sno53NmetaDf)) #this is true, which shows that we can use indices from
+# metadata to isolate stuff from ASV table
+
+# This is how to pull out rownames by meter
+rownames(postUbiq16Sno53NmetaDf)[which(postUbiq16Sno53NmetaDf$Meter == 10)]
+meterVec <- c(10,20,30,40,50,60,70,80,90,100)
+meterRowNamesIndices <- vector("list", length(meterVec)) #this will have all of the rownames that correspond to samples in each meter
+names(meterRowNamesIndices) <- paste(meterVec, "m", sep="_") 
+for (j in 1:length(meterVec)){
+  meterRowNamesIndices[[j]] <- rownames(postUbiq16Sno53NmetaDf)[which(postUbiq16Sno53NmetaDf$Meter == meterVec[j])]
+}
+
+# now, for each one of the ASVs, pull out all of the samples at each point
+# first, make a dataframe to hold all the final stuff:
+medianASVsByMeter <- as.data.frame(matrix(nrow=10, ncol=ncol(postUbiq16Sno53NASVsdf)))
+colnames(medianASVsByMeter) <- colnames(postUbiq16Sno53NASVsdf)
+rownames(medianASVsByMeter) <- names(meterRowNamesIndices)
+
+for (k in 1:length(meterRowNamesIndices)){ #get mean ASV abundance at each meter
+  medianASVsByMeter[k,] <- t(colMeans(postUbiq16Sno53NASVsdf[meterRowNamesIndices[[k]],])) #this pulls out all of the samples at each meter.
+}
+#View(medianASVsByMeter)
+
+medianASVsByMeterTidy <-  medianASVsByMeter %>% 
+  rownames_to_column() %>% 
+  pivot_longer(cols = ASV_1:ASV_9931, names_to = "ASV_name", values_to = "meanASVabundance")
+# View(medianASVsByMeterTidy) #looks good!
+colnames(medianASVsByMeterTidy)[1] <- "meter"
+DAphylumAll_no53N2 <- rownames_to_column(DAphylumAll_no53N) #grab this so that can get info on specialists
+colnames(DAphylumAll_no53N2)[1] <- "ASV_name"
+medianASVsByMeterHabitat <- merge(medianASVsByMeterTidy, DAphylumAll_no53N2, by="ASV_name")
+
+#### GET RELATIVE ABUNDANCES #####
+# Get the total ASV abundance within each meter
+ASVmeterTotal <- as.data.frame(matrix(nrow=10, ncol=1))
+rownames(ASVmeterTotal) <- paste(meterVec, "m", sep="_") 
+colnames(ASVmeterTotal) <- "ASVmeterTotal"
+for (j in 1:length(meterVec)){
+  ASVmeterTotal[j,1] <- sum(medianASVsByMeterHabitat[which(medianASVsByMeterHabitat$meter ==  rownames(ASVmeterTotal)[j]),3]) #pull out meter by meter
+}
+ASVmeterTotal
+
+# Finally get relative abundances by dividing each value in each row by the meter total
+relAbundDfs <- vector("list", length(meterVec)) #this will have all of the rownames that correspond to samples in each meter
+names(relAbundDfs) <- rownames(ASVmeterTotal)
+for (h in 1:length(relAbundDfs)){
+  relAbundDfs[[h]] <- medianASVsByMeterHabitat[which(medianASVsByMeterHabitat$meter ==  names(relAbundDfs)[[h]]),] #this pulls out just the data for each meter
+  relAbundDfs[[h]]$relAbund <- (relAbundDfs[[h]]$meanASVabundance/ASVmeterTotal[h,1])*100
+}
+sum(relAbundDfs[[1]]$relAbund) #great, these add up to be 100!
+
+### rbind all of the relAbunds[[all meters]] and plug this into ggplot2 below
+relAbund_df <- do.call("rbind", relAbundDfs)
+# View(relAbund_df)
+
+# Plot it!
+# Relative abundance
+level_order <- names(meterRowNamesIndices) #set this to make in correct order from 10m to 100m
+transectX <- c("40 m", "30 m","20 m", "10 m", "edge", "10 m", "20 m", "30 m", "40 m", "50 m")#for re-naming axis tick marks
+relAbundTransectProks_plot <- ggplot(relAbund_df, aes(x = factor(meter, level = level_order), y = relAbund, fill = Habitat)) + 
+  geom_bar(stat = "identity", position = "fill")  +
+  scale_fill_manual(values=c("darkgrey","darkgreen","goldenrod"), name= NULL, labels=c("non-specialists", "forest specialists", "patch specialists")) +
+  labs(y= "relative abundance (%)", x = "meters from edge") + 
+  ggtitle("Prokaryote Specialists Across the Transect") +
+  scale_x_discrete(labels=transectX) + #change x-axis tick labels
+  theme(axis.title=element_text(size=14))
+#quartz()
+relAbundTransectProks_plot
+
+#View(medianASVsByMeterHabitat)
+
+
