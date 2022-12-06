@@ -153,11 +153,13 @@ grid.arrange(pHEUMed_plot, CanEU_plot, vegEU_plot, ncol=3)
 
 # Aug 9, 2022 (based on tutorial here: https://ggplot2.tidyverse.org/reference/guide_colourbar.html)
 ########################
+#### EU 10
 df <- expand.grid(X1 = 1:10, X2 = 1:10)
 df$value <- df$X1 * df$X2
 
+pHCanVegMedEU$EU[1:10]
 pHCanVegMedEU[1:10,4] #just EU_10 canopy cover data
-pHCanVegMedEU[31:40,4] #just EU_53S canopy cover data
+
 
 canEU10_df <- expand.grid(X = 1:10, Y = 1:10) #make a 10 x 10 grid,
 # where X is the x-axis, and Y the y-axis
@@ -167,7 +169,7 @@ canEU10_df$value <- rep(canCoverVec10, 10) #add canopy cover data
 # View(canEU10_df) #Now, each row in this 10 x 10 grid should be the same, and should be the mean canopy
 # cover across transect 10
 canEU10_df$value #since only the first row is what we are using for the color bar, we will add in some 
-# high and low numbers in another row so that color bar goes from 0 to 100 percent canopy cover
+# high and low numbers in the first row so that color bar goes from 0 to 100 percent canopy cover. So any row but the first one can be used as the color bar
 canEU10_df$value[1:10] <- c(rep(0,5), rep(100,5))
 
 canCoverEU_10_grid <- ggplot(canEU10_df, aes(X, Y)) + geom_tile(aes(fill = value)) + 
@@ -189,12 +191,13 @@ canCoverEU_10_grid + guides(fill = guide_colourbar(ticks=FALSE, label.position =
 canEU53S_df <- expand.grid(X = 1:10, Y = 1:10) #make a 10 x 10 grid,
 # where X is the x-axis, and Y the y-axis
 dim(canEU53S_df)
+pHCanVegMedEU$EU[31:40] #53S
 canCoverVec53S <- pHCanVegMedEU$avgCanopyEu[31:40] #add  just the canopy cover data for EU 53S
 canEU53S_df$value <- rep(canCoverVec53S, 10) #add canopy cover data
 # View(canEU53S_df) #Now, each row in this 10 x 10 grid should be the same, and should be the mean canopy
 # cover across transect 53S
 canEU53S_df$value #since only the first row is what we are using for the color bar, we will add in some 
-# high and low numbers in another row so that color bar goes from 0 to 100 percent canopy cover
+# high and low numbers in the first row so that color bar goes from 0 to 100 percent canopy cover. So any row but the first one can be used as the color bar
 canEU53S_df$value[1:10] <- c(rep(0,5), rep(100,5))
 
 canCoverEU_53S_grid <- ggplot(canEU53S_df, aes(X, Y)) + geom_tile(aes(fill = value)) + 
@@ -216,10 +219,14 @@ canCoverEU_53S_grid + guides(fill = guide_colourbar(ticks=FALSE, label.position 
 canEU54S_df <- expand.grid(X = 1:10, Y = 1:10) #make a 10 x 10 grid,
 # where X is the x-axis, and Y the y-axis
 dim(canEU54S_df)
+pHCanVegMedEU$EU[41:50] #54S
 canCoverVec54S <- pHCanVegMedEU$avgCanopyEu[41:50] #add  just the canopy cover data for EU 54S
 canEU54S_df$value <- rep(canCoverVec54S, 10) #add canopy cover data
 # View(canEU54S_df) #Now, each row in this 10 x 10 grid should be the same, and should be the mean canopy
 # cover across transect 54S
+canEU54S_df$value #since only the first row is what we are using for the color bar, we will add in some 
+# high and low numbers in the first row so that color bar goes from 0 to 100 percent canopy cover. So any row but the first one can be used as the color bar
+canEU54S_df$value[1:10] <- c(rep(0,5), rep(100,5))
 
 canCoverEU_54S_grid <- ggplot(canEU54S_df, aes(X, Y)) + geom_tile(aes(fill = value)) + 
   ggtitle("Mean Canopy Cover EU 54S") +
@@ -230,20 +237,26 @@ canCoverEU_54S_grid + guides(fill = guide_colourbar(ticks=FALSE, label.position 
                                                     direction= "horizontal", barwidth = 6, barheight = 1.5)) + 
   theme_bw()
 # Vertical color bar legend
-quartz() 
-canCoverEU_54S_grid + guides(fill = guide_colourbar(ticks=FALSE, label.position = "left", nbin = 100, title= "Canopy cover",
-                                                    direction= "vertical", barwidth = 1.5, barheight = 6)) + 
+canCoverEU_54S_gridVert <- canCoverEU_54S_grid + guides(fill = guide_colourbar(ticks=FALSE, label.position = "left", nbin = 100, title= "Canopy cover",
+                                                    direction= "vertical", barwidth = 1.5, barheight = 6, ticks.colour = NA, frame.color = NULL)) + 
   theme_bw()
+quartz() 
+canCoverEU_54S_gridVert
 
 ###########################################################
 ### 53N
 canEU53N_df <- expand.grid(X = 1:10, Y = 1:10) #make a 10 x 10 grid,
 # where X is the x-axis, and Y the y-axis
 dim(canEU53N_df)
+pHCanVegMedEU$EU[21:30] #53N
 canCoverVec53N <- pHCanVegMedEU$avgCanopyEu[21:30] #add  just the canopy cover data for EU 53N
 canEU53N_df$value <- rep(canCoverVec53N, 10) #add canopy cover data
 # View(canEU53N_df) #Now, each row in this 10 x 10 grid should be the same, and should be the mean canopy
 # cover across transect 53N
+canEU53N_df$value #since only the first row is what we are using for the color bar, we will add in some 
+# high and low numbers in the first row so that color bar goes from 0 to 100 percent canopy cover. So any row but the first one can be used as the color bar
+canEU53N_df$value[1:10] <- c(rep(0,5), rep(100,5))
+
 
 canCoverEU_53N_grid <- ggplot(canEU53N_df, aes(X, Y)) + geom_tile(aes(fill = value)) + 
   ggtitle("Mean Canopy Cover EU 53N") +
@@ -264,10 +277,14 @@ canCoverEU_53N_grid + guides(fill = guide_colourbar(ticks=FALSE, label.position 
 canEU52_df <- expand.grid(X = 1:10, Y = 1:10) #make a 10 x 10 grid,
 # where X is the x-axis, and Y the y-axis
 dim(canEU52_df)
+pHCanVegMedEU$EU[11:20] #52
 canCoverVec52 <- pHCanVegMedEU$avgCanopyEu[11:20] #add  just the canopy cover data for EU 52
 canEU52_df$value <- rep(canCoverVec52, 10) #add canopy cover data
 # View(canEU52_df) #Now, each row in this 10 x 10 grid should be the same, and should be the mean canopy
 # cover across transect 52
+canEU52_df$value #since only the first row is what we are using for the color bar, we will add in some 
+# high and low numbers in the first row so that color bar goes from 0 to 100 percent canopy cover. So any row but the first one can be used as the color bar
+canEU52_df$value[1:10] <- c(rep(0,5), rep(100,5))
 
 canCoverEU_52_grid <- ggplot(canEU52_df, aes(X, Y)) + geom_tile(aes(fill = value)) + 
   ggtitle("Mean Canopy Cover EU 52") +
@@ -282,6 +299,34 @@ quartz()
 canCoverEU_52_grid + guides(fill = guide_colourbar(ticks=FALSE, label.position = "left", nbin = 100, title= "Canopy cover",
                                                    direction= "vertical", barwidth = 1.5, barheight = 6)) + 
   theme_bw()
+
+###########################################################
+### 8
+canEU8_df <- expand.grid(X = 1:10, Y = 1:10) #make a 10 x 10 grid,
+# where X is the x-axis, and Y the y-axis
+pHCanVegMedEU$EU[51:60] #8
+canCoverVec8 <- pHCanVegMedEU$avgCanopyEu[51:60] #add  just the canopy cover data for EU 8
+canEU8_df$value <- rep(canCoverVec8, 10) #add canopy cover data
+# View(canEU8_df) 
+canEU8_df$value #since only the first row is what we are using for the color bar, we will add in some 
+# high and low numbers in the first row so that color bar goes from 0 to 100 percent canopy cover. So any row but the first one can be used as the color bar
+canEU8_df$value[1:10] <- c(rep(0,5), rep(100,5))
+
+canCoverEU_8_grid <- ggplot(canEU8_df, aes(X, Y)) + geom_tile(aes(fill = value)) + 
+  ggtitle("Mean Canopy Cover EU 8") +
+  scale_fill_gradient(low = "white", high = "darkgreen")
+# Horizontal color bar legend
+quartz() # Horizontal color bar legend
+canCoverEU_8_grid + guides(fill = guide_colourbar(ticks=FALSE, label.position = "top", nbin = 100, title= "Canopy cover",
+                                                   direction= "horizontal", barwidth = 6, barheight = 1.5)) + 
+  theme_bw()
+# Vertical color bar legend
+quartz() 
+canCoverEU_8_grid + guides(fill = guide_colourbar(ticks=FALSE, label.position = "left", nbin = 100, title= "Canopy cover",
+                                                   direction= "vertical", barwidth = 1.5, barheight = 6)) + 
+  theme_bw()
+
+
 
 
 # save pH, canopy cover, and vegetation data for transects
