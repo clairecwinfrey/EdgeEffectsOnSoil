@@ -126,13 +126,15 @@ BCcompsPlot$BCdists <- as.numeric(BCcompsPlot$BCdists)
 ##############################################
 
 #. 2 PLOTTING USING DATAFRAME CREATED ABOVE
+# New labels for transect
+transectX <- c("40", "30","20", "10", "edge", "10", "20", "30", "40", "50")#for re-naming axis tick marks
 
 # EU 10
 # Matrix AND Patch lines
 ggEU_10 <- ggplot(data=BCcompsPlot[1:20,], aes(x=meter, y=BCdists, color= compType)) + 
   geom_line(size=2.7) +
   theme_bw() + ylim(0.1, 1.00) +
-  scale_x_continuous("Transect Meter", breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100)) +
+  scale_x_continuous("meters from edge", breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100), labels=transectX) +
   labs(title= "EU 10", y = "Bray-Curtis dissimilarity", size= 10) + 
   geom_vline(xintercept = 50, linetype= "dashed", color= "darkgrey") + 
   theme(text = element_text(size=15)) +
@@ -149,7 +151,7 @@ EU_10_MedBCsforestOnly <- BCcompsPlot[1:20,] %>%
 ggEU_10_forestOnly <- ggplot(data=EU_10_MedBCsforestOnly, aes(x=meter, y=BCdists)) + 
   geom_line(size=2.7, color= "darkgreen") +
   theme_bw() + ylim(0.1, 1.00) +
-  scale_x_continuous("Transect Meter", breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100)) +
+  scale_x_continuous("meters from edge", breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100), labels=transectX) +
   labs(title= "EU 10", y = "Bray-Curtis dissimilarity", size= 14) + 
   geom_vline(xintercept = 50, linetype= "dashed", color= "darkgrey", size=1.5) + 
   theme(text = element_text(size=18)) +
@@ -161,7 +163,7 @@ ggEU_10_forestOnly
 ggEU_52 <- ggplot(data=BCcompsPlot[21:40,], aes(x=meter, y=BCdists, color= compType)) + 
   geom_line(size=2.7) +
   theme_bw() + ylim(0.1, 1.00) +
-  scale_x_continuous("Transect Meter", breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100)) +
+  scale_x_continuous("meters from edge", breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100), labels=transectX) +
   labs(title= "EU 52", y = "Bray-Curtis dissimilarity", size= 10) + 
   geom_vline(xintercept = 50, linetype= "dashed", color= "darkgrey") + 
   theme(text = element_text(size=15)) +
@@ -175,7 +177,7 @@ ggEU_52
 ggEU_53N <- ggplot(data=BCcompsPlot[41:60,], aes(x=meter, y=BCdists, color= compType)) + 
   geom_line(size=2.7) +
   theme_bw() + ylim(0.1, 1.00) +
-  scale_x_continuous("Transect Meter", breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100)) +
+  scale_x_continuous("meters from edge", breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100), labels=transectX) +
   labs(title= "EU 53N", y = "Bray-Curtis dissimilarity", size= 10) + 
   geom_vline(xintercept = 50, linetype= "dashed", color= "darkgrey") + 
   theme(text = element_text(size=15)) +
@@ -188,7 +190,7 @@ ggEU_53N
 ggEU_53S <- ggplot(data=BCcompsPlot[61:80,], aes(x=meter, y=BCdists, color= compType)) + 
   geom_line(size=2.7) +
   theme_bw() + ylim(0.1, 1.00) +
-  scale_x_continuous("Transect Meter", breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100)) +
+  scale_x_continuous("meters from edge", breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100), labels=transectX) +
   labs(title= "EU 53S", y = "Bray-Curtis dissimilarity", size= 10) + 
   geom_vline(xintercept = 50, linetype= "dashed", color= "darkgrey") + 
   theme(text = element_text(size=15)) +
@@ -205,7 +207,7 @@ EU_53S_MedBCsforestOnly <- BCcompsPlot[61:80,] %>%
 ggEU_53S_forestOnly <- ggplot(data=EU_53S_MedBCsforestOnly, aes(x=meter, y=BCdists)) + 
   geom_line(size=2.7, color= "darkgreen") +
   theme_bw() + ylim(0.1, 1.00) +
-  scale_x_continuous("Transect Meter", breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100)) +
+  scale_x_continuous("meters from edge", breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100), labels=transectX) +
   labs(title= "EU 53S", y = "Bray-Curtis dissimilarity", size= 14) + 
   geom_vline(xintercept = 50, linetype= "dashed", color= "darkgrey", size=1.5) + 
   theme(text = element_text(size=18)) +
@@ -217,7 +219,7 @@ ggEU_53S_forestOnly
 ggEU_54S <- ggplot(data=BCcompsPlot[81:100,], aes(x=meter, y=BCdists, color= compType)) + 
   geom_line(size=2.7) +
   theme_bw() + ylim(0.1, 1.00) +
-  scale_x_continuous("Transect Meter", breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100)) +
+  scale_x_continuous("meters from edge", breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100), labels=transectX) +
   labs(title= "EU 54S", y = "Bray-Curtis dissimilarity", size= 10) + 
   geom_vline(xintercept = 50, linetype= "dashed", color= "darkgrey") + 
   theme(text = element_text(size=15)) +
@@ -230,7 +232,7 @@ ggEU_54S
 ggEU_8 <- ggplot(data=BCcompsPlot[101:120,], aes(x=meter, y=BCdists, color= compType)) + 
   geom_line(size=2.7) +
   theme_bw() + ylim(0.1, 1.00) +
-  scale_x_continuous("Transect Meter", breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100)) +
+  scale_x_continuous("meters from edge", breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100), labels=transectX) +
   labs(title= "EU 8", y = "Bray-Curtis dissimilarity", size= 10) + 
   geom_vline(xintercept = 50, linetype= "dashed", color= "darkgrey") + 
   theme(text = element_text(size=15)) +
