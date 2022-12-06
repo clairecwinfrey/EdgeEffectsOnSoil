@@ -148,6 +148,12 @@ vegEU_plot
 quartz()
 grid.arrange(pHEUMed_plot, CanEU_plot, vegEU_plot, ncol=3)
 
+# Add habitat column:
+pHCanVegMedEU$habitat <- rep(NA, nrow(pHCanVegMedEU))
+pHCanVegMedEU$habitat[which(pHCanVegMedEU$Meter %in% c(10,20,30,40))] <- "patch"
+pHCanVegMedEU$habitat[which(pHCanVegMedEU$Meter %in% c(60,70,80,90,100))] <- "matrix"
+pHCanVegMedEU$habitat[which(pHCanVegMedEU$Meter %in% 50)] <- "edge"
+
 ############### CANOPY COVER "COLOR BARS" ###################
 ############################################################
 
@@ -160,6 +166,11 @@ df$value <- df$X1 * df$X2
 pHCanVegMedEU$EU[1:10]
 pHCanVegMedEU[1:10,4] #just EU_10 canopy cover data
 
+# What is the mean difference between forest and patch canopy cover
+EU10_avgPatchCan <- mean(pHCanVegMedEU$avgCanopyEu[1:4]) #mean patch
+EU10_avgForestCan <- mean(pHCanVegMedEU$avgCanopyEu[6:10]) #mean forest
+canContrast_EU10 <- EU10_avgForestCan - EU10_avgPatchCan
+canContrast_EU10
 
 canEU10_df <- expand.grid(X = 1:10, Y = 1:10) #make a 10 x 10 grid,
 # where X is the x-axis, and Y the y-axis
@@ -192,7 +203,15 @@ canEU53S_df <- expand.grid(X = 1:10, Y = 1:10) #make a 10 x 10 grid,
 # where X is the x-axis, and Y the y-axis
 dim(canEU53S_df)
 pHCanVegMedEU$EU[31:40] #53S
+
+# What is the mean difference between forest and patch canopy cover
+EU53S_avgPatchCan <- mean(pHCanVegMedEU$avgCanopyEu[31:34]) #mean patch
+EU53S_avgForestCan <- mean(pHCanVegMedEU$avgCanopyEu[36:40]) #mean forest
+canContrast_EU53S <- EU53S_avgForestCan - EU53S_avgPatchCan
+canContrast_EU53S
+
 canCoverVec53S <- pHCanVegMedEU$avgCanopyEu[31:40] #add  just the canopy cover data for EU 53S
+
 canEU53S_df$value <- rep(canCoverVec53S, 10) #add canopy cover data
 # View(canEU53S_df) #Now, each row in this 10 x 10 grid should be the same, and should be the mean canopy
 # cover across transect 53S
@@ -220,6 +239,12 @@ canEU54S_df <- expand.grid(X = 1:10, Y = 1:10) #make a 10 x 10 grid,
 # where X is the x-axis, and Y the y-axis
 dim(canEU54S_df)
 pHCanVegMedEU$EU[41:50] #54S
+
+# What is the mean difference between forest and patch canopy cover
+EU54S_avgPatchCan <- mean(pHCanVegMedEU$avgCanopyEu[41:44]) #mean patch
+EU54S_avgForestCan <- mean(pHCanVegMedEU$avgCanopyEu[46:50]) #mean forest
+canContrast_EU54S <- EU54S_avgForestCan - EU54S_avgPatchCan
+
 canCoverVec54S <- pHCanVegMedEU$avgCanopyEu[41:50] #add  just the canopy cover data for EU 54S
 canEU54S_df$value <- rep(canCoverVec54S, 10) #add canopy cover data
 # View(canEU54S_df) #Now, each row in this 10 x 10 grid should be the same, and should be the mean canopy
@@ -249,6 +274,12 @@ canEU53N_df <- expand.grid(X = 1:10, Y = 1:10) #make a 10 x 10 grid,
 # where X is the x-axis, and Y the y-axis
 dim(canEU53N_df)
 pHCanVegMedEU$EU[21:30] #53N
+
+# What is the mean difference between forest and patch canopy cover
+EU53N_avgPatchCan <- mean(pHCanVegMedEU$avgCanopyEu[21:24]) #mean patch
+EU53N_avgForestCan <- mean(pHCanVegMedEU$avgCanopyEu[26:30]) #mean forest
+canContrast_EU53N <- EU53N_avgForestCan - EU53N_avgPatchCan
+
 canCoverVec53N <- pHCanVegMedEU$avgCanopyEu[21:30] #add  just the canopy cover data for EU 53N
 canEU53N_df$value <- rep(canCoverVec53N, 10) #add canopy cover data
 # View(canEU53N_df) #Now, each row in this 10 x 10 grid should be the same, and should be the mean canopy
@@ -278,6 +309,13 @@ canEU52_df <- expand.grid(X = 1:10, Y = 1:10) #make a 10 x 10 grid,
 # where X is the x-axis, and Y the y-axis
 dim(canEU52_df)
 pHCanVegMedEU$EU[11:20] #52
+
+# What is the mean difference between forest and patch canopy cover?
+EU52_avgPatchCan <- mean(pHCanVegMedEU$avgCanopyEu[11:14]) #mean patch
+EU52_avgForestCan <- mean(pHCanVegMedEU$avgCanopyEu[16:20]) #mean forest
+canContrast_EU52 <- EU52_avgForestCan - EU52_avgPatchCan
+canContrast_EU52
+
 canCoverVec52 <- pHCanVegMedEU$avgCanopyEu[11:20] #add  just the canopy cover data for EU 52
 canEU52_df$value <- rep(canCoverVec52, 10) #add canopy cover data
 # View(canEU52_df) #Now, each row in this 10 x 10 grid should be the same, and should be the mean canopy
@@ -305,6 +343,13 @@ canCoverEU_52_grid + guides(fill = guide_colourbar(ticks=FALSE, label.position =
 canEU8_df <- expand.grid(X = 1:10, Y = 1:10) #make a 10 x 10 grid,
 # where X is the x-axis, and Y the y-axis
 pHCanVegMedEU$EU[51:60] #8
+
+# What is the mean difference between forest and patch canopy cover?
+EU8_avgPatchCan <- mean(pHCanVegMedEU$avgCanopyEu[51:54]) #mean patch
+EU8_avgForestCan <- mean(pHCanVegMedEU$avgCanopyEu[56:60]) #mean forest
+canContrast_EU8 <- EU8_avgForestCan - EU8_avgPatchCan
+canContrast_EU8
+
 canCoverVec8 <- pHCanVegMedEU$avgCanopyEu[51:60] #add  just the canopy cover data for EU 8
 canEU8_df$value <- rep(canCoverVec8, 10) #add canopy cover data
 # View(canEU8_df) 
@@ -326,8 +371,15 @@ canCoverEU_8_grid + guides(fill = guide_colourbar(ticks=FALSE, label.position = 
                                                    direction= "vertical", barwidth = 1.5, barheight = 6)) + 
   theme_bw()
 
-
-
+meanCanopyDiff <- as.data.frame(matrix(nrow=6, ncol=4))
+colnames(meanCanopyDiff) <- c("EU", "meanCanopyDiff", "meanPatchCan", "meanForestCan")
+meanCanopyDiff[1,] <- c("EU_10", canContrast_EU10, EU10_avgPatchCan, EU10_avgForestCan)
+meanCanopyDiff[2,] <- c("EU_53S", canContrast_EU53S, EU53S_avgPatchCan, EU53S_avgForestCan)
+meanCanopyDiff[3,] <- c("EU_54S", canContrast_EU54S, EU54S_avgPatchCan, EU54S_avgForestCan)
+meanCanopyDiff[4,] <- c("EU_53N", canContrast_EU53N, EU53N_avgPatchCan, EU53N_avgForestCan)
+meanCanopyDiff[5,] <- c("EU_52", canContrast_EU52, EU52_avgPatchCan, EU52_avgForestCan)
+meanCanopyDiff[6,] <- c("EU_8", canContrast_EU8, EU8_avgPatchCan, EU8_avgForestCan)
+View(meanCanopyDiff)
 
 # save pH, canopy cover, and vegetation data for transects
 # save(pHCanVegMedEU, file="pHCanVegMedEU")
