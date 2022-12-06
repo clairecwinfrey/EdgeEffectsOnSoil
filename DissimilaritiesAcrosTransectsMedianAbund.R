@@ -1,9 +1,9 @@
-# Bray-Curtis Dissimilarities within EUs- Median Abundances 
-# Exploration of Dissimilarity Patterns 
+# Bray-Curtis Dissimilarities - Plots and RDAs within EUs- Median Abundances 
 # November 19, 2021
 
 # This script calculates and plots the Bray-Curtis dissimilarities for the 
-# meters across the transect. 
+# meters across the transect for prokaryotes. In addition, this script runs distance-based redundancy
+# analyses (db_RDA) and tests their constraints with permutational ANOVAs. 
 # THIS IS USES MEDIAN ABUNDANCES (see description of medianEU.ps object below)
 
 # Libraries
@@ -15,15 +15,15 @@ library("tidyr")
 library("vegan")
 library("gridExtra")    # allows you to make multiple plots on the same page with ggplot
 
-setwd("/Users/clairewinfrey/Desktop/CU_Research/SoilEdgeEffectsResearch/Bioinformatics")
+setwd("/Users/clairewinfrey/Desktop/CU_Research/SoilEdgeEffectsResearch")
 
 # Load data
-load("medianEU.ps") #load phyloseq object that was made after 1) rarefying,
+load("RobjectsSaved/medianEU.ps") #load phyloseq object that was made after 1) rarefying,
 # the 2) keeping only ASVs that occurred at least 50 times across the (rarefied), 
 # then 3) filtering out ASVs with a ubiquity of <45, and 4) finally getting the 
 # median ASV abundance at each meter in each EU (median is four values from each
 # transect)
-
+load("RobjectsSaved/trimmedJustSoils.ps")
 medianEU.ps
 
 # FUNCTIONS DEFINED IN THIS SCRIPT:
@@ -51,9 +51,11 @@ metadata_outta_ps <- function(physeq){ #input is a phyloseq object
 
 ###############################################################################
 # Main part of script
-###############################################################################
 
-##############################################
+
+############################################################
+# FOR MEDIAN ABUNDANCES (i.e. medianEU.ps)
+################################################################
 # 1. CALCULATE BRAY-CURTIS DISSIMILARITIES ALONG TRANSECTS WITHIN EACH EU
 
 # The lines below get the Bray-Curtis dissimilarities along the transect, comparing each point along
@@ -122,36 +124,53 @@ for (i in 1:length(comps)) {
 BCcompsPlot <- bind_rows(comps$EU_10, comps$EU_52, comps$EU_53N, comps$EU_53S, comps$EU_54S, comps$EU_8)
 BCcompsPlot$meter <- as.numeric(BCcompsPlot$meter) 
 BCcompsPlot$BCdists <- as.numeric(BCcompsPlot$BCdists)
-View(BCcompsPlot)
+#View(BCcompsPlot)
 ##############################################
 
-##############################################
 #. 2 PLOTTING USING DATAFRAME CREATED ABOVE
+transectX <- c("40", "30","20", "10", "edge", "10", "20", "30", "40", "50")#for re-naming axis tick marks
 
 # EU 10
-# quartz()
+# Matrix AND Patch lines
 ggEU_10 <- ggplot(data=BCcompsPlot[1:20,], aes(x=meter, y=BCdists, color= compType)) + 
   geom_line(size=2.7) +
   theme_bw() + ylim(0.1, 1.00) +
-  scale_x_continuous("Transect Meter", breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100)) +
+  scale_x_continuous("meters from edge", breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100), labels=transectX) +
   labs(title= "EU 10", y = "Bray-Curtis dissimilarity", size= 10) + 
   geom_vline(xintercept = 50, linetype= "dashed", color= "darkgrey") + 
   theme(text = element_text(size=15)) +
   scale_colour_manual(name = "compType", values = c("darkgreen", "goldenrod")) +
   theme(legend.position = "none")
+# quartz()
 ggEU_10 
 
-# EU 52
+# Matrix comparison lines ONLY (added to ESA 2022 presentation)
+# get subset of data for only forest comparison
+EU_10_MedBCsforestOnly <- BCcompsPlot[1:20,] %>% 
+  filter(compType == "comp100m")
+
+ggEU_10_forestOnly <- ggplot(data=EU_10_MedBCsforestOnly, aes(x=meter, y=BCdists)) + 
+  geom_line(size=2.7, color= "darkgreen") +
+  theme_bw() + ylim(0.1, 1.00) +
+  scale_x_continuous("meters from edge", breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100), labels=transectX) +
+  labs(title= "EU 10", y = "Bray-Curtis dissimilarity", size= 14) + 
+  geom_vline(xintercept = 50, linetype= "dashed", color= "darkgrey", size=1.5) + 
+  theme(text = element_text(size=18)) +
+  theme(legend.position = "none")
 # quartz()
+ggEU_10_forestOnly 
+
+# EU 52
 ggEU_52 <- ggplot(data=BCcompsPlot[21:40,], aes(x=meter, y=BCdists, color= compType)) + 
   geom_line(size=2.7) +
   theme_bw() + ylim(0.1, 1.00) +
-  scale_x_continuous("Transect Meter", breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100)) +
+  scale_x_continuous("meters from edge", breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100), labels=transectX) +
   labs(title= "EU 52", y = "Bray-Curtis dissimilarity", size= 10) + 
   geom_vline(xintercept = 50, linetype= "dashed", color= "darkgrey") + 
   theme(text = element_text(size=15)) +
   scale_colour_manual(name = "compType", values = c("darkgreen", "goldenrod")) +
   theme(legend.position = "none")
+# quartz()
 ggEU_52 
 
 # EU 53N
@@ -159,45 +178,62 @@ ggEU_52
 ggEU_53N <- ggplot(data=BCcompsPlot[41:60,], aes(x=meter, y=BCdists, color= compType)) + 
   geom_line(size=2.7) +
   theme_bw() + ylim(0.1, 1.00) +
-  scale_x_continuous("Transect Meter", breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100)) +
+  scale_x_continuous("meters from edge", breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100), labels=transectX) +
   labs(title= "EU 53N", y = "Bray-Curtis dissimilarity", size= 10) + 
   geom_vline(xintercept = 50, linetype= "dashed", color= "darkgrey") + 
   theme(text = element_text(size=15)) +
   scale_colour_manual(name = "compType", values = c("darkgreen", "goldenrod")) +
   theme(legend.position = "none")
+# quartz()
 ggEU_53N 
 
 # EU 53S
-# quartz()
 ggEU_53S <- ggplot(data=BCcompsPlot[61:80,], aes(x=meter, y=BCdists, color= compType)) + 
   geom_line(size=2.7) +
   theme_bw() + ylim(0.1, 1.00) +
-  scale_x_continuous("Transect Meter", breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100)) +
+  scale_x_continuous("meters from edge", breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100), labels=transectX) +
   labs(title= "EU 53S", y = "Bray-Curtis dissimilarity", size= 10) + 
   geom_vline(xintercept = 50, linetype= "dashed", color= "darkgrey") + 
   theme(text = element_text(size=15)) +
   scale_colour_manual(name = "compType", values = c("darkgreen", "goldenrod")) +
   theme(legend.position = "none")
+# quartz()
 ggEU_53S 
 
-# EU 54S
+# Matrix comparison lines ONLY (added to ESA 2022 presentation)
+# get subset of data for only forest comparison
+EU_53S_MedBCsforestOnly <- BCcompsPlot[61:80,] %>% 
+  filter(compType == "comp100m")
+
+ggEU_53S_forestOnly <- ggplot(data=EU_53S_MedBCsforestOnly, aes(x=meter, y=BCdists)) + 
+  geom_line(size=2.7, color= "darkgreen") +
+  theme_bw() + ylim(0.1, 1.00) +
+  scale_x_continuous("meters from edge", breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100), labels=transectX) +
+  labs(title= "EU 53S", y = "Bray-Curtis dissimilarity", size= 14) + 
+  geom_vline(xintercept = 50, linetype= "dashed", color= "darkgrey", size=1.5) + 
+  theme(text = element_text(size=18)) +
+  theme(legend.position = "none")
 # quartz()
+ggEU_53S_forestOnly 
+
+# EU 54S
 ggEU_54S <- ggplot(data=BCcompsPlot[81:100,], aes(x=meter, y=BCdists, color= compType)) + 
   geom_line(size=2.7) +
   theme_bw() + ylim(0.1, 1.00) +
-  scale_x_continuous("Transect Meter", breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100)) +
+  scale_x_continuous("meters from edge", breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100), labels=transectX) +
   labs(title= "EU 54S", y = "Bray-Curtis dissimilarity", size= 10) + 
   geom_vline(xintercept = 50, linetype= "dashed", color= "darkgrey") + 
   theme(text = element_text(size=15)) +
   scale_colour_manual(name = "compType", values = c("darkgreen", "goldenrod")) +
   theme(legend.position = "none")
+# quartz()
 ggEU_54S 
 
 # EU 8
 ggEU_8 <- ggplot(data=BCcompsPlot[101:120,], aes(x=meter, y=BCdists, color= compType)) + 
   geom_line(size=2.7) +
   theme_bw() + ylim(0.1, 1.00) +
-  scale_x_continuous("Transect Meter", breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100)) +
+  scale_x_continuous("meters from edge", breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100), labels=transectX) +
   labs(title= "EU 8", y = "Bray-Curtis dissimilarity", size= 10) + 
   geom_vline(xintercept = 50, linetype= "dashed", color= "darkgrey") + 
   theme(text = element_text(size=15)) +
@@ -208,6 +244,59 @@ ggEU_8
 
 ##### PLOT ALL TOGETHER #####
 quartz()
-require(gridExtra)
 grid.arrange(ggEU_52, ggEU_53N, ggEU_54S, ggEU_8, ggEU_53S, ggEU_10, ncol=3)
+
+# PLOT FOREST COMPARISONS for EU 10 and EU 53 south side by side
+# (For ESA 2022 presentation)
+quartz()
+grid.arrange(ggEU_10_forestOnly, ggEU_53S_forestOnly, ncol=2)
+
+#####################
+# FOR load("RobjectsSaved/medianEU.ps")
+
+
+################################################
+# ATTEMPT AT SOME STATS!!
+################################################
+
+ASVsdf <- ASVsdf %>% 
+  arrange(EU, Meter)
+dim(ASVsdf)
+
+#View(ASVsdf[26,]) #cut out those with NAs for pH
+#View(ASVsdf[30,]) #cut out those with NAs for pH
+rownames(ASVsdf)
+
+medBCdists <- vegdist(ASVsdf[c(1:25, 27:29, 31:60),1:4480], method = "bray")
+medBCdists
+
+############### HERE ##################
+load("pHCanVegMedEU") # bring in pHCanVegMedEU from EnvDataPlots.R
+pHCanVegMedEU <- as.data.frame(pHCanVegMedEU[1:60,])
+#View(pHCanVegMedEU)
+pHCanVegMedEU$edgeDist <- abs(50-pHCanVegMedEU$Meter)
+
+rownames(pHCanVegMedEU) <- rownames(ASVsdf)
+
+set.seed(19)
+medMod_dbRDA.mod0 <- dbrda(medBCdists ~1)
+medMod_dbRDA <- dbrda(medBCdists ~ pHCanVegMedEU[c(1:25, 27:29, 31:60),3] + pHCanVegMedEU[c(1:25, 27:29, 31:60),4] + 
+                        pHCanVegMedEU[c(1:25, 27:29, 31:60),5] + pHCanVegMedEU[c(1:25, 27:29, 31:60),6] +
+                        Condition(pHCanVegMedEU[c(1:25, 27:29, 31:60),1]))
+# col 3 is pH, col 4 is canopy cover, col 5 is vegetation cover, and col 6 is distance from edge
+medMod_dbRDARes <- anova.cca(medMod_dbRDA, permutations = 9999)  #test significance of constraints
+medMod_dbRDA$terms
+
+#quartz()
+plot(medMod_dbRDA)
+
+# col 3 is pH, col 4 is canopy cover, col 5 is vegetation cover, and col 6 is distance from edge  
+set.seed(93)
+medMod_forsel <- ordiR2step(medMod_dbRDA.mod0, scope = medMod_dbRDA, permutations = 999)
+
+medMod_forsel$anova
+
+colnames(pHCanVegMedEU[c(3,4)])
+# Are median pHs and canopy cover correlated? Yes, yes they are!
+cor(pHCanVegMedEU[c(1:25, 27:29, 31:60),4], pHCanVegMedEU[c(1:25, 27:29, 31:60),3])
 
