@@ -13,6 +13,7 @@
 # and non-differentially abundant microbes 
 # 3. Stacked barcharts of the abundance of non-specialists, forest specialists, and patch specialists across the transect
 # 4. Comparisons and plots of ubiquity of non-specialists, forest specialists, and patch specialists 
+# 5. What is the median abundance of each ASVs across samples?
 
 # PART 2: Performs differential abundance analysis removing EU 53N from consideration, given how different its turnover from forest to patch is 
 #c(supported by fis in DissAcrossTransectDiffAbundOnly.R and DissimilaritiesAcrosTransectsMedianAbund.R)
@@ -361,6 +362,60 @@ prokUbiquityBySpecialistPlot_no100m
 # Saved Dec 11, 2022
 #save(prokUbiquityBySpecialistPlot_no100m, file= "RobjectsSaved/prokUbiquityBySpecialistPlot_no100m")
 
+##########################################################################
+# 5. MEDIAN ABUNDANCE OF EACH ASV ACROSS SAMPLES
+##########################################################################
+colnames(ASVsAllDiffAbund_tax)
+# Get median abundance across all samples
+ASVsAllDiffAbund_tax$ASVmedAbund <- rowMedians(as.matrix(ASVsAllDiffAbund_tax[,2:234]))
+
+# Make plot for median abundance 
+prokMedASVabundPlot <- ggplot(ASVsAllDiffAbund_tax, aes(x=diffAbundHabitat, y=ASVmedAbund, fill=diffAbundHabitat)) + 
+  geom_boxplot() +
+  scale_fill_manual(values=c("darkgray", "darkgreen", "goldenrod")) +
+  geom_jitter(color="black", size=0.4, alpha=0.9) +
+  ylab("Median ASV abundance") +
+  xlab("Habitat specialist group") +
+  theme(axis.text=element_text(size=16),
+        axis.title=element_text(size=16)) +
+  ggtitle("Prokaryotes: Median ASV abundance across samples") +
+  theme(plot.title = element_text(size=18)) +
+  theme(legend.key.size = unit(1.7, 'cm')) +
+  theme(legend.title=element_blank())
+
+# quartz()
+prokMedASVabundPlot
+
+# MAKE PLOT OF MEDIAN ABUNDANCE IN PATCH OR FOREST SAMPLES
+# The plot above shows that this is not super informative, so get it across samples, in the patch, on edge, and in forest
+unique(colnames(ASVsAllDiffAbund_tax[2:234]) == rownames(postUbiqmetaDf)) #this is true, which shows that we can use indices from
+# metadata to isolate stuff from ASV table
+patchSampleIndex <- which(postUbiqmetaDf$Meter %in% c(10,20,30,40)) #isolate patch samples
+forestSampleIndex <- which(postUbiqmetaDf$Meter %in% c(60,70,80,90,100)) #isolate forest samples
+ASVsAllDiffAbund_tax$patchASVmedAbund <- rowMedians(as.matrix(ASVsAllDiffAbund_tax[,patchSampleIndex+1])) #add one because columns start at 2
+ASVsAllDiffAbund_tax$forestASVmedAbund <- rowMedians(as.matrix(ASVsAllDiffAbund_tax[,forestSampleIndex+1])) #add one because columns start at 2
+# Finally, make a new "longer" and "tidy" data frame
+ASVsAllDiffAbund_taxAbunGroups <- ASVsAllDiffAbund_tax %>% 
+  pivot_longer(cols="ASVmedAbund":"forestASVmedAbund", names_to= "habitatForMedAbundCalc", values_to="medAbund")
+# View(ASVsAllDiffAbund_taxAbunGroups)
+
+# grouped boxplot
+prokMedAbundByHabitatPlot <- ggplot(ASVsAllDiffAbund_taxAbunGroups, aes(x=diffAbundHabitat, y=medAbund, color=habitatForMedAbundCalc)) + 
+  #geom_boxplot() +
+  #scale_fill_manual(values=c("darkgray", "darkgreen", "goldenrod")) +
+  geom_jitter(size=1, alpha=0.9) +
+  ylab("Median ASV abundance") +
+  xlab("Habitat specialist group") +
+  theme(axis.text=element_text(size=16),
+        axis.title=element_text(size=16)) +
+  ggtitle("Prokaryotes: Median ASV abundance across samples") +
+  theme(plot.title = element_text(size=18)) +
+  theme(legend.key.size = unit(1.7, 'cm')) +
+  theme(legend.title=element_blank())
+
+quartz()
+prokMedAbundByHabitatPlot
+
 #######################################################################################################
 # PART 2: EU 53N EXCLUDED FROM ANALYSES
 #######################################################################################################
@@ -464,7 +519,7 @@ taxPostUbiq <- taxPostUbiq %>% rownames_to_column(var="ASV_name") #change rownam
 ASVsAllDiffAbund_tax <- merge(ASVsAllDiffAbund, taxPostUbiq, by="ASV_name", all.x=TRUE)
 # save(ASVsAllDiffAbund_tax, file= "RobjectsSaved/ASVsAllDiffAbund_tax") #saved December 7, 2022
 ##########################################################################
-# II. STACKED BARCHART OF DIFFERENTIAL ABUNDANCE PHYLA NUMBER IN EACH CATEGORY
+# 2. STACKED BARCHART OF DIFFERENTIAL ABUNDANCE PHYLA NUMBER IN EACH CATEGORY
 ##########################################################################
 
 DeseqResults_no53NMini <- DeseqResults_no53N[,c(8,14)]  #diff abund analysis: just ASV name (as rownames), phylum, and habitat 
