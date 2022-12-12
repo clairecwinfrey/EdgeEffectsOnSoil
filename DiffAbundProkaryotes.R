@@ -385,6 +385,7 @@ prokMedASVabundPlot <- ggplot(ASVsAllDiffAbund_tax, aes(x=diffAbundHabitat, y=AS
 
 # quartz()
 prokMedASVabundPlot
+# save(prokMedASVabundPlot, file= "RobjectsSaved/prokMedASVabundPlot") #last saved Dec. 11, 2022
 
 # MAKE PLOT OF MEDIAN ABUNDANCE IN PATCH OR FOREST SAMPLES
 # The plot above shows that this is not super informative, so get it across samples, in the patch, on edge, and in forest
@@ -413,8 +414,9 @@ prokMedAbundByHabitatPlot <- ggplot(ASVsAllDiffAbund_taxAbunGroups, aes(x=diffAb
   theme(legend.key.size = unit(1.7, 'cm')) +
   theme(legend.title=element_blank())
 
-quartz()
+# quartz()
 prokMedAbundByHabitatPlot
+#save(prokMedAbundByHabitatPlot, file= "RobjectsSaved/prokMedAbundByHabitatPlot") #last saved Dec. 11, 2022
 
 #######################################################################################################
 # PART 2: EU 53N EXCLUDED FROM ANALYSES
@@ -491,8 +493,6 @@ without53N_index_indexF <- which(without53N_index==FALSE)
 onlyIf53Nexcluded <- ASVnamesDA_no53N[without53N_index_indexF] #this shows those ASVs that are only differentially abundant if 53N is EXCLUDED
 intersect(onlyIfWith53N, onlyIf53Nexcluded) #shows that these two objects are distinct
 
-
-
 #save(diffAbunDat_no53N_tidy_PROKARYOTES, file= "RobjectsSaved/diffAbunDat_no53N_PROKARYOTES") #last saved Oct. 1, 2022
 ##########
 
@@ -518,6 +518,7 @@ taxPostUbiq <- taxtable_outta_ps(postUbiq16Sno53N.ps)
 taxPostUbiq <- taxPostUbiq %>% rownames_to_column(var="ASV_name") #change rownames to ASV nmae column for merging below
 ASVsAllDiffAbund_tax <- merge(ASVsAllDiffAbund, taxPostUbiq, by="ASV_name", all.x=TRUE)
 # save(ASVsAllDiffAbund_tax, file= "RobjectsSaved/ASVsAllDiffAbund_tax") #saved December 7, 2022
+
 ##########################################################################
 # 2. STACKED BARCHART OF DIFFERENTIAL ABUNDANCE PHYLA NUMBER IN EACH CATEGORY
 ##########################################################################
