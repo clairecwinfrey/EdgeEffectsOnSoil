@@ -225,7 +225,7 @@ chloroBoxPlot
 # at each meter.
 # In other words, the EU is ignored, so the number of rows = number of ASVs in 
 
-# This code gets median abundance for each ASV at each meter along the transect (regardless of EU)
+# This code gets mean abundance for each ASV at each meter along the transect (regardless of EU)
 ASVsPostUbiq <- ASVs_outta_ps(postUbiquity.ps) #rows are samples, ASV abundance is columns 
 postUbiqmetaDf <- metadata_outta_ps(postUbiquity.ps) #rows are samples, columns are all of the rest of the metadata
 postUbiqmetaDf <- as.data.frame(as.matrix(postUbiqmetaDf)) #make format nicer
@@ -244,23 +244,23 @@ for (j in 1:length(meterVec)){
 
 # For each one of the ASVs, pull out all of the samples at each point
 # first, make a dataframe to hold all the final stuff:
-medianASVsByMeter <- as.data.frame(matrix(nrow=10, ncol=ncol(ASVsPostUbiq)))
-colnames(medianASVsByMeter) <- colnames(ASVsPostUbiq)
-rownames(medianASVsByMeter) <- names(meterRowNamesIndices)
+meanASVsByMeter <- as.data.frame(matrix(nrow=10, ncol=ncol(ASVsPostUbiq)))
+colnames(meanASVsByMeter) <- colnames(ASVsPostUbiq)
+rownames(meanASVsByMeter) <- names(meterRowNamesIndices)
 
 for (k in 1:length(meterRowNamesIndices)){ #get mean ASV abundance at each meter
-  medianASVsByMeter[k,] <- t(colMeans(ASVsPostUbiq[meterRowNamesIndices[[k]],])) #this pulls out all of the samples at each meter.
+  meanASVsByMeter[k,] <- t(colMeans(ASVsPostUbiq[meterRowNamesIndices[[k]],])) #this pulls out all of the samples at each meter.
 }
-#View(medianASVsByMeter)
+#View(meanASVsByMeter)
 
-medianASVsByMeterTidy <-  medianASVsByMeter %>% 
+meanASVsByMeterTidy <-  meanASVsByMeter %>% 
   rownames_to_column() %>% 
   pivot_longer(cols = ASV_1:ASV_9931, names_to = "ASV_name", values_to = "meanASVabundance")
-# View(medianASVsByMeterTidy) #looks good!
-colnames(medianASVsByMeterTidy)[1] <- "meter"
+# View(meanASVsByMeterTidy) #looks good!
+colnames(meanASVsByMeterTidy)[1] <- "meter"
 DAphylumAll_2 <- rownames_to_column(DAphylumAll) #grab this so that can get info on specialists
 colnames(DAphylumAll_2)[1] <- "ASV_name"
-medianASVsByMeterHabitat <- merge(medianASVsByMeterTidy, DAphylumAll_2, by="ASV_name")
+meanASVsByMeterHabitat <- merge(meanASVsByMeterTidy, DAphylumAll_2, by="ASV_name")
 
 #### GET RELATIVE ABUNDANCES #####
 # Get the total ASV abundance within each meter
@@ -268,7 +268,7 @@ ASVmeterTotal <- as.data.frame(matrix(nrow=10, ncol=1))
 rownames(ASVmeterTotal) <- paste(meterVec, "m", sep="_") 
 colnames(ASVmeterTotal) <- "ASVmeterTotal"
 for (j in 1:length(meterVec)){
-  ASVmeterTotal[j,1] <- sum(medianASVsByMeterHabitat[which(medianASVsByMeterHabitat$meter ==  rownames(ASVmeterTotal)[j]),3]) #pull out meter by meter
+  ASVmeterTotal[j,1] <- sum(meanASVsByMeterHabitat[which(meanASVsByMeterHabitat$meter ==  rownames(ASVmeterTotal)[j]),3]) #pull out meter by meter
 }
 ASVmeterTotal
 
@@ -276,7 +276,7 @@ ASVmeterTotal
 relAbundDfs <- vector("list", length(meterVec)) #this will have all of the rownames that correspond to samples in each meter
 names(relAbundDfs) <- rownames(ASVmeterTotal)
 for (h in 1:length(relAbundDfs)){
-  relAbundDfs[[h]] <- medianASVsByMeterHabitat[which(medianASVsByMeterHabitat$meter ==  names(relAbundDfs)[[h]]),] #this pulls out just the data for each meter
+  relAbundDfs[[h]] <- meanASVsByMeterHabitat[which(meanASVsByMeterHabitat$meter ==  names(relAbundDfs)[[h]]),] #this pulls out just the data for each meter
   relAbundDfs[[h]]$relAbund <- (relAbundDfs[[h]]$meanASVabundance/ASVmeterTotal[h,1])*100
 }
 sum(relAbundDfs[[1]]$relAbund) #great, these add up to be 100!
@@ -331,7 +331,7 @@ samples100mCols <- which(colnames(ASVsAllDiffAbund_tax) %in% samples100m) #find 
 ASVsAllDiffAbund_tax_no100m <- ASVsAllDiffAbund_tax[,-samples100mCols] #make a new object without these columns
 colnames(ASVsAllDiffAbund_tax_no100m)
 ASVsAllDiffAbund_tax_no100m$sampOccurrence <- rowSums(ASVsAllDiffAbund_tax_no100m[,2:210] > 0) #just select samples and get occurrence across samples
-# Note: lowest uumber of samples found in here is 31 samples (not 40) because 100 m samples were removed
+# Note: lowest number of samples found in here is 31 samples (not 40) because 100 m samples were removed
 #View(ASVsAllDiffAbund_tax_no100m)
 
 # Test to see if I can do a one-way ANOVA
@@ -417,6 +417,67 @@ prokMedAbundByHabitatPlot <- ggplot(ASVsAllDiffAbund_taxAbunGroups, aes(x=diffAb
 # quartz()
 prokMedAbundByHabitatPlot
 #save(prokMedAbundByHabitatPlot, file= "RobjectsSaved/prokMedAbundByHabitatPlot") #last saved Dec. 11, 2022
+
+##########
+# MEAN ABUNDANCE 
+##########
+# This plot above is not very informative. Will take mean instead and then log 10 transform (mean so that there
+# are values of zero
+# Get mean abundance across all samples
+colnames(ASVsAllDiffAbund_tax)
+ASVsAllDiffAbund_tax$ASVmeanAbund <- rowMeans(as.matrix(ASVsAllDiffAbund_tax[,2:234]))
+
+# Make plot for mean abundance 
+prokMeanASVabundPlot <- ggplot(ASVsAllDiffAbund_tax, aes(x=diffAbundHabitat, y=ASVmeanAbund, fill=diffAbundHabitat)) + 
+  geom_boxplot() +
+  scale_fill_manual(values=c("darkgray", "darkgreen", "goldenrod")) +
+  geom_jitter(color="black", size=0.4, alpha=0.9) +
+  ylab("Mean ASV abundance") +
+  xlab("Habitat specialist group") +
+  theme(axis.text=element_text(size=16),
+        axis.title=element_text(size=16)) +
+  ggtitle("Prokaryotes: Mean ASV abundance across samples") +
+  theme(plot.title = element_text(size=18)) +
+  theme(legend.key.size = unit(1.7, 'cm')) +
+  theme(legend.title=element_blank())
+
+# quartz()
+prokMeanASVabundPlot
+
+##########
+# LOG TRANSFORMED MEAN ABUNDANCE 
+##########
+
+# Log transform ASV mean abundance values
+ASVsAllDiffAbund_taxlog10 <- ASVsAllDiffAbund_tax #make a duplicate
+ASVsAllDiffAbund_taxlog10$ASVmeanAbundLog10 <- log10(ASVsAllDiffAbund_taxlog10$ASVmeanAbund)
+# View(ASVsAllDiffAbund_taxlog10)
+
+# Make plot for these log transformed means
+prokLog10MeansASVabundPlot <- ggplot(ASVsAllDiffAbund_taxlog10, aes(x=diffAbundHabitat, y=ASVmeanAbundLog10, fill=diffAbundHabitat)) + 
+  geom_boxplot() +
+  scale_fill_manual(values=c("darkgray", "darkgreen", "goldenrod")) +
+  geom_jitter(color="black", size=0.5, alpha=0.9) +
+  ylab("Log10 of Mean ASV abundance") +
+  xlab("Habitat specialist group") +
+  theme(axis.text=element_text(size=16),
+        axis.title=element_text(size=16)) +
+  ggtitle("Prokaryotes: Mean ASV abundance across samples") +
+  theme(plot.title = element_text(size=18)) +
+  theme(legend.key.size = unit(1.7, 'cm')) +
+  theme(legend.title=element_blank())
+
+# quartz()
+prokLog10MeansASVabundPlot
+
+# save(prokLog10MeansASVabundPlot, file= "RobjectsSaved/prokLog10MeansASVabundPlot") #last saved Dec. 12, 2022
+
+# Bring in fungal plot to make a two-paneled plot
+load("RobjectsSaved/fungiLog10MeansASVabundPlot")
+
+quartz()
+grid.arrange(prokLog10MeansASVabundPlot, fungiLog10MeansASVabundPlot, ncol=2)
+
 
 #######################################################################################################
 # PART 2: EU 53N EXCLUDED FROM ANALYSES
