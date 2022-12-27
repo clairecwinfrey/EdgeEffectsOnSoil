@@ -100,52 +100,66 @@ EUcolors <- c("EU 10" = "#d73027", "EU 52" = "#4575b4", "EU 53N" = "#fc8d59",
             "EU 53S" = "#91bfdb", "EU 54S" = "#fee090", "EU 8" = "#e0f3f8")
 
 # pH
-pHEUMed_plot <- ggplot() + 
-  geom_line(data=pHCanVegMedEU[1:10,], aes(x=Meter, y=meanpHEu, group = EU), color = "#d73027", size= 1.5) +
-  geom_line(data=pHCanVegMedEU[11:20,], aes(x=Meter, y=meanpHEu, group = EU), color = "#4575b4", size= 1.5) +
-  geom_line(data=pHCanVegMedEU[21:30,], aes(x=Meter, y=meanpHEu, group = EU), color = "#fc8d59", size= 1.5) +
-  geom_line(data=pHCanVegMedEU[31:40,], aes(x=Meter, y=meanpHEu, group = EU), color = "#91bfdb", size= 1.5) +
-  geom_line(data=pHCanVegMedEU[41:50,], aes(x=Meter, y=meanpHEu, group = EU), color = "#fee090", size= 1.5) +
-  geom_line(data=pHCanVegMedEU[51:60,], aes(x=Meter, y=meanpHEu, group = EU), color = "#e0f3f8", size= 1.5) +
-  theme_bw() + ylim(3, 7) +
-  scale_x_continuous("Transect Meter", breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100)) +
-  ggtitle("Mean pH across transect") + geom_vline(xintercept = 50, linetype= "dashed", color= "grey") +
-  labs(y= "Mean pH") + theme_bw()
-quartz()
-pHEUMed_plot
+pHEUMed_plot <- ggplot(pHCanVegMedEU, aes(x=Meter, y=meanpHEu, group = EU, color = EU)) + 
+  geom_line(size=2.7) +
+  scale_colour_manual(values=c(`10`="#d73027",`52`="#4575b4",`53N`="#fc8d59",`53S`="#91bfdb",`54S`="#fee090",`8`="#e0f3f8"))+
+  theme_bw() +
+  scale_x_continuous("Meter on transect", breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100)) +
+  ggtitle("pH across transect") + 
+  geom_vline(xintercept = 50, linetype= "dashed",  color= "black", size=1.2) +
+  labs(y= "Mean pH", size=10) +
+  theme(text = element_text(size=15)) +
+  theme(legend.position = "none") #remove legend
 
 # Canopy cover
-CanEU_plot <- ggplot() + 
-  geom_line(data=pHCanVegMedEU[1:10,], aes(x=Meter, y=avgCanopyEu), color = "#d73027", size= 1.5) +
-  geom_line(data=pHCanVegMedEU[11:20,], aes(x=Meter, y=avgCanopyEu), color = "#4575b4", size= 1.5) +
-  geom_line(data=pHCanVegMedEU[21:30,], aes(x=Meter, y=avgCanopyEu), color = "#fc8d59", size= 1.5) +
-  geom_line(data=pHCanVegMedEU[31:40,], aes(x=Meter, y=avgCanopyEu), color = "#91bfdb", size= 1.5) +
-  geom_line(data=pHCanVegMedEU[41:50,], aes(x=Meter, y=avgCanopyEu), color = "#fee090", size= 1.5) +
-  geom_line(data=pHCanVegMedEU[51:60,], aes(x=Meter, y=avgCanopyEu), color = "#e0f3f8", size= 1.5) +
-  theme_bw() + 
-  scale_x_continuous("Transect Meter", breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100)) +
-  ggtitle("Mean canopy cover across transect") + geom_vline(xintercept = 50, linetype= "dashed", color= "grey") +
-  labs(y= "Mean canopy cover (%)") + theme_bw()
-quartz()
-CanEU_plot
+CanEU_plot <- ggplot(pHCanVegMedEU, aes(x=Meter, y=avgCanopyEu, group = EU, color = EU)) + 
+  geom_line(size=2.7) +
+  scale_colour_manual(values=c(`10`="#d73027",`52`="#4575b4",`53N`="#fc8d59",`53S`="#91bfdb",`54S`="#fee090",`8`="#e0f3f8"))+
+  theme_bw() +
+  scale_x_continuous("Meter on transect", breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100)) +
+  ggtitle("Canopy cover across transect") + 
+  geom_vline(xintercept = 50, linetype= "dashed",  color= "black", size=1.2) +
+  labs(y= "Mean canopy cover (%)", size=10) +
+  theme(text = element_text(size=15)) +
+  theme(legend.position = "none") #remove legend
 
 # Vegetation cover
-vegEU_plot <- ggplot() + 
-  geom_line(data=pHCanVegMedEU[1:10,], aes(x=Meter, y=avgVegCov, group = EU), color = "#d73027", size= 1.5) +
-  geom_line(data=pHCanVegMedEU[11:20,], aes(x=Meter, y=avgVegCov, group = EU), color = "#4575b4", size= 1.5) +
-  geom_line(data=pHCanVegMedEU[21:30,], aes(x=Meter, y=avgVegCov, group = EU), color = "#fc8d59", size= 1.5) +
-  geom_line(data=pHCanVegMedEU[31:40,], aes(x=Meter, y=avgVegCov, group = EU), color = "#91bfdb", size= 1.5) +
-  geom_line(data=pHCanVegMedEU[41:50,], aes(x=Meter, y=avgVegCov, group = EU), color = "#fee090", size= 1.5) +
-  geom_line(data=pHCanVegMedEU[51:60,], aes(x=Meter, y=avgVegCov, group = EU), color = "#e0f3f8", size= 1.5) +
+vegEU_plot <- ggplot(pHCanVegMedEU, aes(x=Meter, y=avgVegCov, group = EU, color = EU)) + 
+  geom_line(size=2.7) +
+  scale_colour_manual(values=c(`10`="#d73027",`52`="#4575b4",`53N`="#fc8d59",`53S`="#91bfdb",`54S`="#fee090",`8`="#e0f3f8"))+
   theme_bw() +
-  scale_x_continuous("Transect Meter", breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100)) +
-  ggtitle("Mean vegetation cover across transect") + geom_vline(xintercept = 50, linetype= "dashed", color= "grey") +
-  labs(y= "Mean vegetation cover (%)") + theme_bw()
-quartz()
+  scale_x_continuous("Meter on transect", breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100)) +
+  ggtitle("Vegetation cover across transect") + 
+  geom_vline(xintercept = 50, linetype= "dashed",  color= "black", size=1.2) +
+  labs(y= "Mean vegetation cover (%)", size=10) +
+  theme(text = element_text(size=15)) +
+  theme(legend.position = "none") #remove legend
+  
+# quartz()
 vegEU_plot
 
+# This plot has the legend included, and is used to make legend for whole figure
+vegEU_plotwithLegend <- ggplot(pHCanVegMedEU, aes(x=Meter, y=avgVegCov, group = EU, color = EU)) + 
+  geom_line(size=2.7) +
+  scale_colour_manual(values=c(`10`="#d73027",`52`="#4575b4",`53N`="#fc8d59",`53S`="#91bfdb",`54S`="#fee090",`8`="#e0f3f8"))+
+  theme_bw() +
+  scale_x_continuous("Meter on transect", breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100)) +
+  ggtitle("Vegetation cover across transect") + 
+  geom_vline(xintercept = 50, linetype= "dashed",  color= "black", size=1.2) +
+  labs(y= "Mean vegetation cover (%)", size=10) +
+  theme(text = element_text(size=15)) +
+  theme(legend.position="bottom",
+        legend.key.size = unit(3, 'cm'), #change legend key size
+        legend.key.height = unit(1, 'cm'), #change legend key height
+        legend.key.width = unit(1, 'cm'), #change legend key width
+        legend.title = element_text(size=14), #change legend title font size
+        legend.text = element_text(size=13)) #change legend text font size
+# quartz()
+vegEU_plotwithLegend
+
+
 ##### PLOT ALL TOGETHER #####
-quartz()
+# quartz()
 grid.arrange(pHEUMed_plot, CanEU_plot, vegEU_plot, ncol=3)
 
 # Add habitat column:
@@ -153,6 +167,7 @@ pHCanVegMedEU$habitat <- rep(NA, nrow(pHCanVegMedEU))
 pHCanVegMedEU$habitat[which(pHCanVegMedEU$Meter %in% c(10,20,30,40))] <- "patch"
 pHCanVegMedEU$habitat[which(pHCanVegMedEU$Meter %in% c(60,70,80,90,100))] <- "matrix"
 pHCanVegMedEU$habitat[which(pHCanVegMedEU$Meter %in% 50)] <- "edge"
+
 
 ############### CANOPY COVER "COLOR BARS" ###################
 ############################################################
@@ -227,6 +242,7 @@ quartz() # Horizontal color bar legend
 canCoverEU_53S_grid + guides(fill = guide_colourbar(ticks=FALSE, label.position = "top", nbin = 100, title= "Canopy cover",
                                                     direction= "horizontal", barwidth = 6, barheight = 1.5)) + 
   theme_bw()
+
 # Vertical color bar legend
 quartz() 
 canCoverEU_53S_grid + guides(fill = guide_colourbar(ticks=FALSE, label.position = "left", nbin = 100, title= "Canopy cover",
@@ -297,6 +313,8 @@ quartz() # Horizontal color bar legend
 canCoverEU_53N_grid + guides(fill = guide_colourbar(ticks=FALSE, label.position = "top", nbin = 100, title= "Canopy cover",
                                                     direction= "horizontal", barwidth = 6, barheight = 1.5)) + 
   theme_bw()
+
+
 # Vertical color bar legend
 quartz() 
 canCoverEU_53N_grid + guides(fill = guide_colourbar(ticks=FALSE, label.position = "left", nbin = 100, title= "Canopy cover",
