@@ -45,23 +45,32 @@ ASVs_outta_ps <- function(physeq){ #input is a phyloseq object
 # Bray-Curtis dissimilarities based on square-root transformed data
 set.seed(19)
 ord_ITS <- ordinate(ITS_postUbiquity.ps, method = "NMDS", distance = "bray", trymax = 100) 
+# stress= 0.1484425 
 
-# Ordination based on "habitat"/ plant community type (added to ESA presentation Aug 8)
+# Ordination based on "habitat"/ plant community type 
 HabitatNMDS_ITS_postUbiq <- phyloseq::plot_ordination(ITS_postUbiquity.ps, ord_ITS, type= "samples", color= "Habitat")
 HabitatNMDS_ITS_postUbiq <- HabitatNMDS_ITS_postUbiq +
-   scale_color_manual(values=c("purple", "darkgreen", "goldenrod")) + #change color of points
-   geom_point(size=3) + ggtitle("Fungi") +
+  scale_color_manual(values=c("purple", "darkgreen", "goldenrod"), #change color of points
+                      breaks= c("edge", "forest", "patch"),
+                      labels= c("edge", "forest", "savanna")) + #rename categories
+  geom_point(size=3) + ggtitle("Fungi") +
   theme_bw() +
-  theme(plot.title = element_text(size=22)) +
-  guides(color = guide_legend(override.aes = list(size = 7))) + #change size of legend and title
-  theme(axis.ticks = element_blank(), #remove x and y axis labels and tick marks
-        axis.text = element_blank())
+  theme(plot.title = element_text(size=18)) +
+  guides(color = guide_legend(override.aes = list(size =7))) +
+  theme(legend.title = element_text(size=14)) + #increase size of legend title
+  theme(legend.text = element_text(size = 12)) + #increase size of legend font
+  theme(axis.text=element_text(size=12), #increase font size of axis labels
+        axis.title=element_text(size=12)) #increase font size of axis title
+
+  # + #change size of legend and title
+  #theme(axis.ticks = element_blank(), #remove x and y axis labels and tick marks
+   #     axis.text = element_blank())
 
 quartz()
 HabitatNMDS_ITS_postUbiq #cool, you can see that the forest and the patch separate out, with edge somewhat in between!
 
-# Save the plot made above (saved Aug. 6, 2022) so that we can make a two paneled figure with ITS stuff
-#save(HabitatNMDS_ITS_postUbiq, file="RobjectsSaved/diffAbund_ITS_stackedBarplotPhyla_plot")
+# Save the plot made above (saved Jan.2, 2022) so that we can make a two paneled figure with ITS stuff
+#save(HabitatNMDS_ITS_postUbiq, file="RobjectsSaved/HabitatNMDS_ITS_postUbiq")
 
 ### MAKEA TWO PANELED PLOT WITH THIS AND FUNGAL ORDINATION PLOT SIDE BY SIDE #####
 # LOAD 16S plot made in PostUbiqGraphics_16S.R
@@ -102,3 +111,12 @@ postUbiq_ITSPermanova <- adonis(postUbiq_ITSBC ~ habitat, data=metaDatForVeg, pe
 
 # Save PERMANOVA results
 # save(postUbiq_ITSPermanova, file= "RobjectsSaved/postUbiq_ITSPermanova") #last saved Aug 9, 2022
+
+# WHAT ABOUT A DB-RDA-- SAME AS THE PERMANOVA
+mod1Fungi <- dbrda(postUbiq_ITSBC ~ habitat, data=metaDatForVeg)
+
+dbRDAfungiHabitatResults <- anova.cca(mod1Fungi, permutations= 99999)
+# this shows the exact same thing as the PERMANOVA
+
+# Save DBRDA results
+# save(dbRDAfungiHabitatResults, file= "RobjectsSaved/dbRDAfungiHabitatResults") #last saved Dec. 14, 2022

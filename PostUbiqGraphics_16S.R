@@ -46,22 +46,32 @@ ASVs_outta_ps <- function(physeq){ #input is a phyloseq object
 # Bray-Curtis dissimilarities based on square-root transformed data
 set.seed(19)
 ord_16S <- ordinate(postUbiquity.ps, method = "NMDS", distance = "bray", trymax = 100) 
+# stress = 0.1105877 
 
-# Ordination based on "habitat"/ plant community type
+# Ordination based on "habitat"/ plant community type 
 HabitatNMDS_16S_postUbiq <- phyloseq::plot_ordination(postUbiquity.ps, ord_16S, type= "samples", color= "Habitat")
 HabitatNMDS_16S_postUbiq <- HabitatNMDS_16S_postUbiq +
-  scale_color_manual(values=c("purple", "darkgreen", "goldenrod")) + #change color of points
+  scale_color_manual(values=c("purple", "darkgreen", "goldenrod"), #change color of points
+                     breaks= c("edge", "forest", "patch"),
+                     labels= c("edge", "forest", "savanna")) + #rename categories
   geom_point(size=3) + ggtitle("Bacteria and Archaea") +
   theme_bw() +
-  theme(plot.title = element_text(size=22)) +
-  guides(color = guide_legend(override.aes = list(size = 7))) + 
-  theme(axis.ticks = element_blank(),
-        axis.text = element_blank())
+  theme(plot.title = element_text(size=18)) +
+  guides(color = guide_legend(override.aes = list(size =7))) +
+  theme(legend.title = element_text(size=14)) + #increase size of legend title
+  theme(legend.text = element_text(size = 12)) + #increase size of legend font
+  theme(axis.text=element_text(size=12), #increase font size of axis labels
+        axis.title=element_text(size=12)) #increase font size of axis title
+
+# + #change size of legend and title
+#theme(axis.ticks = element_blank(), #remove x and y axis labels and tick marks
+#     axis.text = element_blank())
+
 #quartz()
 HabitatNMDS_16S_postUbiq #cool, you can see that the forest and the patch separate out, with edge somewhat in between!
 
 # save plot
-save(HabitatNMDS_16S_postUbiq, file="RobjectsSaved/HabitatNMDS_16S_postUbiq") #saved Aug. 13, 2022
+save(HabitatNMDS_16S_postUbiq, file="RobjectsSaved/HabitatNMDS_16S_postUbiq") #saved Jan. 2, 2023
 
 # Ordination based on EU (just to show that they are different!)
 EU_NMDS_16S_postUbiq <- phyloseq::plot_ordination(postUbiquity.ps, ord_16S, type= "samples", color= "EU")
@@ -100,4 +110,11 @@ postUbiq_16SPermanova <- adonis(postUbiq_16SBC ~ habitat, data=metaDatForVeg, pe
 # Save PERMANOVA results
 # save(postUbiq_16SPermanova, file= "RobjectsSaved/postUbiq_16SPermanova") #last saved Aug 9, 2022
 
+# WHAT ABOUT A DB-RDA-- SAME AS THE PERMANOVA
+mod1 <- dbrda(postUbiq_16SBC ~ habitat, data=metaDatForVeg)
 
+dbRDAprokHabitatResults <- anova.cca(mod1, permutations= 99999)
+# this shows the exact same thing as the PERMANOVA
+
+# Save DBRDA results
+# save(dbRDAprokHabitatResults, file= "RobjectsSaved/dbRDAprokHabitatResults") #last saved Dec. 14, 2022
