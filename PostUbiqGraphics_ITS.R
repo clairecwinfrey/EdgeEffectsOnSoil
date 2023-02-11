@@ -1,7 +1,9 @@
 # ITS- PostUbiquity Graphics 
 # started August 2, 2022
 
-# This script re-does ordinations and Bray-Curtis analyses with the postUbiquity analysis for fungal samples
+# This script re-does ordinations and Bray-Curtis analyses with the postUbiquity analysis for fungal samples.
+# In addition, it creates stacked barcharts of the relative abundance of top phyla and families, and performs db-RDAs
+# and makes visualizations to explore how sample segregate by habitat type.
 
 ###################################################################################################
 # SET UP
@@ -20,7 +22,7 @@ library("utilities")
 load("RobjectsSaved/ITS_postUbiquity.ps") #load phyloseq object that was made after 1) rarefying,
 # the 2) keeping only ASVs that occurred at least 50 times across the (rarefied), 
 # then 3) filtering out ASVs with a ubiquity of <40
-# R OBJECT MADE IN: EdgeEffectsAllSitesFUNGI.R
+# R OBJECT MADE IN: ITS_UbiquityMedianSetup.R
 
 # FUNCTIONS DEFINED IN THIS SCRIPT (but often used first in other scripts):
 # 1. taxtable_outta_ps takes the phyloseq ASV table and converts it to a dataframe
@@ -38,6 +40,143 @@ ASVs_outta_ps <- function(physeq){ #input is a phyloseq object
   }
   return(as.data.frame(ASVTable))
 }
+
+###############################
+# TOP PHYLA PLOT
+###############################
+# Phylum level (adopted from my code at:
+# https://github.com/clairecwinfrey/PhanBioMS_scripts/blob/master/R_scripts/figures/taxonomic_barplots.R)
+
+# Combine taxa based on phylum
+postUbiq.phylum.glom <-  tax_glom(ITS_postUbiquity.ps, taxrank = "Phylum") 
+tax_table(postUbiq.phylum.glom) #8 phyla
+sample_data(postUbiq.phylum.glom)
+
+# Transform sample counts based on just glommed samples
+relabun.phyla.0 <- transform_sample_counts(postUbiq.phylum.glom, function(x) x / sum(x) )
+rownames(otu_table(relabun.phyla.0)) 
+colSums(otu_table(relabun.phyla.0)) #right now these all sum to one, which shows that right now, it is relative
+# abundance by sample and that the code is working as expected.
+# ASVs are just representative from each phylum
+
+# Merge samples so that we only have combined abundances for EU (i.e. experimental replicate)
+relabun.phyla.1 <- merge_samples(relabun.phyla.0, group = c("EU"))
+sample_data(relabun.phyla.1) #this just confirms that samples were combined by EU, other variables are averaged but can be ignored
+
+# Convert to proportions again after merging samples by EU.
+relabun.phyla.2 <- transform_sample_counts(relabun.phyla.1, function(x) x / sum(x))
+rowSums(otu_table(relabun.phyla.2)) #these show that all of the ASVs now sum to one, which is exactly what we want!
+
+# Get taxa that that are at least .5% of total abundance
+relabun.phyla.df <-psmelt(relabun.phyla.2)
+dim(relabun.phyla.df) #
+relabun.phylatop99.5  <- relabun.phyla.df
+relabun.phylatop99.5$Phylum[relabun.phylatop99.5$Abundance < 0.005] <- "< .5% abund."
+
+# Olpidiomycota and Rozellomycota were phyla as well, but comprised less than .5% of abundance
+
+# Remove p_ in phylum names
+relabun.phylatop99.5$Phylum <- gsub("p__","",as.character(relabun.phylatop99.5$Phylum))
+
+# Phyla comprising at least 0.5% of total abundance
+phylumPlot99.5percent <- ggplot(data=relabun.phylatop99.5, aes(x=Sample, y=Abundance, fill=Phylum))
+phylumPlot99.5percent <- phylumPlot99.5percent + geom_bar(aes(), stat="identity", position="fill") +
+  theme_bw() +
+  theme(legend.position="bottom") +
+  theme(axis.title.y = element_text(size = 14)) +
+  theme(axis.text.y= element_text(size=14)) +
+  theme(axis.title.x = element_blank()) +
+  theme(axis.text.x= element_text(size=14)) +
+  guides(fill=guide_legend(nrow=3)) + theme(legend.text = element_text(colour="black", size = 14)) +
+  theme(legend.title= element_blank()) #remove legend title
+
+quartz()
+phylumPlot99.5percent
+# Get exact abundances of each phyla (top 99.5%):
+colnames(relabun.phylatop99.5)
+relabun.phylatop99.5[,2] #This is EU... now "Sample" because of the glomming!
+
+top_99.5p_phyla <- relabun.phylatop99.5 %>%
+  group_by(Sample, Phylum) %>%
+  summarize(Mean = mean(Abundance)) %>%
+  arrange(-Mean) 
+# View()
+
+###############################
+# TOP FAMILIES PLOT
+###############################
+# Combine taxa based on family
+postUbiq.family.glom <-  tax_glom(ITS_postUbiquity.ps, taxrank = "Family") 
+tax_table(postUbiq.family.glom) # 107 families total
+sample_data(postUbiq.family.glom)
+
+# Transform sample counts based on just glommed samples
+relabun.fam.0 <- transform_sample_counts(postUbiq.family.glom, function(x) x / sum(x) )
+rownames(otu_table(relabun.fam.0)) 
+colSums(otu_table(relabun.fam.0)) #right now these all sum to one, which shows that right now, it is relative
+# abundance by sample and that the code is working as expected.
+# ASVs are just representative from each family
+
+# Merge samples so that we only have combined abundances for EU (i.e. experimental replicate)
+relabun.fam.1 <- merge_samples(relabun.fam.0, group = c("EU"))
+sample_data(relabun.fam.1) #this just confirms that samples were combined by EU, other variables are averaged but can be ignored
+
+# Convert to proportions again after merging samples by EU.
+relabun.fam.2 <- transform_sample_counts(relabun.fam.1, function(x) x / sum(x))
+rowSums(otu_table(relabun.fam.2)) #these show that all of the ASVs now sum to one, which is exactly what we want!
+
+# Get taxa that that are at least 1 or 5% of total abundance
+relabun.fam.df <-psmelt(relabun.fam.2)
+dim(relabun.fam.df) #
+# Make copies 
+relabun.famtop99 <- relabun.fam.df
+relabun.famtop95 <- relabun.fam.df
+
+relabun.famtop99$Family[relabun.famtop99$Abundance < 0.01] <- "< 1% abund."
+relabun.famtop95$Family[relabun.famtop95$Abundance < 0.05] <- "< 5% abund."
+
+top_99p_fam <- unique(relabun.famtop99$Family)
+top_99p_fam #28 families
+
+top_95p_fam <- unique(relabun.famtop95$Family)
+top_95p_fam #10 families
+
+# Remove f__ in family names
+relabun.famtop99$Family <- gsub("f__","",as.character(relabun.famtop99$Family))
+relabun.famtop95$Family <- gsub("f__","",as.character(relabun.famtop95$Family))
+
+# Clean up Mucoromycotina_fam_Incertae_sedis
+relabun.famtop99$Family <- gsub("_fam_Incertae_sedis"," (incertae sedis)",as.character(relabun.famtop99$Family))
+relabun.famtop95$Family <- gsub("_fam_Incertae_sedis"," (incertae sedis)",as.character(relabun.famtop95$Family))
+
+# PLOT FOR FAMILIES COMPRISING AT LEAST 1% of abundance
+
+familyPlot99percent <- ggplot(data=relabun.famtop99, aes(x=Sample, y=Abundance, fill=Family))
+
+familyPlot99percent <- familyPlot99percent + geom_bar(aes(), stat="identity", position="fill") +
+  theme_bw() +
+  theme(legend.position="bottom") +
+  theme(axis.title.y = element_text(size = 14)) +
+  theme(axis.text.y= element_text(size=14)) +
+  theme(axis.title.x = element_blank()) +
+  theme(axis.text.x= element_text(size=14)) +
+  guides(fill=guide_legend(nrow=10)) + theme(legend.text = element_text(colour="black", size = 14)) +
+  theme(legend.title= element_blank()) #remove legend title
+
+quartz()
+familyPlot99percent
+# Get exact abundances of each family (top 99%) in each sample:
+colnames(relabun.famtop99)
+relabun.famtop99[,2] #This is EU... now "Sample" because of the glomming!
+
+top_99_fam <- relabun.famtop99 %>%
+  group_by(Sample, Family) %>%
+  summarize(Mean = mean(Abundance)) %>%
+  arrange(-Mean) 
+# View()
+
+
+
 
 #################################
 # ORDINATIONS
