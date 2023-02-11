@@ -99,7 +99,7 @@ phylumPlot99.5percent <- phylumPlot99.5percent + geom_bar(aes(), stat="identity"
   guides(fill=guide_legend(nrow=5)) + theme(legend.text = element_text(colour="black", size = 14)) +
   theme(legend.title= element_blank()) #remove legend title
 
-quartz()
+#quartz()
 phylumPlot99.5percent
 # Get exact abundances of each phyla (top 99.5%):
 colnames(relabun.phylatop99.5)
@@ -110,6 +110,24 @@ top_99.5p_phyla <- relabun.phylatop99.5 %>%
   summarize(Mean = mean(Abundance)) %>%
   arrange(-Mean) 
 # View()
+#View(top_99.5p_phyla)
+
+# This gets the top phyla's relative abundance in each group.
+# It shows that the top 4 are Acidobcteria, Proteobacteria, Verrucomicrobia,
+# and Planctomycetes, nd Chloroflexi and Actinos are comaprable 
+relabun.phylatop99.5_grouped <- relabun.phylatop99.5 %>% 
+  group_by(Phylum, Sample) %>% 
+  summarize(relAbund = sum(Abundance))
+# View(relabun.phylatop99.5_grouped)
+
+# This gets relative abundnce across all EUs
+relabun.phyla_grouped2 <- relabun.phylatop99.5 %>% 
+  group_by(Phylum) %>% 
+  summarize(relAbundSummedAcrossEUs = sum(Abundance)) %>% 
+  mutate(relAbund = relAbundSummedAcrossEUs/6)
+#View(relabun.phyla_grouped2)
+
+sum(relabun.phyla_grouped2$relAbund) #this adds up to 1!
 
 ###############################
 # TOP FAMILIES PLOT
@@ -167,19 +185,31 @@ familyPlot99percent <- familyPlot99percent + geom_bar(aes(), stat="identity", po
   guides(fill=guide_legend(nrow=8)) + theme(legend.text = element_text(colour="black", size = 14)) +
   theme(legend.title= element_blank()) #remove legend title
 
-quartz()
+#quartz()
 familyPlot99percent
 # Get exact abundances of each family (top 99%) in each sample:
-colnames(relabun.famtop99)
-relabun.famtop99[,2] #This is EU... now "Sample" because of the glomming!
-
 top_99_fam <- relabun.famtop99 %>%
   group_by(Sample, Family) %>%
   summarize(Mean = mean(Abundance)) %>%
   arrange(-Mean) 
 # View()
 
+# This gets the top families's relative abundance in each group.
+# It shows that the top 4 are Acidobcteria, Proteobacteria, Verrucomicrobia,
+# and Planctomycetes, nd Chloroflexi and Actinos are comaprable 
+relabun.famtop99_grouped <- relabun.famtop99 %>% 
+  group_by(Family, Sample) %>% 
+  summarize(relAbund = sum(Abundance))
+# View(relabun.famtop99_grouped)
 
+# This gets relative abundance across all EUs
+relabun.famtop99_grouped2 <- relabun.famtop99 %>% 
+  group_by(Family) %>% 
+  summarize(relAbundSummedAcrossEUs = sum(Abundance)) %>% 
+  mutate(relAbund = relAbundSummedAcrossEUs/6)
+#View(relabun.famtop99_grouped2)
+
+sum(relabun.famtop99_grouped2$relAbund) #this adds up to 1!
 #################################
 # ORDINATIONS
 #################################
