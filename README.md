@@ -18,6 +18,8 @@ This repository contains the scripts used to process 16S and ITS data from soils
 5. DiffAbundFungi.R-- this script performs a differential abundance test to see which ASVs differ between the forested matrix and the savanna patch, and saves these results (which are loaded in the following script). It also makes visualizations of these results. Basically identical to DiffAbundProkaryotes.R except with fungi.
 6. FungiAbundanceZscores.R - same as ProkaryotesAbundanceZScores.R except with fungi.
 7. PostUbiqGraphic_ITS.R - makes NMDS ordinations and Bray-Curtis dissimilarities along the transect for dataset created in ITS_UbiquityMedianSetup.R (i.e. after removing rare ASVs and not very ubiquitous ones). Also performs a PERMANOVA (adonis function) and then a dbRDA (ultimately in manuscript) to test if samples segregate based on habitat type.
+8. FUNGuildExploraton.R - This script prepares ASV dataset (ASV table made in ITS_UbiquityMedianSetup.R, where ASVs hve been rarefied and ubiquity and rarity filters applied) for FUNGuild and then explores results of FUNGuild and makes stacked barplot visualizations. Run up to line 72, then run FUNGuildStepByStep, then return to this script to explore results.
+9. FUNGuildStepByStep text file describes the specific steps taken to run FUNGuild, as well as provides Python code run in command line. Should be run after running through line 72 in FUNGuildExploraton.R.
 
 **16S and ITS together or other miscellaneous**
 1. EnvDataPlots.R -- this script makes plots of mean pH, canopy cover, and vegetation for all of the points along the transects sampled in the dataset.
