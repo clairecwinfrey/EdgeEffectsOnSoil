@@ -96,7 +96,8 @@ phylumPlot99.5percent <- phylumPlot99.5percent + geom_bar(aes(), stat="identity"
   theme(axis.text.y= element_text(size=14)) +
   theme(axis.title.x = element_blank()) +
   theme(axis.text.x= element_text(size=14)) +
-  guides(fill=guide_legend(nrow=5)) + theme(legend.text = element_text(colour="black", size = 10))
+  guides(fill=guide_legend(nrow=5)) + theme(legend.text = element_text(colour="black", size = 14)) +
+  theme(legend.title= element_blank()) #remove legend title
 
 quartz()
 phylumPlot99.5percent
@@ -150,6 +151,9 @@ top_95p_fam <- unique(relabun.famtop95$Family)
 top_95p_fam #9
 
 # PLOT FOR FAMILIES COMPRISING AT LEAST 1% of abundance
+# For aesthetic/fitting reasons, remove subgroup info for two of the families from legend
+relabun.famtop99$Family <- gsub("_(Subgroup_3)","",as.character(relabun.famtop99$Family),fixed = T) #remove subgroup from Solibacteraceae
+relabun.famtop99$Family <- gsub("_(Subgroup_1)","",as.character(relabun.famtop99$Family),fixed = T) #remove subgroup from Acidobacteriaceae
 
 familyPlot99percent <- ggplot(data=relabun.famtop99, aes(x=Sample, y=Abundance, fill=Family))
 
@@ -160,7 +164,8 @@ familyPlot99percent <- familyPlot99percent + geom_bar(aes(), stat="identity", po
   theme(axis.text.y= element_text(size=14)) +
   theme(axis.title.x = element_blank()) +
   theme(axis.text.x= element_text(size=14)) +
-  guides(fill=guide_legend(nrow=8)) + theme(legend.text = element_text(colour="black", size = 10))
+  guides(fill=guide_legend(nrow=8)) + theme(legend.text = element_text(colour="black", size = 14)) +
+  theme(legend.title= element_blank()) #remove legend title
 
 quartz()
 familyPlot99percent
