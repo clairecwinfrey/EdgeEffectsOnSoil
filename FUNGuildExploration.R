@@ -68,8 +68,8 @@ FUNGuildTable1$taxonomy <-gsub("s__","",as.character(FUNGuildTable1$taxonomy))
 # colnames(FUNGuildTable1)
 
 # Written to file Aug. 10, 2022
-write.table(FUNGuildTable1, file = "FUNGuildTable.txt", sep = "\t",
-            row.names = TRUE, col.names = TRUE)
+# write.table(FUNGuildTable1, file = "FUNGuildTable.txt", sep = "\t",
+         #   row.names = TRUE, col.names = TRUE)
 # ** Finally, remove any quotation marks that may appear in new file in a text editor (I used Atom) and make
 # sure that column names and data line up.
 
@@ -120,7 +120,7 @@ unique(fungResultsDA$Guild)
 unique(fungResultsDA$Trophic.Mode)
 View(fungResultsDA)
 
-save(fungResultsDA, file="RobjectsSaved/fungResultsDA") #saved Sept 14, 2022
+#save(fungResultsDA, file="RobjectsSaved/fungResultsDA") #saved Sept 14, 2022
 
 # Make a stacked bar plot of trophic modes in different habitat types
 FUNGuild_stackedBarplotTrophic <- ggplot(fungResultsDA, aes(fill=Habitat, x=Trophic.Mode)) + 
@@ -153,6 +153,9 @@ FUNGuild_stackedBarplotGuild
   # 1. Get indices of both
 # Get only arbuscular mycorrhizal 
 arbMycoIndex <- which(fungResultsDA$Guild == "Arbuscular Mycorrhizal")
+length(unique(fungResultsDA$Guild))
+guilds <- unique(fungResultsDA$Guild)
+
 length(arbMycoIndex) #19
 arbMycoIndex
 # Get only EMF
