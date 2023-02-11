@@ -102,6 +102,14 @@ top_99.5p_phyla <- relabun.phylatop99.5 %>%
   arrange(-Mean) 
 # View()
 
+# This gets relative abundance across all EUs
+fungiRelabunFam_grouped <- relabun.phylatop99.5 %>% 
+  group_by(Phylum) %>% 
+  summarize(relAbundSummedAcrossEUs = sum(Abundance)) %>% 
+  mutate(relAbund = relAbundSummedAcrossEUs/6)
+#View(fungiRelabunFam_grouped)
+sum(fungiRelabunFam_grouped$relAbund) #this adds up to 1!
+
 ###############################
 # TOP FAMILIES PLOT
 ###############################
@@ -175,7 +183,13 @@ top_99_fam <- relabun.famtop99 %>%
   arrange(-Mean) 
 # View()
 
-
+# This gets relative abundance across all EUs
+fungiTopFamsGrouped <- relabun.famtop99 %>% 
+  group_by(Family) %>% 
+  summarize(relAbundSummedAcrossEUs = sum(Abundance)) %>% 
+  mutate(relAbund = relAbundSummedAcrossEUs/6)
+#View(fungiTopFamsGrouped)
+sum(fungiTopFamsGrouped$relAbund) #this adds up to 1!
 
 
 #################################
