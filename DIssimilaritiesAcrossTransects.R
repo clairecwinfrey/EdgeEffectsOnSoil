@@ -3,9 +3,10 @@
 # November 14, 2021
 
 # This script calculates and plots the Bray-Curtis dissimilarities for the 
-# meters across the transect. It uses the post-ubiquity (pre-median) abundances
+# meters across the transect. It uses the post-ubiquity (not median) abundances
 # of each ASV for each transect. See description below, where postUbiquity.ps is
-# loaded.
+# loaded. In addition, it performs db-RDAs and forward model selection to test which
+# environmental variables explain differences among samples
 
 # Libraries
 library("phyloseq")
@@ -15,10 +16,11 @@ library("tibble")
 library("tidyr")
 library("vegan")
 library("gridExtra")    # allows you to make multiple plots on the same page with ggplot
+library("ggord") #plotting dbRDAs
 
-setwd("/Users/clairewinfrey/Desktop/CU_Research/SoilEdgeEffectsResearch/Bioinformatics")
+setwd("/Users/clairewinfrey/Desktop/CU_Research/SoilEdgeEffectsResearch")
 
-load("postUbiquity.ps") #load phyloseq object that was made after 1) rarefying,
+load("RobjectsSaved/postUbiquity.ps") #load 16S phyloseq object that was made after 1) rarefying,
 # the 2) keeping only ASVs that occurred at least 50 times across the (rarefied), 
 # then 3) filtering out ASVs with a ubiquity of <45. PostUbiquity.ps was made and 
 # saved in the script titled "UbiquityMedianSetup.R".
@@ -41,10 +43,11 @@ ASVs_outta_ps <- function(physeq){ #input is a phyloseq object
   return(as.data.frame(ASVTable))
 }
 
-# 3. metadata_outta_ps takes the phyloseq metadata table and converts it to a dataframe
-metadata_outta_ps <- function(physeq){ #input is a phyloseq object
-  metaDat <- sample_data(physeq)
-  return(as.data.frame(metaDat))
+# 3. pssd2veg takes the phyloseq metadata table and converts it to a dataframe
+# from: https://jacobrprice.github.io/2017/08/26/phyloseq-to-vegan-and-back.html
+pssd2veg <- function(physeq) { 
+  sd <- sample_data(physeq)
+  return(as(sd,"data.frame"))
 }
 
 # 4. TransectDissim3 obtains the Bray-Curtis dissimilarities between 1) 10 m and 
@@ -64,7 +67,7 @@ metadata_outta_ps <- function(physeq){ #input is a phyloseq object
 ####### MAKEA FUNCTION THAT HAS IT FORMATTED FOR GGPLOT2!!!
 transectDissim3 <- function(physeq) {
   ASVsdf <- ASVs_outta_ps(physeq) #get ASV table using functioned defined earlier; samples are rows, ASVs = columns
-  metaDf <- metadata_outta_ps(physeq) #get metadata using function defined earlier; samples are rows
+  metaDf <- pssd2veg(physeq) #get metadata using function defined earlier; samples are rows
   # Next six lines make a new df that has variables of interest and ASVs
   ASVsdf$Transect <- metaDf$Transect
   ASVsdf$Meter <- metaDf$Meter
@@ -173,88 +176,88 @@ transectDissim3 <- function(physeq) {
 #############
 
 # To get dissimilarities, first split phyloseq object by EUs and remove ASVs that don't occur in subset
-EU_52_Soils.ps <- subset_samples(postUbiquity.ps, EU == "EU_52")
-EU_52_Soils.ps <- prune_taxa(taxa_sums(EU_52_Soils.ps) > 0, EU_52_Soils.ps) #remove non-occuring ASVs
+EU_52_16S_Soils.ps <- subset_samples(postUbiquity.ps, EU == "EU_52")
+EU_52_16S_Soils.ps <- prune_taxa(taxa_sums(EU_52_16S_Soils.ps) > 0, EU_52_16S_Soils.ps) #remove non-occurring ASVs
 
-EU_53N_Soils.ps <- subset_samples(postUbiquity.ps, EU == "EU_53N")
-EU_53N_Soils.ps <- prune_taxa(taxa_sums(EU_53N_Soils.ps) > 0, EU_53N_Soils.ps) #remove non-occuring ASVs
+EU_53N_16S_Soils.ps <- subset_samples(postUbiquity.ps, EU == "EU_53N")
+EU_53N_16S_Soils.ps <- prune_taxa(taxa_sums(EU_53N_16S_Soils.ps) > 0, EU_53N_16S_Soils.ps) #remove non-occurring  ASVs
 
-EU_54S_Soils.ps <- subset_samples(postUbiquity.ps, EU == "EU_54S")
-EU_54S_Soils.ps <- prune_taxa(taxa_sums(EU_54S_Soils.ps) > 0, EU_54S_Soils.ps) #remove non-occuring ASVs
+EU_54S_16S_Soils.ps <- subset_samples(postUbiquity.ps, EU == "EU_54S")
+EU_54S_16S_Soils.ps <- prune_taxa(taxa_sums(EU_54S_16S_Soils.ps) > 0, EU_54S_16S_Soils.ps) #remove non-occurring ASVs
 
-EU_8_Soils.ps <- subset_samples(postUbiquity.ps, EU == "EU_8")
-EU_8_Soils.ps <- prune_taxa(taxa_sums(EU_8_Soils.ps) > 0, EU_8_Soils.ps) #remove non-occuring ASVs
+EU_8_16S_Soils.ps <- subset_samples(postUbiquity.ps, EU == "EU_8")
+EU_8_16S_Soils.ps <- prune_taxa(taxa_sums(EU_8_16S_Soils.ps) > 0, EU_8_16S_Soils.ps) #remove non-occurring ASVs
 
-EU_53S_Soils.ps <- subset_samples(postUbiquity.ps, EU == "EU_53S")
-EU_53S_Soils.ps <- prune_taxa(taxa_sums(EU_53S_Soils.ps) > 0, EU_53S_Soils.ps) #remove non-occuring ASVs
+EU_53S_16S_Soils.ps <- subset_samples(postUbiquity.ps, EU == "EU_53S")
+EU_53S_16S_Soils.ps <- prune_taxa(taxa_sums(EU_53S_16S_Soils.ps) > 0, EU_53S_16S_Soils.ps) #remove non-occurring  ASVs
 
-EU_10_Soils.ps <- subset_samples(postUbiquity.ps, EU == "EU_10")
-EU_10_Soils.ps <- prune_taxa(taxa_sums(EU_10_Soils.ps) > 0, EU_10_Soils.ps) #remove non-occuring ASVs
+EU_10_16S_Soils.ps <- subset_samples(postUbiquity.ps, EU == "EU_10")
+EU_10_16S_Soils.ps <- prune_taxa(taxa_sums(EU_10_16S_Soils.ps) > 0, EU_10_16S_Soils.ps) #remove non-occurring  ASVs
 
 # Run function on each EU's phyloseq object and then make sure first two columns are numeric
-dissim_52 <- transectDissim3(EU_52_Soils.ps)
-dissim_52[,1] <- as.numeric(dissim_52[,1])
-dissim_52[,2] <- as.numeric(dissim_52[,2])
+dissim_16S_52 <- transectDissim3(EU_52_16S_Soils.ps)
+dissim_16S_52[,1] <- as.numeric(dissim_16S_52[,1])
+dissim_16S_52[,2] <- as.numeric(dissim_16S_52[,2])
 
-dissim_53N <- transectDissim3(EU_53N_Soils.ps)
-dissim_53N[,1] <- as.numeric(dissim_53N[,1])
-dissim_53N[,2] <- as.numeric(dissim_53N[,2])
+dissim_16S_53N <- transectDissim3(EU_53N_16S_Soils.ps)
+dissim_16S_53N[,1] <- as.numeric(dissim_16S_53N[,1])
+dissim_16S_53N[,2] <- as.numeric(dissim_16S_53N[,2])
 
-dissim_54S <- transectDissim3(EU_54S_Soils.ps)
-dissim_54S[,1] <- as.numeric(dissim_54S[,1])
-dissim_54S[,2] <- as.numeric(dissim_54S[,2])
+dissim_16S_54S <- transectDissim3(EU_54S_16S_Soils.ps)
+dissim_16S_54S[,1] <- as.numeric(dissim_16S_54S[,1])
+dissim_16S_54S[,2] <- as.numeric(dissim_16S_54S[,2])
 
-dissim_8 <- transectDissim3(EU_8_Soils.ps)
-dissim_8[,1] <- as.numeric(dissim_8[,1])
-dissim_8[,2] <- as.numeric(dissim_8[,2])
+dissim_16S_8 <- transectDissim3(EU_8_16S_Soils.ps)
+dissim_16S_8[,1] <- as.numeric(dissim_16S_8[,1])
+dissim_16S_8[,2] <- as.numeric(dissim_16S_8[,2])
 
-dissim_53S <- transectDissim3(EU_53S_Soils.ps)
-dissim_53S[,1] <- as.numeric(dissim_53S[,1])
-dissim_53S[,2] <- as.numeric(dissim_53S[,2])
+dissim_16S_53S <- transectDissim3(EU_53S_16S_Soils.ps)
+dissim_16S_53S[,1] <- as.numeric(dissim_16S_53S[,1])
+dissim_16S_53S[,2] <- as.numeric(dissim_16S_53S[,2])
 
-dissim_10 <- transectDissim3(EU_10_Soils.ps)
-dissim_10[,1] <- as.numeric(dissim_10[,1])
-dissim_10[,2] <- as.numeric(dissim_10[,2])
+dissim_16S_10 <- transectDissim3(EU_10_16S_Soils.ps)
+dissim_16S_10[,1] <- as.numeric(dissim_16S_10[,1])
+dissim_16S_10[,2] <- as.numeric(dissim_16S_10[,2])
 
 #############
 # Plotting
 # Function above spits this out as it needs to be to plot using ggplot2. 
 
 ggEU_52 <- ggplot() + 
-  geom_line(data=dissim_52[1:38,], aes(x=meter, y=`Bray-Curtis`, group = transect), color = "goldenrod") +
-  geom_line(data=dissim_52[39:76,], aes(x=meter, y=`Bray-Curtis`, group = transect), color = "darkgreen") +
+  geom_line(data=dissim_16S_52[1:38,], aes(x=meter, y=`Bray-Curtis`, group = transect), color = "goldenrod") +
+  geom_line(data=dissim_16S_52[39:76,], aes(x=meter, y=`Bray-Curtis`, group = transect), color = "darkgreen") +
   theme_bw() + ylim(0.3, 1.00) +
   scale_x_continuous("Transect Meter", breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100)) +
   ggtitle("EU 52") + geom_vline(xintercept = 50, linetype= "dashed", color= "grey")
 ggEU_52
 #quartz()
 ggEU_53N <- ggplot() + 
-  geom_line(data=dissim_53N[1:39,], aes(x=meter, y=`Bray-Curtis`, group = transect), color = "goldenrod") +
-  geom_line(data=dissim_53N[40:78,], aes(x=meter, y=`Bray-Curtis`, group = transect), color = "darkgreen") +
+  geom_line(data=dissim_16S_53N[1:39,], aes(x=meter, y=`Bray-Curtis`, group = transect), color = "goldenrod") +
+  geom_line(data=dissim_16S_53N[40:78,], aes(x=meter, y=`Bray-Curtis`, group = transect), color = "darkgreen") +
   theme_bw() + ylim(0.3, 1.00) +
   scale_x_continuous("Transect Meter", breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100)) +
   ggtitle("EU 53N") + geom_vline(xintercept = 50, linetype= "dashed", color= "grey")
 ggEU_53N
 #quartz()
 ggEU_54S <- ggplot() + 
-  geom_line(data=dissim_54S[1:38,], aes(x=meter, y=`Bray-Curtis`, group = transect), color = "goldenrod") +
-  geom_line(data=dissim_54S[39:76,], aes(x=meter, y=`Bray-Curtis`, group = transect), color = "darkgreen") +
+  geom_line(data=dissim_16S_54S[1:38,], aes(x=meter, y=`Bray-Curtis`, group = transect), color = "goldenrod") +
+  geom_line(data=dissim_16S_54S[39:76,], aes(x=meter, y=`Bray-Curtis`, group = transect), color = "darkgreen") +
   theme_bw() + ylim(0.3, 1.00) +
   scale_x_continuous("Transect Meter", breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100)) +
   ggtitle("EU 54S") + geom_vline(xintercept = 50, linetype= "dashed", color= "grey")
 ggEU_54S
 #quartz()
 ggEU_8 <- ggplot() + 
-  geom_line(data=dissim_8[1:39,], aes(x=meter, y=`Bray-Curtis`, group = transect), color = "goldenrod") +
-  geom_line(data=dissim_8[40:78,], aes(x=meter, y=`Bray-Curtis`, group = transect), color = "darkgreen") +
+  geom_line(data=dissim_16S_8[1:39,], aes(x=meter, y=`Bray-Curtis`, group = transect), color = "goldenrod") +
+  geom_line(data=dissim_16S_8[40:78,], aes(x=meter, y=`Bray-Curtis`, group = transect), color = "darkgreen") +
   theme_bw() + ylim(0.3, 1.00) +
   scale_x_continuous("Transect Meter", breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100)) +
   ggtitle("EU 8") + geom_vline(xintercept = 50, linetype= "dashed", color= "grey")
 ggEU_8
 #quartz()
 ggEU_53S <- ggplot() + 
-  geom_line(data=dissim_53S[1:40,], aes(x=meter, y=`Bray-Curtis`, group = transect), color = "goldenrod") +
-  geom_line(data=dissim_53S[41:80,], aes(x=meter, y=`Bray-Curtis`, group = transect), color = "darkgreen") +
+  geom_line(data=dissim_16S_53S[1:40,], aes(x=meter, y=`Bray-Curtis`, group = transect), color = "goldenrod") +
+  geom_line(data=dissim_16S_53S[41:80,], aes(x=meter, y=`Bray-Curtis`, group = transect), color = "darkgreen") +
   theme_bw() + ylim(0.3, 1.00) +
   scale_x_continuous("Transect Meter", breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100)) +
   ggtitle("EU 53S") + geom_vline(xintercept = 50, linetype= "dashed", color= "grey")
@@ -262,14 +265,91 @@ ggEU_53S
 
 #quartz()
 ggEU_10 <- ggplot() + 
-  geom_line(data=dissim_10[1:39,], aes(x=meter, y=`Bray-Curtis`, group = transect), color = "goldenrod") +
-  geom_line(data=dissim_10[40:78,], aes(x=meter, y=`Bray-Curtis`, group = transect), color = "darkgreen") +
+  geom_line(data=dissim_16S_10[1:39,], aes(x=meter, y=`Bray-Curtis`, group = transect), color = "goldenrod") +
+  geom_line(data=dissim_16S_10[40:78,], aes(x=meter, y=`Bray-Curtis`, group = transect), color = "darkgreen") +
   theme_bw() + ylim(0.3, 1.00) +
   scale_x_continuous("Transect Meter", breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100)) +
   ggtitle("EU 10") + geom_vline(xintercept = 50, linetype= "dashed", color= "grey")
 ggEU_10 
 
-quartz()
+#quartz()
 require(gridExtra)
 grid.arrange(ggEU_52, ggEU_53N, ggEU_54S, ggEU_8, ggEU_53S, ggEU_10, ncol=3)
 
+###############################################
+# DBRDA
+################################################
+# first, remove samples with missing pH values... since ordiR2Step won't work with them...
+postUbiquitynoNA_16S.ps <- subset_samples(postUbiquity.ps, Sample.ID != "53ND_T_60")
+postUbiquitynoNA_16S.ps <- subset_samples(postUbiquitynoNA_16S.ps, Sample.ID != "53ND_L_100")
+
+postUbiqnoNA_16S_ASVs <- ASVs_outta_ps(postUbiquitynoNA_16S.ps)
+
+# Get Bray-Curtis dissimilarities
+postUbiqnoNAs_16S_BCdists <- vegdist(postUbiqnoNA_16S_ASVs, method = "bray")
+
+postUbiqNoNAsampsMeta <- pssd2veg(postUbiquitynoNA_16S.ps)
+#View(postUbiqNoNAsampsMeta)
+
+## Make a db-RDA
+postUbiq_16S_dbRDA.mod0 <- dbrda(postUbiqnoNAs_16S_BCdists ~1, data= postUbiqNoNAsampsMeta)
+postUbiq_16S_dbRDA.full <- dbrda(postUbiqnoNAs_16S_BCdists ~ mean_pH + Percent_Vegetation_Cover + 
+                              meanDens + Habitat + Condition(EU), data= postUbiqNoNAsampsMeta)
+set.seed(19)
+postUbiq_16S_dbRDAresults <- anova.cca(postUbiq_16S_dbRDA.full, permutations = 9999)  #test significance of constraints
+# Model: dbrda(formula = postUbiqnoNAs_16S_BCdists ~ mean_pH + Percent_Vegetation_Cover + meanDens + Habitat + Condition(EU), data = postUbiqNoNAsampsMeta)
+# Df SumOfSqs      F Pr(>F)    
+# Model      5    9.540 12.137  1e-04 ***
+#   Residual 220   34.584  
+set.seed(19)
+postUbiq_16S_dbRDAresultsByTerms <- anova.cca(postUbiq_16S_dbRDA.full, by="margin", permutations = 9999) #test which variables are significant
+# Model: dbrda(formula = postUbiqnoNAs_16S_BCdists ~ mean_pH + Percent_Vegetation_Cover + meanDens + Habitat + Condition(EU), data = postUbiqNoNAsampsMeta)
+# Df SumOfSqs       F Pr(>F)    
+# mean_pH                    1    2.099 13.3501 0.0001 ***
+#   Percent_Vegetation_Cover   1    0.260  1.6533 0.0446 *  
+#   meanDens                   1    0.675  4.2930 0.0001 ***
+#   Habitat                    2    0.801  2.5481 0.0002 ***
+#   Residual                 220   34.584             
+
+# SAVE RESULTS
+#save(postUbiq_16S_dbRDAresults, file="RobjectsSaved/postUbiq_16S_dbRDAresults") #saved Feb. 12, 2023
+#save(postUbiq_16S_dbRDAresultsByTerms, file="RobjectsSaved/postUbiq_16S_dbRDAresultsByTerms") #saved Feb. 12, 2023
+
+# model selection
+set.seed(93)
+postUbiqMod_16S_forsel <- ordiR2step(object=postUbiq_16S_dbRDA.mod0, scope = postUbiq_16S_dbRDA.full, permutations = 9999) 
+postUbiqMod_16S_forsel$anova 
+# R2.adj Df    AIC      F Pr(>F)    
+# + mean_pH       0.12738  1 887.85 34.573  1e-04 ***
+#   <All variables> 0.16869     
+#save(postUbiqMod_16S_forsel, file="RobjectsSaved/postUbiqMod_16S_forsel") #saved Feb. 12, 2023
+
+# pH only
+postUbiq_16S_dbRDA.pH <- dbrda(postUbiqnoNAs_16S_BCdists ~ 
+                                    mean_pH, data= postUbiqNoNAsampsMeta)
+set.seed(93)
+postUbiq_16S_dbRDA.pHresults <- anova.cca(postUbiq_16S_dbRDA.pH, permutations = 9999)  #test significance of constraints
+# Model: dbrda(formula = postUbiqnoNAs_16S_BCdists ~ mean_pH, data = postUbiqNoNAsampsMeta)
+# Df SumOfSqs      F Pr(>F)    
+# Model      1    6.958 34.573  1e-04 ***
+#   Residual 229   46.086  
+
+# pH and canopy cover
+postUbiq_16S_dbRDA.phCan <- dbrda(postUbiqnoNAs_16S_BCdists ~ 
+                                           meanDens + mean_pH, data= postUbiqNoNAsampsMeta)
+set.seed(93)
+postUbiq_16S_dbRDA.phCannResults <- anova.cca(postUbiq_16S_dbRDA.phCan, permutations = 9999) 
+# Model: dbrda(formula = postUbiqnoNAs_16S_BCdists ~ meanDens + mean_pH, data = postUbiqNoNAsampsMeta)
+# Df SumOfSqs     F Pr(>F)    
+# Model      2   12.153 33.88  1e-04 ***
+#   Residual 228   40.892              
+
+cor(postUbiqNoNAsampsMeta$meanDens, postUbiqNoNAsampsMeta$mean_pH) #correlation is -0.318194
+
+#quartz()
+#plot(postUbiq_dbRDA.canopyOnly)
+
+# quartz()
+# postUbiqCanHabPlot <- ggord(postUbiq_dbRDA.canopyOnly, postUbiqNoNAsampsMeta$Habitat, size =2)
+# postUbiqCanHabPlot + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + theme(legend.title = element_blank()) + theme(legend.text = element_text(size = 20)) + theme(legend.position = "bottom") + theme(axis.text = element_text(size= 15)) + theme(axis.title = element_text(size = 17)) + theme(axis.title.x = element_text(vjust= -1.5)) +
+#   theme(axis.title.y = element_text(vjust = 1.5)) + theme(legend.box.margin = margin(10, -10, -10, -10))
