@@ -3,7 +3,8 @@
 
 # This script re-does ordinations and Bray-Curtis analyses with the postUbiquity analysis for fungal samples.
 # In addition, it creates stacked barcharts of the relative abundance of top phyla and families, and performs db-RDAs
-# and makes visualizations to explore how sample segregate by habitat type.
+# and makes visualizations to explore how sample segregate by habitat type (both between habitats across sites and 
+# between habitats within sites)
 
 ###################################################################################################
 # SET UP
@@ -239,7 +240,7 @@ EU_NMDS_ITS_postUbiq #cool, you can see that the forest and the patch separate o
 
 
 #########################################################################
-# PERMANOVA TO TEST FOR THE EFFECT OF HABITAT TYPE ON THE DISTRIBUTIONS
+# PERMANOVA AND DBRDAS TO TEST FOR THE EFFECT OF HABITAT TYPE ON THE DISTRIBUTIONS
 #########################################################################
 
 # First, need to get data out of phyloseq so that it can be processed in vegan
@@ -273,3 +274,80 @@ dbRDAfungiHabitatResults <- anova.cca(mod1Fungi, permutations= 99999)
 
 # Save DBRDA results
 # save(dbRDAfungiHabitatResults, file= "RobjectsSaved/dbRDAfungiHabitatResults") #last saved Dec. 14, 2022
+
+#########################################################################
+# DOES EVERY EU DIFFER WITH RESPECT TO HABITAT TYPE?
+#########################################################################
+## Separate out data by each EU, remove non-occurring ASVs, make ordinations, then perform dbRDAs
+
+##########
+# EU 52
+EU_52_ITSubiq.ps <- subset_samples(ITS_postUbiquity.ps, EU == "EU_52")
+EU_52_ITSubiq.ps <- prune_taxa(taxa_sums(EU_52_ITSubiq.ps) > 0, EU_52_ITSubiq.ps) #remove non-occurring ASVs, now 410 taxa
+EU_52_ITSASVs <- ASVs_outta_ps(EU_52_ITSubiq.ps) #get ASV table
+EU_52_ITSBC <- vegdist(EU_52_ITSASVs, method= "bray") #get B-C dissimilarities
+EU52_metaDat <- as.data.frame(as.matrix(sample_data(EU_52_ITSubiq.ps)))
+EU_52_ITSmod <- dbrda(EU_52_ITSBC ~ Habitat, data=EU52_metaDat) #make dbRDA model
+set.seed(19)
+EU_52_ITSdbRDAHabitatResults <- anova.cca(EU_52_ITSmod, permutations= 99999) #test significance of constraints
+# 3.2491  1e-05 ***
+
+##########
+# EU 53N
+EU_53N_ITSubiq.ps <- subset_samples(ITS_postUbiquity.ps, EU == "EU_53N")
+EU_53N_ITSubiq.ps <- prune_taxa(taxa_sums(EU_53N_ITSubiq.ps) > 0, EU_53N_ITSubiq.ps) #remove non-occurring ASVs, 407 ASVs
+EU_53N_ITSASVs <- ASVs_outta_ps(EU_53N_ITSubiq.ps) #get ASV table
+EU_53N_ITSBC <- vegdist(EU_53N_ITSASVs, method= "bray") #get B-C dissimilarities
+EU52_metaDat <- as.data.frame(as.matrix(sample_data(EU_53N_ITSubiq.ps)))
+EU_53N_ITSmod <- dbrda(EU_53N_ITSBC ~ Habitat, data=EU52_metaDat) #make dbRDA model
+set.seed(19)
+EU_53N_ITSdbRDAHabitatResults <- anova.cca(EU_53N_ITSmod, permutations= 99999) #test significance of constraints
+# 2.176  5e-05 ***
+
+##########
+# EU 54S
+EU_54S_ITSubiq.ps <- subset_samples(ITS_postUbiquity.ps, EU == "EU_54S")
+EU_54S_ITSubiq.ps <- prune_taxa(taxa_sums(EU_54S_ITSubiq.ps) > 0, EU_54S_ITSubiq.ps) #remove non-occurring ASVs, now 406
+EU_54S_ITSASVs <- ASVs_outta_ps(EU_54S_ITSubiq.ps) #get ASV table
+EU_54S_ITSBC <- vegdist(EU_54S_ITSASVs, method= "bray") #get B-C dissimilarities
+EU52_metaDat <- as.data.frame(as.matrix(sample_data(EU_54S_ITSubiq.ps)))
+EU_54S_ITSmod <- dbrda(EU_54S_ITSBC ~ Habitat, data=EU52_metaDat) #make dbRDA model
+set.seed(19)
+EU_54S_ITSdbRDAHabitatResults <- anova.cca(EU_54S_ITSmod, permutations= 99999) #test significance of constraints
+# 3.9145  1e-05 ***
+
+##########
+# EU 8
+EU_8_ITSubiq.ps <- subset_samples(ITS_postUbiquity.ps, EU == "EU_8")
+EU_8_ITSubiq.ps <- prune_taxa(taxa_sums(EU_8_ITSubiq.ps) > 0, EU_8_ITSubiq.ps) #remove non-occurring ASVs, now 404
+EU_8_ITSASVs <- ASVs_outta_ps(EU_8_ITSubiq.ps) #get ASV table
+EU_8_ITSBC <- vegdist(EU_8_ITSASVs, method= "bray") #get B-C dissimilarities
+EU52_metaDat <- as.data.frame(as.matrix(sample_data(EU_8_ITSubiq.ps)))
+EU_8_ITSmod <- dbrda(EU_8_ITSBC ~ Habitat, data=EU52_metaDat) #make dbRDA model
+set.seed(19)
+EU_8_ITSdbRDAHabitatResults <- anova.cca(EU_8_ITSmod, permutations= 99999) #test significance of constraints
+# 13.1  1e-05 ***
+
+##########
+# EU 53S
+EU_53S_ITSubiq.ps <- subset_samples(ITS_postUbiquity.ps, EU == "EU_53S")
+EU_53S_ITSubiq.ps <- prune_taxa(taxa_sums(EU_53S_ITSubiq.ps) > 0, EU_53S_ITSubiq.ps) #remove non-occurring ASVs, now 392
+EU_53S_ITSASVs <- ASVs_outta_ps(EU_53S_ITSubiq.ps) #get ASV table
+EU_53S_ITSBC <- vegdist(EU_53S_ITSASVs, method= "bray") #get B-C dissimilarities
+EU52_metaDat <- as.data.frame(as.matrix(sample_data(EU_53S_ITSubiq.ps)))
+EU_53S_ITSmod <- dbrda(EU_53S_ITSBC ~ Habitat, data=EU52_metaDat) #make dbRDA model
+set.seed(19)
+EU_53S_ITSdbRDAHabitatResults <- anova.cca(EU_53S_ITSmod, permutations= 99999) #test significance of constraints
+# 3.68  1e-05 ***
+
+##########
+# EU 10
+EU_10_ITSubiq.ps <- subset_samples(ITS_postUbiquity.ps, EU == "EU_10")
+EU_10_ITSubiq.ps <- prune_taxa(taxa_sums(EU_10_ITSubiq.ps) > 0, EU_10_ITSubiq.ps) #remove non-occurring ASVs, now 392
+EU_10_ITSASVs <- ASVs_outta_ps(EU_10_ITSubiq.ps) #get ASV table
+EU_10_ITSBC <- vegdist(EU_10_ITSASVs, method= "bray") #get B-C dissimilarities
+EU52_metaDat <- as.data.frame(as.matrix(sample_data(EU_10_ITSubiq.ps)))
+EU_10_ITSmod <- dbrda(EU_10_ITSBC ~ Habitat, data=EU52_metaDat) #make dbRDA model
+set.seed(19)
+EU_10_ITSdbRDAHabitatResults <- anova.cca(EU_10_ITSmod, permutations= 99999) #test significance of constraints
+# 7.7019  1e-05 ***
