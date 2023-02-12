@@ -3,7 +3,8 @@
 
 # This script re-does ordinations and Bray-Curtis analyses with the postUbiquity analysis for prokaryote samples. 
 # In addition, it creates stacked barplots to show the top phyla and families (using postUbiquity.ps, see description below)
-# Finally, it performs a PERMANOVA to test if samples differ based on habitat type.
+# Finally, it performs a PERMANOVA and db-RDAs to test if samples differ based on habitat type (db-RDAs performed to test
+# both between habitats across sites and between habitats within sites)
 
 ###################################################################################################
 # SET UP
