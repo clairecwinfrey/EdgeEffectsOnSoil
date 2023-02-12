@@ -2,9 +2,9 @@
 # started August 2, 2022
 
 # This script re-does ordinations and Bray-Curtis analyses with the postUbiquity analysis for fungal samples.
-# In addition, it creates stacked barcharts of the relative abundance of top phyla and families, and performs db-RDAs
-# and makes visualizations to explore how sample segregate by habitat type (both between habitats across sites and 
-# between habitats within sites)
+# In addition, it creates stacked barcharts of the relative abundance of top phyla and families, and performs PERMANOVAs 
+# and db-RDAs nd makes visualizations to explore how sample segregate by habitat type (db-RDAs performed to test both 
+# between habitats across sites and between habitats within sites)
 
 ###################################################################################################
 # SET UP
