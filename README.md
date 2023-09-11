@@ -22,7 +22,7 @@ This repository contains the scripts used to process 16S and ITS data from soils
 9. FUNGuildStepByStep text file describes the specific steps taken to run FUNGuild, as well as provides Python code run in command line. Should be run after running through line 72 in FUNGuildExploraton.R.
 
 **16S and ITS together or other miscellaneous**
-1. EnvDataPlots.R -- this script makes plots of mean pH, canopy cover, and vegetation for all of the points along the transects sampled in the dataset.
+1. EnvDataPlots.R -- this script makes plots of mean pH, canopy cover, and vegetation for all of the points along the transects sampled in the dataset. In addition, it looks at soil analysis for transect end points.
 2. DissimAcrossTransectDiffAbundOnly.R -- this script looks at Bray-Curtis dissimilarities across the transect within each EU, focusing only on ASVs found to be differentially abundant (in DiffAbundProkaryotes.R and DiffAbundFungi.R).
 3. AbundanceZscores_no53N.R -- This script calculates Z-scores, with EU 53N removed from analysis.
 4. AbundanceDropOffAUCsAll.R -- This script gets the area under the curve for each indicator ASV in each EU, and in each one of these ASV/EU combinations, finds the meter where the AUC is half that of the maximum.
