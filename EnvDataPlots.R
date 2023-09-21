@@ -5,6 +5,13 @@
 
 setwd("~/Desktop/CU_Research/SoilEdgeEffectsResearch")
 
+# Read in libraries
+library("phyloseq")
+library("tidyverse")    
+library("vegan")
+library("gridExtra")    # allows you to make multiple plots on the same page with ggplot
+
+
 # FUNCTIONS DEFINED IN THIS SCRIPT:
 #1.  Write function to get mean pH
 Mean_pH_func <- function(pHs_mat) { #enter a dataframe that has the pHs, as made above
@@ -57,7 +64,7 @@ meanpH_EU <- allMetaDat %>%
 meanpH_EU <- meanpH_EU[-61,] #remove weird all NA final row (these were controls so don't have pH)
 meanpH_EU[26,3] <- mean_pH_vecFunc(allMetaDat$mean_pH[c(86,96,106)]) #median of values in (meanpHs of) 53N_B_60, 53N_L_60, and 53N_R_60
 meanpH_EU[30,3] <- mean_pH_vecFunc(allMetaDat$mean_pH[c(90,110,120)]) #median of values in (meanpHs of) 53N_B_100, 53N_R_100, and 53N_T_100
-View(meanpH_EU)
+#View(meanpH_EU)
 
 # These lines below show that getting pH is working as expected
 test <- intersect(which(allMetaDat$EU==10), which(allMetaDat$Meter == 100))
@@ -87,7 +94,7 @@ unique(meanpH_EU[,1:2] == avgCanopyEU[,1:2]) #all true
 unique(avgCanopyEU[,1:2] == avgVegEU[,1:2]) #all true 
 
 pHCanVegMedEU <- cbind(meanpH_EU, avgCanopyEU[,3], avgVegEU[,3])
-View(pHCanVegMedEU)
+#View(pHCanVegMedEU)
 
 ######################
 # Plotting
@@ -110,6 +117,7 @@ pHEUMed_plot <- ggplot(pHCanVegMedEU, aes(x=Meter, y=meanpHEu, group = EU, color
   labs(y= "Mean pH", size=10) +
   theme(text = element_text(size=15)) +
   theme(legend.position = "none") #remove legend
+pHEUMed_plot
 
 # Canopy cover
 CanEU_plot <- ggplot(pHCanVegMedEU, aes(x=Meter, y=avgCanopyEu, group = EU, color = EU)) + 
@@ -122,6 +130,7 @@ CanEU_plot <- ggplot(pHCanVegMedEU, aes(x=Meter, y=avgCanopyEu, group = EU, colo
   labs(y= "Mean canopy cover (%)", size=10) +
   theme(text = element_text(size=15)) +
   theme(legend.position = "none") #remove legend
+CanEU_plot
 
 # Vegetation cover
 vegEU_plot <- ggplot(pHCanVegMedEU, aes(x=Meter, y=avgVegCov, group = EU, color = EU)) + 
@@ -168,12 +177,12 @@ pHCanVegMedEU$habitat[which(pHCanVegMedEU$Meter %in% c(10,20,30,40))] <- "patch"
 pHCanVegMedEU$habitat[which(pHCanVegMedEU$Meter %in% c(60,70,80,90,100))] <- "matrix"
 pHCanVegMedEU$habitat[which(pHCanVegMedEU$Meter %in% 50)] <- "edge"
 
-
+############################################################
 ############### CANOPY COVER "COLOR BARS" ###################
 ############################################################
 
 # Aug 9, 2022 (based on tutorial here: https://ggplot2.tidyverse.org/reference/guide_colourbar.html)
-########################
+
 #### EU 10
 df <- expand.grid(X1 = 1:10, X2 = 1:10)
 df$value <- df$X1 * df$X2
@@ -202,12 +211,12 @@ canCoverEU_10_grid <- ggplot(canEU10_df, aes(X, Y)) + geom_tile(aes(fill = value
   ggtitle("Mean Canopy Cover EU 10") +
   scale_fill_gradient(low = "white", high = "darkgreen")
 # Horizontal color bar legend
-quartz() # Horizontal color bar legend
+#quartz() # Horizontal color bar legend
 canCoverEU_10_grid + guides(fill = guide_colourbar(ticks=FALSE, label.position = "top", nbin = 100, title= "Canopy cover",
                                         direction= "horizontal", barwidth = 6, barheight = 1.5)) + 
   theme_bw()
 # Vertical color bar legend
-quartz() 
+#quartz() 
 canCoverEU_10_grid + guides(fill = guide_colourbar(ticks=FALSE, label.position = "left", nbin = 100, title= "Canopy cover",
                                                    direction= "vertical", barwidth = 1.5, barheight = 6)) + 
   theme_bw()
@@ -238,13 +247,13 @@ canCoverEU_53S_grid <- ggplot(canEU53S_df, aes(X, Y)) + geom_tile(aes(fill = val
   ggtitle("Mean Canopy Cover EU 53S") +
   scale_fill_gradient(low = "white", high = "darkgreen")
 # Horizontal color bar legend
-quartz() # Horizontal color bar legend
+#quartz() # Horizontal color bar legend
 canCoverEU_53S_grid + guides(fill = guide_colourbar(ticks=FALSE, label.position = "top", nbin = 100, title= "Canopy cover",
                                                     direction= "horizontal", barwidth = 6, barheight = 1.5)) + 
   theme_bw()
 
 # Vertical color bar legend
-quartz() 
+#quartz() 
 canCoverEU_53S_grid + guides(fill = guide_colourbar(ticks=FALSE, label.position = "left", nbin = 100, title= "Canopy cover",
                                                     direction= "vertical", barwidth = 1.5, barheight = 6)) + 
   theme_bw()
@@ -273,7 +282,7 @@ canCoverEU_54S_grid <- ggplot(canEU54S_df, aes(X, Y)) + geom_tile(aes(fill = val
   ggtitle("Mean Canopy Cover EU 54S") +
   scale_fill_gradient(low = "white", high = "darkgreen")
 # Horizontal color bar legend
-quartz() # Horizontal color bar legend
+#quartz() # Horizontal color bar legend
 canCoverEU_54S_grid + guides(fill = guide_colourbar(ticks=FALSE, label.position = "top", nbin = 100, title= "Canopy cover",
                                                     direction= "horizontal", barwidth = 6, barheight = 1.5)) + 
   theme_bw()
@@ -281,7 +290,7 @@ canCoverEU_54S_grid + guides(fill = guide_colourbar(ticks=FALSE, label.position 
 canCoverEU_54S_gridVert <- canCoverEU_54S_grid + guides(fill = guide_colourbar(ticks=FALSE, label.position = "left", nbin = 100, title= "Canopy cover",
                                                     direction= "vertical", barwidth = 1.5, barheight = 6, ticks.colour = NA, frame.color = NULL)) + 
   theme_bw()
-quartz() 
+#quartz() 
 canCoverEU_54S_gridVert
 
 ###########################################################
@@ -309,14 +318,14 @@ canCoverEU_53N_grid <- ggplot(canEU53N_df, aes(X, Y)) + geom_tile(aes(fill = val
   ggtitle("Mean Canopy Cover EU 53N") +
   scale_fill_gradient(low = "white", high = "darkgreen")
 # Horizontal color bar legend
-quartz() # Horizontal color bar legend
+#quartz() # Horizontal color bar legend
 canCoverEU_53N_grid + guides(fill = guide_colourbar(ticks=FALSE, label.position = "top", nbin = 100, title= "Canopy cover",
                                                     direction= "horizontal", barwidth = 6, barheight = 1.5)) + 
   theme_bw()
 
 
 # Vertical color bar legend
-quartz() 
+#quartz() 
 canCoverEU_53N_grid + guides(fill = guide_colourbar(ticks=FALSE, label.position = "left", nbin = 100, title= "Canopy cover",
                                                     direction= "vertical", barwidth = 1.5, barheight = 6)) + 
   theme_bw()
@@ -346,12 +355,12 @@ canCoverEU_52_grid <- ggplot(canEU52_df, aes(X, Y)) + geom_tile(aes(fill = value
   ggtitle("Mean Canopy Cover EU 52") +
   scale_fill_gradient(low = "white", high = "darkgreen")
 # Horizontal color bar legend
-quartz() # Horizontal color bar legend
+#quartz() # Horizontal color bar legend
 canCoverEU_52_grid + guides(fill = guide_colourbar(ticks=FALSE, label.position = "top", nbin = 100, title= "Canopy cover",
                                                    direction= "horizontal", barwidth = 6, barheight = 1.5)) + 
   theme_bw()
 # Vertical color bar legend
-quartz() 
+#quartz() 
 canCoverEU_52_grid + guides(fill = guide_colourbar(ticks=FALSE, label.position = "left", nbin = 100, title= "Canopy cover",
                                                    direction= "vertical", barwidth = 1.5, barheight = 6)) + 
   theme_bw()
@@ -379,12 +388,12 @@ canCoverEU_8_grid <- ggplot(canEU8_df, aes(X, Y)) + geom_tile(aes(fill = value))
   ggtitle("Mean Canopy Cover EU 8") +
   scale_fill_gradient(low = "white", high = "darkgreen")
 # Horizontal color bar legend
-quartz() # Horizontal color bar legend
+#quartz() # Horizontal color bar legend
 canCoverEU_8_grid + guides(fill = guide_colourbar(ticks=FALSE, label.position = "top", nbin = 100, title= "Canopy cover",
                                                    direction= "horizontal", barwidth = 6, barheight = 1.5)) + 
   theme_bw()
 # Vertical color bar legend
-quartz() 
+#quartz() 
 canCoverEU_8_grid + guides(fill = guide_colourbar(ticks=FALSE, label.position = "left", nbin = 100, title= "Canopy cover",
                                                    direction= "vertical", barwidth = 1.5, barheight = 6)) + 
   theme_bw()
@@ -397,9 +406,89 @@ meanCanopyDiff[3,] <- c("EU_54S", canContrast_EU54S, EU54S_avgPatchCan, EU54S_av
 meanCanopyDiff[4,] <- c("EU_53N", canContrast_EU53N, EU53N_avgPatchCan, EU53N_avgForestCan)
 meanCanopyDiff[5,] <- c("EU_52", canContrast_EU52, EU52_avgPatchCan, EU52_avgForestCan)
 meanCanopyDiff[6,] <- c("EU_8", canContrast_EU8, EU8_avgPatchCan, EU8_avgForestCan)
-View(meanCanopyDiff)
+#View(meanCanopyDiff)
 
 # save pH, canopy cover, and vegetation data for transects
 # save(pHCanVegMedEU, file="pHCanVegMedEU")
+
+############################################################
+#                  TRANSECT SOIL DATA 
+############################################################
+# Bring in soil end transect data. NOTE: Although these data also have
+# pH, I won't use it since I also took it.
+soilDat <- read.csv("LabWorkAndSoilAnalyses/cleanedUpSoilAnalysisDataFromCSU_F4-F51.csv")
+head(soilDat)
+
+# Add EU and meter columns to soilDat
+for (i in 1:nrow(soilDat)){
+  if (grepl(pattern= "100", x=soilDat[i,1])){
+    soilDat$Meter[i] <- 100
+  } else {
+    soilDat$Meter[i] <- 10
+  }
+  # add in an additional if statement to account for "90" pattern
+  if (grepl(pattern= "90", x=soilDat[i,1])){
+    soilDat$Meter[i] <- 100
+  }
+  if (grepl(pattern= "52D", x=soilDat[i,1])){
+    soilDat$EU[i] <- "52"
+  }
+  if (grepl(pattern= "53SD", x=soilDat[i,1])){
+    soilDat$EU[i] <- "53S"
+  }
+  if (grepl(pattern= "53N", x=soilDat[i,1])){
+    soilDat$EU[i] <- "53N"
+  }
+  if (grepl(pattern= "10C", x=soilDat[i,1])){
+    soilDat$EU[i] <- "10"
+  }
+  if (grepl(pattern= "54S", x=soilDat[i,1])){
+    soilDat$EU[i] <- "54S"
+  }
+  if (grepl(pattern= "8D", x=soilDat[i,1])){
+    soilDat$EU[i] <- "8"
+  }
+}
+
+#View(soilDat)
+
+head(pHCanVegMedEU)
+head(soilDat)
+class(soilDat$Meter)
+soilDat$Meter <- as.character(soilDat$Meter)
+
+# How do some of these characteristics vary by EU?
+aggregate(percentOM ~ EU, data= soilDat, mean)
+summary(lm(percentOM  ~ -1 + EU, data= soilDat))
+confint(lm(percentOM  ~ -1 + EU, data= soilDat))
+aggregate(NO3.N ~ EU, data= soilDat, mean) #this is same across the board!
+aggregate(P ~ EU, data= soilDat, mean)
+summary(lm(P  ~ -1 + EU, data= soilDat))
+confint(lm(P  ~ -1 + EU, data= soilDat)) #while all these confidence intervals overlap, EU52 clearly has more P overall
+aggregate(K ~ EU, data= soilDat, mean)
+summary(lm(K  ~ -1 + EU, data= soilDat))
+confint(lm(K  ~ -1 + EU, data= soilDat)) #while all these confidence intervals overlap, EU52 clearly has more P overall
+
+# How do some of these characteristics vary by meter? And stat them!
+aggregate(percentOM ~ Meter, data= soilDat, mean)
+t.test(percentOM ~ Meter, data= soilDat) #greater in 100 than in 10. t = -2.5289, df = 38.217, p-value = 0.01569
+aggregate(NO3.N ~ Meter, data= soilDat, mean)
+# Nitrate-nitrogen has the same value for both, so t.test doesn't make sense
+aggregate(P ~ Meter, data= soilDat, mean)
+t.test(P ~ Meter, data= soilDat) #t = 1.5492, df = 22.84, p-value = 0.1351. NOT significant, but KINDA close (with 10 more than 100) 
+# mean for 10 is 19.53478, mean for meter 100 is 12.17600)
+aggregate(K ~ Meter, data= soilDat, mean)
+t.test(K ~ Meter, data= soilDat) # No difference among 10 and 100, t = -0.036609, df = 45.137, p-value = 0.971
+
+# How do these characteristics vary by EU and Meter (i.e. 10 or 100)?
+# Test of aggregation:
+soilDat[soilDat$EU == "52",c(1,5)][c(1,4,5,8),] #just meter ten
+mean(soilDat[soilDat$EU == "52",c(1,5)][c(1,4,5,8),]$percentOM) #this is for the 10 meters of EU 52
+# shows that aggregate is working to clump meter and EU correctly 
+aggregate(percentOM  ~ EU + Meter, data= soilDat, mean) 
+aggregate(NO3.N  ~ EU + Meter, data= soilDat, mean) 
+# They are all the same!
+aggregate(P  ~ EU + Meter, data= soilDat, mean) 
+aggregate(K  ~ EU + Meter, data= soilDat, mean) 
 
 
