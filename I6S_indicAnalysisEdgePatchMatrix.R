@@ -330,6 +330,85 @@ relAbundTransectFungalEDGE_plot <- relAbundTransectFungalEDGE_plot + scale_fill_
 # Plot fungal and bacterial side by side!
 # quartz()
 grid.arrange(relAbundTransectBacterEDGE_plot, relAbundTransectFungalEDGE_plot, nrow=2)
+
+
+###############################
+# MAKING TRANSECT PLOTS FOR EACH OF THE DIFFERENT EUS
+###############################
+
+#### GET RELATIVE ABUNDANCES #####
+# GET MEAN ASV ABUNDANCE FOR EACH ASV WITHIN EACH EU
+# 1. Need to get all of the rownames in the ASV table for samples correspondong to each meter, within each EU
+meterIndices_byEU <- vector("list", length(unique(I6S_postUbiquity_meta$EU))) #this will a dataframe for each EU
+names(meterIndices_byEU) <- unique(I6S_postUbiquity_meta$EU) #give this the names of the unique EUs
+
+testEU_52_10mIndex <-intersect(which(bactermetaDf$EU == names(meterIndices_byEU)[1]), which(bactermetaDf$Meter == meterVec[1]))
+bactermetaDf[testEU_52_10mIndex,] #this is correct!
+
+# This for loop works in two nested lists. The list "meterIndices_byEU" contains 6 lists, one per EU. Within each of these EU lists,
+# there is another list with 10 elements. Each of these 10 elements contains the sample names for the that EU, ordered 10-100 meters
+for (i in 1:length(meterIndices_byEU)){
+  # within each of these lists, separated by EU, make another list, one for each meter to hold sample indices for each meter
+  meterIndices_byEU[[i]] <-vector("list", length(unique(meterVec)))
+  for (j in 1:length(meterVec)){
+    meterIndices_byEU[[i]][[j]] <-intersect(which(bactermetaDf$EU == names(meterIndices_byEU)[i]), which(bactermetaDf$Meter == meterVec[j]))
+    names(meterIndices_byEU[[i]])[j] <- meterVec[j] #name each sub-list according to the meter it has indices for.
+  }
+}
+# Check a few of these results:
+bactermetaDf[meterIndices_byEU$EU_10$`100`,] #this shows that, indeed, these are all of the meter 100 samples within 10!
+bactermetaDf[meterIndices_byEU$EU_53S$`80`,] #this shows that, indeed, these are all of the meter 80 samples within 53S!
+
+# # For each one of the ASVs, pull out all of the samples at each point
+# # first, make a dataframe to hold all the final stuff:
+# fungiMeanASVsByMeter <- as.data.frame(matrix(nrow=10, ncol=ncol(fungiASVsdf)))
+# colnames(fungiMeanASVsByMeter) <- colnames(fungiASVsdf)
+# rownames(fungiMeanASVsByMeter) <- names(fungiMeterRowNamesIndices)
+# 
+# # For loop to get mean ASV abundance at each meter
+# for (k in 1:length(fungiMeterRowNamesIndices)){ 
+#   fungiMeanASVsByMeter[k,] <- t(colMeans(fungiASVsdf[fungiMeterRowNamesIndices[[k]],])) #this pulls out all of the samples at each meter.
+# }
+# # View(fungiMeanASVsByMeter)
+# # Check that mean abundances are correct
+# # ASV 1 in 10m samples
+# tenMeterSamps <- rownames(fungimetaDf)[which(fungimetaDf$Meter==10)]
+# # for ASV 1
+# mean(fungiASVsdf[tenMeterSamps,1]) == fungiMeanASVsByMeter[1,1]
+# # ASV 6 in meter 100
+# hundredMeterSamps <- rownames(fungimetaDf)[which(fungimetaDf$Meter==100)]
+# mean(fungiASVsdf[hundredMeterSamps,6]) == fungiMeanASVsByMeter[10,6]
+# 
+# # Make this in long, "tidy" format, and then merge with object made earlier for specialist and taxonomic info
+# fungiMeanASVsByMeterTidy <- fungiMeanASVsByMeter %>% 
+#   rownames_to_column() %>% 
+#   pivot_longer(cols = ASV_1:ASV_2512, names_to = "ASV_name", values_to = "meanASVabundance")
+# # View(fungiMeanASVsByMeterTidy) #looks good!
+# colnames(fungiMeanASVsByMeterTidy)[1] <- "meter"
+# 
+# # Add specialist category to taxonomy table
+# fungiTaxTab
+# 
+# fungiTaxTabWithSpecialists <- fungiTaxTab %>%
+#   rownames_to_column(var="ASV_name") %>% 
+#   mutate(
+#     specialist = case_when(
+#       ASV_name %in% ITS_edgeSpecialists ~ "edge",
+#       ASV_name %in% ITS_forestSpecialists ~ "forest",
+#       ASV_name %in% ITS_savSpecialists ~ "savanna",
+#       TRUE ~ NA_character_
+#     )
+#   )
+# length(which(is.na(fungiTaxTabWithSpecialists$specialist)==TRUE)) #202 are NAs
+# all.equal((length(ITS_edgeSpecialists) + length(ITS_forestSpecialists) + length(ITS_savSpecialists) + 202), nrow(fungiTaxTabWithSpecialists))
+# fungiTaxTabWithSpecialists$specialist[which(is.na(fungiTaxTabWithSpecialists$specialist)==TRUE)] <- "non-specialist"
+# 
+# # Annotate taxonomy based on specialist
+# colnames(fungiTaxTab)
+# fungiMeanASVsByMeterHabitat_edge <- merge(fungiMeanASVsByMeterTidy,fungiTaxTabWithSpecialists[,], by="ASV_name") #add in which habitat specialist in & taxonomic info
+# colnames(fungiMeanASVsByMeterHabitat_edge)[2] <- "meter"
+
+
 ###############################
 # TOP PHYLA PLOT (code from postUbiqGraphics_ITS.R)
 ###############################
