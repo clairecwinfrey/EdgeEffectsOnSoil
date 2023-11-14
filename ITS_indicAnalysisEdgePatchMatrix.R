@@ -16,7 +16,7 @@ library("Polychrome") #for color palette
 library("indicspecies")
 
 # Load data
-load("RobjectsSaved/postUbiqEdgeITS.ps") #load phyloseq object that was made after 1) rarefying,
+load("RobjectsSaved/ITS_postUbiquity.ps") #load phyloseq object that was made after 1) rarefying,
 # the 2) keeping only ASVs that occurred at least 50 times across the (rarefied), 
 # then 3) filtering out ASVs with a ubiquity of <40
 # R OBJECT MADE IN: ITS_UbiquityMedianSetup.R
@@ -104,7 +104,7 @@ indSpecTable2 <- function(myMultipatt, taxTable, ASVtable, signLevel=0.05) {
 # This will perform an indicator species analysis to determine which are edge, patch, and forest specialists
 
 # Get the metadata for these samples
-ITS_postUbiquity_meta <- as.data.frame(as.matrix(sample_data(postUbiqEdgeITS.ps)))
+ITS_postUbiquity_meta <- as.data.frame(as.matrix(sample_data(ITS_postUbiquity.ps)))
 ITS_postUbiquity_meta$Meter <- gsub(pattern= " ", replacement= "", ITS_postUbiquity_meta$Meter) #take out weird spaces in meter
 unique(ITS_postUbiquity_meta$Habitat) #forest, patch, and edge 
 
@@ -127,11 +127,11 @@ cbind(ITS_postUbiquity_meta$Meter, ITS_postUbiquity_meta$habitatEdge2) #spot che
 ITS_habitatEdge2 <- ITS_postUbiquity_meta$habitatEdge2
 
 # Get ASV and taxonomy tables out of phyloseq:
-ITS_postUbiquity_ASVs <- ASVs_outta_ps(postUbiqEdgeITS.ps)
+ITS_postUbiquity_ASVs <- ASVs_outta_ps(ITS_postUbiquity.ps)
 # Double check that metadata and ASV tab still in same order, so that I can use the string of habitat designations that I made above
 rownames(ITS_postUbiquity_ASVs) == rownames(ITS_postUbiquity_meta)
 head(ITS_postUbiquity_ASVs) #ASVs are columms and samples are rows
-ITS_postUbiquity_tax <- as.data.frame(phyloseq::tax_table(postUbiqEdgeITS.ps), stringsAsFactors = F)
+ITS_postUbiquity_tax <- as.data.frame(phyloseq::tax_table(ITS_postUbiquity.ps), stringsAsFactors = F)
 head(ITS_postUbiquity_tax) #looks good!
 
 # Perform indicator analysis
@@ -152,7 +152,6 @@ ITS_habitatIndic <- indSpecTable2(myMultipatt=ITS_habitatIndic, taxTable= ITS_po
 # HERE, I JUST LOAD IT IN CASE THE CODE ABOVE HASN'T BEEN RUN (WHICH DOES TAKE A WHILE)
 load(file = "~/Desktop/CU_Research/SRS_Aeromicrobiome/rObjectsSaved/ITS_habitatIndicTableOct24") #file is ITS_habitatIndic
 
-# STOPPED HERE OCTOBER 24, 2023
 # Assign soil or phyllosphere based on index
 for (j in 1:nrow(ITS_habitatIndic)){
   if (ITS_habitatIndic$index[j] == "1") {
@@ -178,11 +177,6 @@ ITS_savSpecialistsIndex <- which(ITS_habitatIndic$group == "savanna")
 length(ITS_savSpecialistsIndex) #144
 ITS_savSpecialists <- rownames(ITS_habitatIndic)[ITS_savSpecialistsIndex]
 
-# Make two plots that have the % of indicator taaxa in each group (soil, air, and phyllo), where
-# first plot is % soil and second plot is % phyllo for each of these groups.
-phylloSoilonly_ITS_tax <- as.data.frame(phyloseq::tax_table(phylloSoilonly_ITS.ps), stringsAsFactors = F)
-head(phylloSoilonly_ITS_tax)
-
 
 ##########################################################################
 # 3. PLOTS FOR DIFFERENTIALLY ABUNDANT TAXA ALONG THE TRANSECT
@@ -191,11 +185,11 @@ head(phylloSoilonly_ITS_tax)
 # This code gets mean abundance for each ASV at each meter along the transect (regardless of EU))
 
 # 1. First, need to get the mean ASV abundance at each point along the transect, averaging across all EUs
-fungiASVsdf <- ASVs_outta_ps(postUbiqEdgeITS.ps) #rows are samples, ASV abundance is columns 
-fungimetaDf <- as.data.frame(as.matrix(sample_data(postUbiqEdgeITS.ps))) #rows are samples, columns are all of the rest of the metadata
+fungiASVsdf <- ASVs_outta_ps(ITS_postUbiquity.ps) #rows are samples, ASV abundance is columns 
+fungimetaDf <- as.data.frame(as.matrix(sample_data(ITS_postUbiquity.ps))) #rows are samples, columns are all of the rest of the metadata
 fungimetaDf <- as.data.frame(as.matrix(fungimetaDf)) #make format nicer
 fungimetaDf$Meter <- as.numeric(fungimetaDf$Meter) #make meter numeric
-fungiTaxTab <- as.data.frame(as.matrix(tax_table(postUbiqEdgeITS.ps)))
+fungiTaxTab <- as.data.frame(as.matrix(tax_table(ITS_postUbiquity.ps)))
 unique(rownames(fungiASVsdf) == rownames(fungimetaDf)) #this is true, which shows that we can use indices from
 # metadata to isolate stuff from ASV table
 
@@ -254,8 +248,8 @@ fungiTaxTabWithSpecialists$specialist[which(is.na(fungiTaxTabWithSpecialists$spe
 
 # Annotate taxonomy based on specialist
 colnames(fungiTaxTab)
-fungiMeanASVsByMeterHabitat_edge_edge <- merge(fungiMeanASVsByMeterTidy,fungiTaxTabWithSpecialists[,], by="ASV_name") #add in which habitat specialist in & taxonomic info
-colnames(fungiMeanASVsByMeterHabitat_edge_edge)[2] <- "meter"
+fungiMeanASVsByMeterHabitat_edge <- merge(fungiMeanASVsByMeterTidy,fungiTaxTabWithSpecialists[,], by="ASV_name") #add in which habitat specialist in & taxonomic info
+colnames(fungiMeanASVsByMeterHabitat_edge)[2] <- "meter"
 
 #### GET RELATIVE ABUNDANCES #####
 # Get the total ASV abundance within each meter
@@ -263,7 +257,7 @@ ASVmeterTotal_edge <- as.data.frame(matrix(nrow=10, ncol=1))
 rownames(ASVmeterTotal_edge) <- paste(meterVec, "m", sep="_") 
 colnames(ASVmeterTotal_edge) <- "ASVmeterTotal"
 for (j in 1:length(meterVec)){
-  ASVmeterTotal_edge[j,1] <- sum(fungiMeanASVsByMeterHabitat_edge_edge[which(fungiMeanASVsByMeterHabitat_edge_edge$meter == rownames(ASVmeterTotal_edge)[j]),3]) #pull out meter by meter
+  ASVmeterTotal_edge[j,1] <- sum(fungiMeanASVsByMeterHabitat_edge[which(fungiMeanASVsByMeterHabitat_edge$meter == rownames(ASVmeterTotal_edge)[j]),3]) #pull out meter by meter
 }
 ASVmeterTotal_edge
 
@@ -271,7 +265,7 @@ ASVmeterTotal_edge
 fungiRelAbundDfs_edge <- vector("list", length(meterVec)) #this will have all of the rownames that correspond to samples in each meter
 names(fungiRelAbundDfs_edge) <- rownames(ASVmeterTotal_edge)
 for (h in 1:length(fungiRelAbundDfs_edge)){
-  fungiRelAbundDfs_edge[[h]] <- fungiMeanASVsByMeterHabitat_edge_edge[which(fungiMeanASVsByMeterHabitat_edge_edge$meter ==  names(fungiRelAbundDfs_edge)[[h]]),] #this pulls out just the data for each meter
+  fungiRelAbundDfs_edge[[h]] <- fungiMeanASVsByMeterHabitat_edge[which(fungiMeanASVsByMeterHabitat_edge$meter ==  names(fungiRelAbundDfs_edge)[[h]]),] #this pulls out just the data for each meter
   fungiRelAbundDfs_edge[[h]]$relAbund <- (fungiRelAbundDfs_edge[[h]]$meanASVabundance/ASVmeterTotal_edge[h,1])*100
 }
 sum(fungiRelAbundDfs_edge[[1]]$relAbund) #great, these add up to be 100!
@@ -295,15 +289,19 @@ hundredMeterCheckData[411,3] == fungiRelAbundDfs_edge[[10]][411,3] #these are eq
 fungiRelAbundEDGE_df <- do.call("rbind", fungiRelAbundDfs_edge)
 # View(fungiRelAbundEDGE_df)
 levels(fungiRelAbundEDGE_df$specialist)
-fungiRelAbundEDGE_df$specialist <- reorder(fungiRelAbundEDGE_df$specialist, levels=c("non-specialist", "forest", "edge", "savanna"))
+
+# How many specialists are in each group (will add to plot below)
+length(which(fungiTaxTabWithSpecialists$specialist == "savanna")) #144
+length(which(fungiTaxTabWithSpecialists$specialist == "forest")) #49
+length(which(fungiTaxTabWithSpecialists$specialist == "edge")) #18
+length(which(fungiTaxTabWithSpecialists$specialist == "non-specialist")) #202
 
 # Plot it!
 # Relative abundance
-
 level_order <- names(fungiMeterRowNamesIndices) #set this to make in correct order from 10m to 100m
 relAbundTransectFungalEDGE_plot <- ggplot(fungiRelAbundEDGE_df, aes(x = factor(meter, level = level_order), y = relAbund, fill = specialist)) + 
   geom_bar(stat = "identity", position = "fill")  +
-  scale_fill_manual(values=c("purple","darkgreen","darkgrey","goldenrod")) + #, name= NULL, labels=c("forest", "non-specialists", "savanna", "edge")) +
+  scale_fill_manual(values=c("purple","darkgreen","darkgrey","goldenrod"), labels=c("edge (n=18)", "forested matrix (n=49)", "non-specialists (n=202)", "open patch (n= 144)")) +
   labs(y= "Relative abundance", x = "Meter on transect") + 
   scale_x_discrete(labels=c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100)) + #change x-axis tick labels
   guides(color = guide_legend(override.aes = list(size =7))) +
@@ -315,8 +313,199 @@ relAbundTransectFungalEDGE_plot <- ggplot(fungiRelAbundEDGE_df, aes(x = factor(m
 # quartz()
 relAbundTransectFungalEDGE_plot
 
-# Saved October 25, 2023
+# Saved November 2, 2023
 # save(relAbundTransectFungalEDGE_plot, file= "RobjectsSaved/relAbundTransectFungalEDGE_plot")
+
+###############################
+# MAKING TRANSECT PLOTS FOR EACH OF THE DIFFERENT EUS
+###############################
+# GET MEAN ASV ABUNDANCE FOR EACH ASV WITHIN EACH EU
+# 1. Need to get all of the rownames in the ASV table for samples correspondong to each meter, within each EU
+meterIndices_byEU <- vector("list", length(unique(ITS_postUbiquity_meta$EU))) #this will a dataframe for each EU
+names(meterIndices_byEU) <- unique(ITS_postUbiquity_meta$EU) #give this the names of the unique EUs
+
+testEU_52_10mIndex <-intersect(which(fungimetaDf$EU == names(meterIndices_byEU)[1]), which(fungimetaDf$Meter == meterVec[1]))
+fungimetaDf[testEU_52_10mIndex,] #this is correct!
+
+# This for loop works in two nested lists. The list "meterIndices_byEU" contains 6 lists, one per EU. Within each of these EU lists,
+# there is another list with 10 elements. Each of these 10 elements contains the sample names for the that EU, ordered 10-100 meters
+for (i in 1:length(meterIndices_byEU)){
+  # within each of these lists, separated by EU, make another list, one for each meter to hold sample indices for each meter
+  meterIndices_byEU[[i]] <-vector("list", length(unique(meterVec)))
+  for (j in 1:length(meterVec)){
+    meterIndices_byEU[[i]][[j]] <-intersect(which(fungimetaDf$EU == names(meterIndices_byEU)[i]), which(fungimetaDf$Meter == meterVec[j]))
+    names(meterIndices_byEU[[i]])[j] <- meterVec[j] #name each sub-list according to the meter it has indices for.
+  }
+}
+# Check a few of these results:
+fungimetaDf[meterIndices_byEU$EU_10$`100`,] #this shows that, indeed, these are all of the meter 100 samples within 10!
+fungimetaDf[meterIndices_byEU$EU_53S$`80`,] #this shows that, indeed, these are all of the meter 80 samples within 53S!
+rownames(fungimetaDf[meterIndices_byEU$EU_8$`100`,])
+
+# 2. This for loop gets mean ASV abundance at each meter in each EU (i.e., the mean abundance of each ASV across 4 transects)
+# 2a. Pre-allocate lists and dataframes:
+fungiMeanASVsByMeter_EUList <- vector("list", length=6) #make a list with 6 elements, one for each EU
+names(fungiMeanASVsByMeter_EUList) <- unique(ITS_postUbiquity_meta$EU) #set the names equal to the names for each EU
+# 2b. For loop to finish making preallocated lists (maybe not necessary...)
+for (i in 1:length(fungiMeanASVsByMeter_EUList)){
+  # within each of these lists, separated by EU, make a dataframe with 10 rows (one for each meter) and as many columns as ASVs
+  fungiMeanASVsByMeter_EUList[[i]] <- as.data.frame(matrix(nrow= length(meterVec), ncol=ncol(fungiASVsdf)))
+  colnames(fungiMeanASVsByMeter_EUList[[i]]) <- colnames(fungiASVsdf) #make the column names equal to the ASV names
+  rownames(fungiMeanASVsByMeter_EUList[[i]]) <- paste0(meterVec, "m") #make the column names equal to the ASV names
+}
+
+# 2c. To do this next step, I need to go into each of the elements in the list "meterIndices_byEU", which correspond to each EU. The index i
+# in the data frame above will correspond to the EU in meterIndices_byEU AND in fungiMeanASVsByMeter_EUList. The sublist in "meterIndices_byEU,
+# goes with meterVec and meters. This index, k, will go with the meter sublists in meterIndices_byEU and the rows in each dataframe within
+# fungiMeanASVsByMeter_EUList[[i]]. 
+for (i in 1:length(fungiMeanASVsByMeter_EUList)){
+  # within each of these lists, separated by EU, add have the mean ASV value across all 4 transects in each ASV (columns) with each meter as rows
+  for (k in 1:length(meterVec)){ #loop over all 10 meters within each EU, i
+      # here, i is list by EU, k is meter. So fungiMeanASVsByMeter_EUList is a list of 6 EUs, each with 10 lists within for each meter
+      fungiMeanASVsByMeter_EUList[[i]][k,] <- colMeans(fungiASVsdf[which(rownames(fungiASVsdf) %in% rownames(fungimetaDf)[meterIndices_byEU[[i]][[k]]] == TRUE),])
+  }
+}
+
+# 2d. Testing these results 
+# 2d.1 -- this first part checks that the indexing is indeed working correctly, i.e. getting the correct meter/EU combo
+testIndex <- which(rownames(fungiASVsdf) %in% rownames(fungimetaDf)[meterIndices_byEU$EU_53S$`80`] == TRUE) #
+fungiASVsdf[which(rownames(fungiASVsdf) %in% rownames(fungimetaDf)[meterIndices_byEU$EU_53S$`80`] == TRUE),]
+colMeans(fungiASVsdf[which(rownames(fungiASVsdf) %in% rownames(fungimetaDf)[meterIndices_byEU$EU_53S$`80`] == TRUE),])
+rownames(fungiASVsdf[testIndex,]) #"154" "192" "200" "221"
+fungimetaDf[rownames(fungimetaDf) %in% c("154","192","200","221") ==TRUE,] #yep, these are also 53SD, meter 80 
+# 2d.2 -- this part checks that the mean ASVs are correct and accessible in my nested loops
+colMeans(fungiASVsdf[which(rownames(fungiASVsdf) %in% rownames(fungimetaDf)[meterIndices_byEU$EU_53S$`80`] == TRUE),])
+unname(fungiMeanASVsByMeter_EUList$EU_53S[8,] == colMeans(fungiASVsdf[which(rownames(fungiASVsdf) %in% rownames(fungimetaDf)[meterIndices_byEU$EU_53S$`80`] == TRUE),]))
+
+# 3.Make this in long, "tidy" format,
+fungiMeanASVsByMeterTIDY_EUList <- vector("list", length=6) #make a list with 6 elements, one for each EU
+names(fungiMeanASVsByMeterTIDY_EUList) <- names(fungiMeanASVsByMeter_EUList)
+for (i in 1:length(fungiMeanASVsByMeter_EUList)){ #looping over each EU's big dataframe
+  fungiMeanASVsByMeterTIDY_EUList[[i]] <-  fungiMeanASVsByMeter_EUList[[i]] %>% 
+    rownames_to_column() %>% 
+    pivot_longer(cols = colnames(fungiMeanASVsByMeter_EUList[[i]])[1]:colnames(fungiMeanASVsByMeter_EUList[[i]])[ncol(fungiMeanASVsByMeter_EUList[[i]])], names_to = "ASV_name", values_to = "meanASVabundance")
+    colnames(fungiMeanASVsByMeterTIDY_EUList[[i]])[1] <- "meter" #re-name rowname as meter
+}
+
+# 4. Merge with object made earlier for specialist and taxonomic information
+colnames(fungiTaxTab)
+fungiMeanASVsByMeterHabitatEdge_EUList <- vector("list", length=6) #make a list with 6 elements, one for each EU
+names(fungiMeanASVsByMeterHabitatEdge_EUList) <- names(fungiMeanASVsByMeter_EUList)
+for (i in 1:length(fungiMeanASVsByMeterHabitatEdge_EUList)){ #looping over each EU's big dataframe
+  fungiMeanASVsByMeterHabitatEdge_EUList[[i]] <- merge(fungiMeanASVsByMeterTIDY_EUList[[i]],fungiTaxTabWithSpecialists[,], by="ASV_name") #add in which habitat specialist in & taxonomic info
+}
+names(fungiMeanASVsByMeterHabitatEdge_EUList)
+
+# 5. Get the total ASV abundances within each meter within each EU (based on mean abundance at each)
+fungiASVmeterTotal_edge_EUList <- vector("list", length=6) #make a list with 6 elements, one for each EU
+names(fungiASVmeterTotal_edge_EUList) <- names(fungiMeanASVsByMeter_EUList)
+# 5b. For loop to finish making preallocated lists (maybe not necessary...)
+for (i in 1:length(fungiASVmeterTotal_edge_EUList)){
+  # within each of these lists, separated by EU, make a dataframe with 10 rows (one for each meter) and only one column (for the single of interest)
+  fungiASVmeterTotal_edge_EUList[[i]] <- as.data.frame(matrix(nrow=length(meterVec), ncol=1))
+  colnames(fungiASVmeterTotal_edge_EUList[[i]]) <- "ASVmeterTotal" #make the column names equal to the ASV names
+  rownames(fungiASVmeterTotal_edge_EUList[[i]]) <- paste0(meterVec, "m") #make the rownames names equal to the ASV names
+  for (j in 1:length(meterVec)){
+    fungiASVmeterTotal_edge_EUList[[i]][j,1] <- sum(fungiMeanASVsByMeterHabitatEdge_EUList[[i]][which(fungiMeanASVsByMeterHabitatEdge_EUList[[i]]$meter == rownames(fungiASVmeterTotal_edge_EUList[[i]])[j]),3]) #pull out meter by meter
+  }
+}
+# 5c. Test a few
+sumTest100_EU52 <- fungiMeanASVsByMeterHabitatEdge_EUList$EU_52 %>% 
+  filter(meter == "100m")
+sum(sumTest100_EU52$meanASVabundance) == fungiASVmeterTotal_edge_EUList$EU_52[10,] #yeah!
+sumTest60_EU8 <- fungiMeanASVsByMeterHabitatEdge_EUList$EU_8 %>% 
+  filter(meter == "60m")
+sum(sumTest60_EU8$meanASVabundance) == fungiASVmeterTotal_edge_EUList$EU_8[6,] #yeah!
+
+# 5d. Finally, make rownames a column for merging in the next step below
+for (i in 1:length(fungiASVmeterTotal_edge_EUList)){
+  fungiASVmeterTotal_edge_EUList[[i]] <- fungiASVmeterTotal_edge_EUList[[i]] %>% 
+    rownames_to_column(var="meter")
+}
+
+# 6. Actually get the dang relative abundances by dividing each value in each row by the meter total
+# For this last part, I need to take the meanASVabundance in each of the 6 fungiMeanASVsByMeterHabitatEdge_EUList, and divide it
+# by the total for each meter, which is found in fungiASVmeterTotal_edge_EUList. Then this will be multiplied by 100. 
+# In other words, in each in each fungiMeanASVsByMeterHabitatEdge_EUList, I can divide all of the values in the column called "meanASVabundance" by the 
+# the fungiASVmeterTotal_edge_EUList that corresponds to its meter value.
+
+# 6a. Merge each fungiMeanASVsByMeterHabitatEdge_EUList and each fungiASVmeterTotal_edge_EUList, organized by each EU, so that the total ASV abundance 
+# is now in fungiMeanASVsByMeterHabitatEdge_EUList
+for (j in 1:length(fungiMeanASVsByMeterHabitatEdge_EUList)){
+  fungiMeanASVsByMeterHabitatEdge_EUList[[j]] <- merge(fungiMeanASVsByMeterHabitatEdge_EUList[[j]], fungiASVmeterTotal_edge_EUList[[j]], by="meter", all.x= TRUE)
+}
+# check a few of the merges
+unique((fungiMeanASVsByMeterHabitatEdge_EUList$EU_52 %>% 
+  filter(meter== "100m"))$ASVmeterTotal) == fungiASVmeterTotal_edge_EUList$EU_52[10,2] #nice this worked
+unique((fungiMeanASVsByMeterHabitatEdge_EUList$EU_53S %>% 
+          filter(meter== "70m"))$ASVmeterTotal) == fungiASVmeterTotal_edge_EUList$EU_53S[7,2] #nice this worked
+# 6b. Divide each mean ASV abundance (within each EU), by the total ASV abundance in that EU at each meter and multiply by 100
+fungiRelAbundDfs_edge_byEU <- fungiMeanASVsByMeterHabitatEdge_EUList #this will a dataframe for each EU for the final stuff, but since I want to build off of
+# fungiMeanASVsByMeterHabitatEdge_EUList, I will duplicate it.
+for (k in 1:length(fungiMeanASVsByMeterHabitatEdge_EUList)){
+  # this next line makes it so that the ASV relative abundance is the last column (column 13) of this dataframe in each elements of the list
+  fungiRelAbundDfs_edge_byEU[[k]][,13] <- (fungiMeanASVsByMeterHabitatEdge_EUList[[k]]$meanASVabundance/fungiMeanASVsByMeterHabitatEdge_EUList[[k]]$ASVmeterTotal)*100
+  colnames(fungiRelAbundDfs_edge_byEU[[k]])[ncol(fungiRelAbundDfs_edge_byEU[[k]])] <- "ASVrelativeAbundance"
+}
+# 6c. Check a few to make sure that they add up to 100-- and they do!
+sum((fungiRelAbundDfs_edge_byEU$EU_52 %>% 
+  filter(meter == "10m"))$ASVrelativeAbundance)
+sum((fungiRelAbundDfs_edge_byEU$EU_8 %>% 
+       filter(meter == "70m"))$ASVrelativeAbundance)
+
+# 7. Finally, perform a total global checks to make sure that all of this is right (one is fine since I do checks throughout!)
+##### NOVEMBER 13, 2023-- NOT SURE WHY THIS ISN'T WORKING... FIX LATER #####
+# 7a. EU_8, ASV 1. Is this relative abundance correct?
+colnames(fungiRelAbundDfs_edge_byEU$EU_8)
+# Pull out what I just calculated-- meter and ASV relative abundance
+justEU8_ASV1rel <- fungiRelAbundDfs_edge_byEU$EU_8[which(fungiRelAbundDfs_edge_byEU$EU_8$ASV_name == "ASV_1"), c(1, 13)]
+# Now calculate it from the get-go
+EU_8_meter100names <- rownames(fungimetaDf %>% #this gets the sample names for EU 8 at meter 100
+  filter(EU == "EU_8" & Meter == 100))
+rownames(fungimetaDf[meterIndices_byEU$EU_8$`100`,]) == EU_8_meter100names #okay, so this is indexing as I wanted
+
+
+EU_8_meter100_ASVs <- fungiASVsdf[which(rownames(fungiASVsdf) %in% EU_8_meter100names == TRUE),] #
+EU_8_meter100_ASVsMeans <- colMeans(EU_8_meter100_ASVs) #this gets the mean ASV abundance for each ASV across all 4 samples (i.e. across EU 8, meter 100 samples)
+EU_8_meter100_ASVsSUM <- sum(EU_8_meter100_ASVs)
+sum(colSums(EU_8_meter100_ASVs)) == sum(EU_8_meter100_ASVs)
+(EU_8_meter100_ASVsMeans[1]/EU_8_meter100_ASVsSUM)*100
+sum((EU_8_meter100_ASVsMeans/EU_8_meter100_ASVsSUM)*100) #this should add up to 100, but doesn't....
+sumZ <- (EU_8_meter100_ASVsMeans/EU_8_meter100_ASVsSUM)*100
+# 8. FINALLY, PLOT IT
+# Plot it!
+# Relative abundance
+level_order2 <- c("10m","20m","30m" ,"40m","50m","60m","70m","80m","90m", "100m" )  #set this to make in correct order from 10m to 100m
+indicatorsByEUplotsList <- vector("list", length=6) #make a list with 6 elements, one for each EU
+names(indicatorsByEUplotsList) <- names(fungiRelAbundDfs_edge_byEU) #name them like the EUs
+for (m in 1:length(fungiRelAbundDfs_edge_byEU)){
+  indicatorsByEUplotsList[[m]] <- ggplot(fungiRelAbundDfs_edge_byEU[[m]], aes(x = factor(meter, level = level_order2), y = ASVrelativeAbundance, fill = specialist)) + 
+    geom_bar(stat = "identity", position = "fill")  +
+    scale_fill_manual(values=c("purple","darkgreen","darkgrey","goldenrod"), labels=c("edge (n=18)", "forested matrix (n=49)", "non-specialists (n=202)", "open patch (n= 144)")) +
+    labs(y= "Relative abundance", x = "Meter on transect") + 
+    scale_x_discrete(labels=c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100)) + #change x-axis tick labels
+    guides(color = guide_legend(override.aes = list(size =7))) +
+    theme(legend.title = element_text(size=8)) + #increase size of legend title
+    theme(legend.text = element_text(size = 8)) + #increase size of legend font
+    theme(axis.text=element_text(size=8), #increase font size of axis labels
+          axis.title=element_text(size=8)) + #increase font size of axis title
+    theme_bw() +
+    ggtitle(paste0("plot for ", names(indicatorsByEUplotsList)[m]))
+  
+}
+
+# quartz()
+grid.arrange(indicatorsByEUplotsList[[1]], indicatorsByEUplotsList[[2]], indicatorsByEUplotsList[[3]],
+             indicatorsByEUplotsList[[4]], indicatorsByEUplotsList[[5]], indicatorsByEUplotsList[[6]],
+             ncol=3)
+
+
+# Saved November 2, 2023
+# save(relAbundTransectFungalEDGE_plot, file= "RobjectsSaved/relAbundTransectFungalEDGE_plot")
+
+
+
+
 
 
 ###############################
@@ -325,9 +514,9 @@ relAbundTransectFungalEDGE_plot
 # Phylum level (adopted from my code at:
 # https://github.com/clairecwinfrey/PhanBioMS_scripts/blob/master/R_scripts/figures/taxonomic_barplots.R)
 sampDat <- phyloseq::sample_data(ITS_postUbiquity_meta)
-postUbiqEdgeITS.ps <- phyloseq(sampDat, tax_table(postUbiqEdgeITS.ps), otu_table(postUbiqEdgeITS.ps))
+ITS_postUbiquity.ps <- phyloseq(sampDat, tax_table(ITS_postUbiquity.ps), otu_table(ITS_postUbiquity.ps))
 # Combine taxa based on phylum
-postUbiq.phylum.glom <-  tax_glom(postUbiqEdgeITS.ps, taxrank = "Phylum") 
+postUbiq.phylum.glom <-  tax_glom(ITS_postUbiquity.ps, taxrank = "Phylum") 
 tax_table(postUbiq.phylum.glom) #8 phyla
 sample_data(postUbiq.phylum.glom)
 
@@ -405,4 +594,75 @@ fungiRelabunFam_grouped <- relabun.phylatop99.5 %>%
   mutate(relAbund = relAbundSummedAcrossEUs/6)
 #View(fungiRelabunFam_grouped)
 sum(fungiRelabunFam_grouped$relAbund) #this adds up to 1!
+
+###############################
+# TOP PHYLA PLOT (code from postUbiqGraphics_ITS.R)
+###############################
+# Phylum level (adopted from my code at:
+# https://github.com/clairecwinfrey/PhanBioMS_scripts/blob/master/R_scripts/figures/taxonomic_barplots.R)
+sampDat <- phyloseq::sample_data(ITS_postUbiquity_meta)
+ITS_postUbiquity.ps <- phyloseq(sampDat, tax_table(ITS_postUbiquity.ps), otu_table(ITS_postUbiquity.ps))
+# Combine taxa based on phylum
+postUbiq.phylum.glom <-  tax_glom(ITS_postUbiquity.ps, taxrank = "Phylum") 
+tax_table(postUbiq.phylum.glom) #8 phyla
+sample_data(postUbiq.phylum.glom)
+
+# Transform sample counts based on just glommed samples
+relabun.phyla.0 <- transform_sample_counts(postUbiq.phylum.glom, function(x) x / sum(x) )
+rownames(otu_table(relabun.phyla.0)) 
+colSums(otu_table(relabun.phyla.0)) #right now these all sum to one, which shows that right now, it is relative
+# abundance by sample and that the code is working as expected.
+# ASVs are just representative from each phylum
+
+###### TOP PHYLA BY HABITAT #####
+
+# Merge samples so that we only have combined abundances for EU (i.e. experimental replicate)
+relabun.phyla.1 <- merge_samples(relabun.phyla.0, group = c("habitatEdge2"))
+sample_data(relabun.phyla.1) #this just confirms that samples were combined by EU, other variables are averaged but can be ignored
+
+# Convert to proportions again after merging samples by EU.
+relabun.phyla.2 <- transform_sample_counts(relabun.phyla.1, function(x) x / sum(x))
+rowSums(otu_table(relabun.phyla.2)) #these show that all of the ASVs now sum to one, which is exactly what we want!
+
+# Get taxa that that are at least .5% of total abundance
+relabun.phyla.df <-psmelt(relabun.phyla.2)
+dim(relabun.phyla.df) #
+relabun.phylatop99.5  <- relabun.phyla.df
+relabun.phylatop99.5$Phylum[relabun.phylatop99.5$Abundance < 0.005] <- "< .5% abundance"
+
+# Olpidiomycota and Rozellomycota were phyla as well, but comprised less than .5% of abundance
+unique(relabun.phylatop99.5$Phylum)
+# Phyla comprising at least 0.5% of total abundance
+# Get unique colors for these 7 groups
+colors31 <- Polychrome::glasbey.colors(32)
+swatch(colors31)
+colorsForPhyla7 <- unname(colors31)[c(2:4,6:8)] #remove some unwanted colors
+colorsForPhyla7[7] <- "gray48" #make last one gray
+
+# Remove p_ in phylum names
+relabun.phylatop99.5$Phylum <- gsub("p__","",as.character(relabun.phylatop99.5$Phylum))
+uniquePhyla <- sort(unique(relabun.phylatop99.5$Phylum)) #7 unique phyla
+
+# re-order phyla so that "< .5% abundance" is last
+relabun.phylatop99.5$Phylum <- factor(relabun.phylatop99.5$Phylum, levels=uniquePhyla[c(2:7,1)])
+
+# Phyla comprising at least 0.5% of total abundance
+phylumPlot99.5percent <- ggplot(data=relabun.phylatop99.5, aes(x=Sample, y=Abundance, fill=Phylum))
+phylumPlot99.5percent <- phylumPlot99.5percent + geom_bar(aes(), stat="identity", position="fill") +
+  theme_bw() +
+  theme(legend.position="bottom") +
+  scale_fill_manual(values = colorsForPhyla7) +
+  theme(axis.title.y = element_text(size = 16)) +
+  ylab("Relative abundance") +
+  theme(axis.text.y= element_text(size=16)) +
+  theme(axis.title.x = element_blank()) +
+  theme(axis.text.x= element_text(size=16)) +
+  guides(fill=guide_legend(nrow=3)) + theme(legend.text = element_text(colour="black", size = 14)) +
+  theme(legend.title= element_blank()) #remove legend title
+
+# quartz()
+phylumPlot99.5percent
+# Get exact abundances of each phyla (top 99.5%):
+colnames(relabun.phylatop99.5)
+relabun.phylatop99.5[,2] #This is EU... now "Sample" because of the glomming!
 
