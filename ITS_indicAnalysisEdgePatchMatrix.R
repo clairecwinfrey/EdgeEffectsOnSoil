@@ -412,10 +412,10 @@ for (i in 1:length(fungiASVmeterTotal_edge_EUList)){
 # 5c. Test a few
 sumTest100_EU52 <- fungiMeanASVsByMeterHabitatEdge_EUList$EU_52 %>% 
   filter(meter == "100m")
-sum(sumTest100_EU52$meanASVabundance) == fungiASVmeterTotal_edge_EUList$EU_52[10,] #yeah!
+sum(sumTest100_EU52$meanASVabundance) == fungiASVmeterTotal_edge_EUList$EU_52[10,2] #yeah!
 sumTest60_EU8 <- fungiMeanASVsByMeterHabitatEdge_EUList$EU_8 %>% 
   filter(meter == "60m")
-sum(sumTest60_EU8$meanASVabundance) == fungiASVmeterTotal_edge_EUList$EU_8[6,] #yeah!
+sum(sumTest60_EU8$meanASVabundance) == fungiASVmeterTotal_edge_EUList$EU_8[6,2] #yeah!
 
 # 5d. Finally, make rownames a column for merging in the next step below
 for (i in 1:length(fungiASVmeterTotal_edge_EUList)){
@@ -454,8 +454,7 @@ sum((fungiRelAbundDfs_edge_byEU$EU_8 %>%
        filter(meter == "70m"))$ASVrelativeAbundance)
 
 # 7. Finally, perform a total global checks to make sure that all of this is right (one is fine since I do checks throughout!)
-##### NOVEMBER 13, 2023-- NOT SURE WHY THIS ISN'T WORKING... FIX LATER #####
-# 7a. EU_8, ASV 1. Is this relative abundance correct?
+# 7a. EU_8, ASV 1. 
 colnames(fungiRelAbundDfs_edge_byEU$EU_8)
 # Pull out what I just calculated-- meter and ASV relative abundance
 justEU8_ASV1rel <- fungiRelAbundDfs_edge_byEU$EU_8[which(fungiRelAbundDfs_edge_byEU$EU_8$ASV_name == "ASV_1"), c(1, 13)]
@@ -463,18 +462,19 @@ justEU8_ASV1rel <- fungiRelAbundDfs_edge_byEU$EU_8[which(fungiRelAbundDfs_edge_b
 EU_8_meter100names <- rownames(fungimetaDf %>% #this gets the sample names for EU 8 at meter 100
   filter(EU == "EU_8" & Meter == 100))
 rownames(fungimetaDf[meterIndices_byEU$EU_8$`100`,]) == EU_8_meter100names #okay, so this is indexing as I wanted
-
-
+# Get subset of the data
 EU_8_meter100_ASVs <- fungiASVsdf[which(rownames(fungiASVsdf) %in% EU_8_meter100names == TRUE),] #
 EU_8_meter100_ASVsMeans <- colMeans(EU_8_meter100_ASVs) #this gets the mean ASV abundance for each ASV across all 4 samples (i.e. across EU 8, meter 100 samples)
-EU_8_meter100_ASVsSUM <- sum(EU_8_meter100_ASVs)
+EU_8_meter100_ASVsSUM <- sum(EU_8_meter100_ASVsMeans)
 sum(colSums(EU_8_meter100_ASVs)) == sum(EU_8_meter100_ASVs)
 (EU_8_meter100_ASVsMeans[1]/EU_8_meter100_ASVsSUM)*100
-sum((EU_8_meter100_ASVsMeans/EU_8_meter100_ASVsSUM)*100) #this should add up to 100, but doesn't....
-sumZ <- (EU_8_meter100_ASVsMeans/EU_8_meter100_ASVsSUM)*100
+sum((EU_8_meter100_ASVsMeans/EU_8_meter100_ASVsSUM)*100) #this adds up to 100, as expected!
+justEU8_ASV1rel[1,2] == (EU_8_meter100_ASVsMeans[1]/EU_8_meter100_ASVsSUM)*100 #yay, this worked so my code worked!
+
 # 8. FINALLY, PLOT IT
 # Plot it!
-# Relative abundance
+# Relative abundance (I removed legend for better plotting of everything together, but can use legend for overall plot made above and add in
+# in PowerPoint.)
 level_order2 <- c("10m","20m","30m" ,"40m","50m","60m","70m","80m","90m", "100m" )  #set this to make in correct order from 10m to 100m
 indicatorsByEUplotsList <- vector("list", length=6) #make a list with 6 elements, one for each EU
 names(indicatorsByEUplotsList) <- names(fungiRelAbundDfs_edge_byEU) #name them like the EUs
@@ -489,7 +489,7 @@ for (m in 1:length(fungiRelAbundDfs_edge_byEU)){
     theme(legend.text = element_text(size = 8)) + #increase size of legend font
     theme(axis.text=element_text(size=8), #increase font size of axis labels
           axis.title=element_text(size=8)) + #increase font size of axis title
-    theme_bw() +
+    theme_bw() + theme(legend.position = "none") +
     ggtitle(paste0("plot for ", names(indicatorsByEUplotsList)[m]))
   
 }
@@ -499,9 +499,8 @@ grid.arrange(indicatorsByEUplotsList[[1]], indicatorsByEUplotsList[[2]], indicat
              indicatorsByEUplotsList[[4]], indicatorsByEUplotsList[[5]], indicatorsByEUplotsList[[6]],
              ncol=3)
 
-
-# Saved November 2, 2023
-# save(relAbundTransectFungalEDGE_plot, file= "RobjectsSaved/relAbundTransectFungalEDGE_plot")
+# Saved November 14, 2023
+# save(indicatorsByEUplotsList, file= "RobjectsSaved/indicatorsByEUplotsList")
 
 
 
