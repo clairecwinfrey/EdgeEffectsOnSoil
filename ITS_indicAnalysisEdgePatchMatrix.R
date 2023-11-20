@@ -299,9 +299,10 @@ length(which(fungiTaxTabWithSpecialists$specialist == "non-specialist")) #202
 # Plot it!
 # Relative abundance
 level_order <- names(fungiMeterRowNamesIndices) #set this to make in correct order from 10m to 100m
+fungiRelAbundEDGE_df$specialist <- factor(fungiRelAbundEDGE_df$specialist, levels=c("non-specialist","savanna", "edge", "forest"))
 relAbundTransectFungalEDGE_plot <- ggplot(fungiRelAbundEDGE_df, aes(x = factor(meter, level = level_order), y = relAbund, fill = specialist)) + 
   geom_bar(stat = "identity", position = "fill")  +
-  scale_fill_manual(values=c("purple","darkgreen","darkgrey","goldenrod"), labels=c("edge (n=18)", "forested matrix (n=49)", "non-specialists (n=202)", "open patch (n= 144)")) +
+  scale_fill_manual(values=c("darkgrey","goldenrod", "purple","darkgreen"), labels=c("non-specialists (n=202)", "open patch (n= 144)", "edge (n=18)", "forested matrix (n=49)")) +
   labs(y= "Relative abundance", x = "Meter on transect") + 
   scale_x_discrete(labels=c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100)) + #change x-axis tick labels
   guides(color = guide_legend(override.aes = list(size =7))) +
@@ -313,11 +314,11 @@ relAbundTransectFungalEDGE_plot <- ggplot(fungiRelAbundEDGE_df, aes(x = factor(m
 # quartz()
 relAbundTransectFungalEDGE_plot
 
-# Saved November 2, 2023
+# Saved November 18, 2023
 # save(relAbundTransectFungalEDGE_plot, file= "RobjectsSaved/relAbundTransectFungalEDGE_plot")
 
 ###############################
-# MAKING TRANSECT PLOTS FOR EACH OF THE DIFFERENT EUS
+# 4. MAKING TRANSECT PLOTS FOR EACH OF THE DIFFERENT EUS
 ###############################
 # GET MEAN ASV ABUNDANCE FOR EACH ASV WITHIN EACH EU
 # 1. Need to get all of the rownames in the ASV table for samples correspondong to each meter, within each EU
@@ -412,10 +413,10 @@ for (i in 1:length(fungiASVmeterTotal_edge_EUList)){
 # 5c. Test a few
 sumTest100_EU52 <- fungiMeanASVsByMeterHabitatEdge_EUList$EU_52 %>% 
   filter(meter == "100m")
-sum(sumTest100_EU52$meanASVabundance) == fungiASVmeterTotal_edge_EUList$EU_52[10,2] #yeah!
+sum(sumTest100_EU52$meanASVabundance) == fungiASVmeterTotal_edge_EUList$EU_52[10,] #yeah!
 sumTest60_EU8 <- fungiMeanASVsByMeterHabitatEdge_EUList$EU_8 %>% 
   filter(meter == "60m")
-sum(sumTest60_EU8$meanASVabundance) == fungiASVmeterTotal_edge_EUList$EU_8[6,2] #yeah!
+sum(sumTest60_EU8$meanASVabundance) == fungiASVmeterTotal_edge_EUList$EU_8[6,] #yeah!
 
 # 5d. Finally, make rownames a column for merging in the next step below
 for (i in 1:length(fungiASVmeterTotal_edge_EUList)){
@@ -476,12 +477,14 @@ justEU8_ASV1rel[1,2] == (EU_8_meter100_ASVsMeans[1]/EU_8_meter100_ASVsSUM)*100 #
 # Relative abundance (I removed legend for better plotting of everything together, but can use legend for overall plot made above and add in
 # in PowerPoint.)
 level_order2 <- c("10m","20m","30m" ,"40m","50m","60m","70m","80m","90m", "100m" )  #set this to make in correct order from 10m to 100m
-indicatorsByEUplotsList <- vector("list", length=6) #make a list with 6 elements, one for each EU
-names(indicatorsByEUplotsList) <- names(fungiRelAbundDfs_edge_byEU) #name them like the EUs
+ITS_indicatorsByEUplotsList <- vector("list", length=6) #make a list with 6 elements, one for each EU
+names(ITS_indicatorsByEUplotsList) <- names(fungiRelAbundDfs_edge_byEU) #name them like the EUs
 for (m in 1:length(fungiRelAbundDfs_edge_byEU)){
-  indicatorsByEUplotsList[[m]] <- ggplot(fungiRelAbundDfs_edge_byEU[[m]], aes(x = factor(meter, level = level_order2), y = ASVrelativeAbundance, fill = specialist)) + 
+  # re-order bars so that it goes savanna on top, followed by edge, forest, and non-specialist is last
+  fungiRelAbundDfs_edge_byEU[[m]]$specialist <- factor(fungiRelAbundDfs_edge_byEU[[m]]$specialist, levels=c("non-specialist","savanna", "edge", "forest"))
+  ITS_indicatorsByEUplotsList[[m]] <- ggplot(fungiRelAbundDfs_edge_byEU[[m]], aes(x = factor(meter, level = level_order2), y = ASVrelativeAbundance, fill = specialist)) + 
     geom_bar(stat = "identity", position = "fill")  +
-    scale_fill_manual(values=c("purple","darkgreen","darkgrey","goldenrod"), labels=c("edge (n=18)", "forested matrix (n=49)", "non-specialists (n=202)", "open patch (n= 144)")) +
+    scale_fill_manual(values=c("darkgrey","goldenrod", "purple","darkgreen"), labels=c("edge (n=18)", "forested matrix (n=49)", "non-specialists (n=202)", "open patch (n= 144)")) +
     labs(y= "Relative abundance", x = "Meter on transect") + 
     scale_x_discrete(labels=c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100)) + #change x-axis tick labels
     guides(color = guide_legend(override.aes = list(size =7))) +
@@ -490,37 +493,75 @@ for (m in 1:length(fungiRelAbundDfs_edge_byEU)){
     theme(axis.text=element_text(size=8), #increase font size of axis labels
           axis.title=element_text(size=8)) + #increase font size of axis title
     theme_bw() + theme(legend.position = "none") +
-    ggtitle(paste0("plot for ", names(indicatorsByEUplotsList)[m]))
+    ggtitle(paste0("plot for ", names(ITS_indicatorsByEUplotsList)[m]))
   
 }
 
 # quartz()
-grid.arrange(indicatorsByEUplotsList[[1]], indicatorsByEUplotsList[[2]], indicatorsByEUplotsList[[3]],
-             indicatorsByEUplotsList[[4]], indicatorsByEUplotsList[[5]], indicatorsByEUplotsList[[6]],
+grid.arrange(ITS_indicatorsByEUplotsList[[3]], ITS_indicatorsByEUplotsList[[5]], ITS_indicatorsByEUplotsList[[2]],
+             ITS_indicatorsByEUplotsList[[1]], ITS_indicatorsByEUplotsList[[6]], ITS_indicatorsByEUplotsList[[4]],
              ncol=3)
+# This above was plotted in the window to the right and saved as a JPEG, so that the weird horizontal bars wouldn't be there
 
-# Saved November 14, 2023
-# save(indicatorsByEUplotsList, file= "RobjectsSaved/indicatorsByEUplotsList")
+# Saved November 18, 2023
+# save(ITS_indicatorsByEUplotsList, file= "RobjectsSaved/ITS_indicatorsByEUplotsList")
+
+##########################################################################
+# 5. STACKED BARCHART OF DIFFERENTIAL ABUNDANCE PHYLA NUMBER IN EACH CATEGORY
+##########################################################################
+head(fungiTaxTabWithSpecialists)
+unique(fungiTaxTabWithSpecialists$specialist)
+# Remove pesky "p__" before phylum names
+fungiTaxTabWithSpecialists$Phylum <- gsub(pattern= "p__", replacement= "", x=fungiTaxTabWithSpecialists$Phylum)
 
 
+fungiTaxTabWithSpecialists$specialist <- factor(fungiTaxTabWithSpecialists$specialist, levels=c("non-specialist","savanna", "edge", "forest"))
+# Saved November 20, 2023
+# save(fungiTaxTabWithSpecialists, file= "RobjectsSaved/fungiTaxTabWithSpecialists_Nov20_2023")
 
+diffAbund_ITS_stackedBarplotPhyla <- ggplot(fungiTaxTabWithSpecialists, aes(fill=specialist, x=Phylum)) + 
+  geom_bar(position="stack", stat="count") +
+  scale_fill_manual(values=c("darkgrey","goldenrod", "purple","darkgreen"), labels=c("edge (n=18)", "forested matrix (n=49)", "non-specialists (n=202)", "open patch (n= 144)")) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90), legend.title= element_blank()) +
+  theme(legend.position = "none") + #remove legend since I'll change it in PP anyway
+  theme(axis.text=element_text(size=12), #increase font size of axis labels
+        axis.title=element_text(size=12)) + #increase font size of axis title
+  theme(axis.title.x = element_blank()) + #remove x axis label
+  theme(axis.title.y = element_blank()) + #remove y axis label
+  scale_y_continuous(breaks=seq(0,1000,by=100))
 
+# quartz()
+diffAbund_ITS_stackedBarplotPhyla
 
+# Below saved November 20, 2023 so that it can be added to a 2 paneled plot with prokaryote plot!
+# save(diffAbund_ITS_stackedBarplotPhyla, file="RobjectsSaved/ITS_indicStackedBarplotPhyla_plot")
+
+# A few checks to make sure that the counting above is working as expected
+# Ascomycota
+length(which(fungiTaxTabWithSpecialists$Phylum=="Ascomycota")) #249
+asco_index <- which(fungiTaxTabWithSpecialists$Phylum=="Ascomycota")
+length(which(fungiTaxTabWithSpecialists[asco_index,]$specialist=="forest")) #27 forest specialists within Ascomycota
+length(which(fungiTaxTabWithSpecialists[asco_index,]$specialist=="savanna")) #106 patch specialists within Ascomycota
+length(which(fungiTaxTabWithSpecialists[asco_index,]$specialist=="edge")) #11 edge specialists within Ascomycota
+length(which(fungiTaxTabWithSpecialists[asco_index,]$specialist=="non-specialist")) #105 remaining ASVs
+(27+ 106+ 11 + 105) == length(which(fungiTaxTabWithSpecialists$Phylum=="Ascomycota"))
 
 ###############################
-# TOP PHYLA PLOT (code from postUbiqGraphics_ITS.R)
+# 6. TOP PHYLA PLOT (code from postUbiqGraphics_ITS.R)
 ###############################
 # Phylum level (adopted from my code at:
 # https://github.com/clairecwinfrey/PhanBioMS_scripts/blob/master/R_scripts/figures/taxonomic_barplots.R)
 sampDat <- phyloseq::sample_data(ITS_postUbiquity_meta)
+# make a new phyloseq object with the savanna/edge/forest distinction
 ITS_postUbiquity.ps <- phyloseq(sampDat, tax_table(ITS_postUbiquity.ps), otu_table(ITS_postUbiquity.ps))
 # Combine taxa based on phylum
-postUbiq.phylum.glom <-  tax_glom(ITS_postUbiquity.ps, taxrank = "Phylum") 
-tax_table(postUbiq.phylum.glom) #8 phyla
-sample_data(postUbiq.phylum.glom)
+ITS_postUbiq.phylum.glom <-  tax_glom(ITS_postUbiquity.ps, taxrank = "Phylum") 
+tax_table(ITS_postUbiq.phylum.glom) #8 phyla
+sample_data(ITS_postUbiq.phylum.glom)
 
 # Transform sample counts based on just glommed samples
-relabun.phyla.0 <- transform_sample_counts(postUbiq.phylum.glom, function(x) x / sum(x) )
+relabun.phyla.0 <- transform_sample_counts(ITS_postUbiq.phylum.glom, function(x) x / sum(x) )
 rownames(otu_table(relabun.phyla.0)) 
 colSums(otu_table(relabun.phyla.0)) #right now these all sum to one, which shows that right now, it is relative
 # abundance by sample and that the code is working as expected.
@@ -545,7 +586,7 @@ relabun.phylatop99.5$Phylum[relabun.phylatop99.5$Abundance < 0.005] <- "< .5% ab
 # Olpidiomycota and Rozellomycota were phyla as well, but comprised less than .5% of abundance
 unique(relabun.phylatop99.5$Phylum)
 # Phyla comprising at least 0.5% of total abundance
-# Get unique colors for these 7 groups
+# Get unique colors for these 6 groups
 colors31 <- Polychrome::glasbey.colors(32)
 swatch(colors31)
 colorsForPhyla7 <- unname(colors31)[c(2:4,6:8)] #remove some unwanted colors
@@ -558,9 +599,11 @@ uniquePhyla <- sort(unique(relabun.phylatop99.5$Phylum)) #7 unique phyla
 # re-order phyla so that "< .5% abundance" is last
 relabun.phylatop99.5$Phylum <- factor(relabun.phylatop99.5$Phylum, levels=uniquePhyla[c(2:7,1)])
 
+habOrder <- c("savanna", "edge", "forest") #set correct order
 # Phyla comprising at least 0.5% of total abundance
-phylumPlot99.5percent <- ggplot(data=relabun.phylatop99.5, aes(x=Sample, y=Abundance, fill=Phylum))
+phylumPlot99.5percent <- ggplot(data=relabun.phylatop99.5, aes(x= factor(Sample, level = habOrder), y=Abundance, fill=Phylum))
 phylumPlot99.5percent <- phylumPlot99.5percent + geom_bar(aes(), stat="identity", position="fill") +
+  scale_y_continuous(expand = c(0, 0)) + #this line removes weird white horizontal lines between colors of same color
   theme_bw() +
   theme(legend.position="bottom") +
   scale_fill_manual(values = colorsForPhyla7) +
@@ -569,7 +612,7 @@ phylumPlot99.5percent <- phylumPlot99.5percent + geom_bar(aes(), stat="identity"
   theme(axis.text.y= element_text(size=16)) +
   theme(axis.title.x = element_blank()) +
   theme(axis.text.x= element_text(size=16)) +
-  guides(fill=guide_legend(nrow=3)) + theme(legend.text = element_text(colour="black", size = 14)) +
+  guides(fill=guide_legend(nrow=4)) + theme(legend.text = element_text(colour="black", size = 10)) +
   theme(legend.title= element_blank()) #remove legend title
 
 # quartz()
@@ -578,7 +621,8 @@ phylumPlot99.5percent
 colnames(relabun.phylatop99.5)
 relabun.phylatop99.5[,2] #This is EU... now "Sample" because of the glomming!
 
-######## STOPPED HERE OCTOBER 25, 2023 #####
+# saved Nov 16, 2023
+# save(phylumPlot99.5percent, file= "/Users/clairewinfrey/Desktop/CU_Research/SoilEdgeEffectsResearch/Figures/fungiPhylumHabitatEdgePlot99.5percent")
 
 top_99.5p_phyla <- relabun.phylatop99.5 %>%
   group_by(Sample, Phylum) %>%
@@ -595,73 +639,83 @@ fungiRelabunFam_grouped <- relabun.phylatop99.5 %>%
 sum(fungiRelabunFam_grouped$relAbund) #this adds up to 1!
 
 ###############################
-# TOP PHYLA PLOT (code from postUbiqGraphics_ITS.R)
+# 7. TOP FAMILY PLOT 
 ###############################
-# Phylum level (adopted from my code at:
-# https://github.com/clairecwinfrey/PhanBioMS_scripts/blob/master/R_scripts/figures/taxonomic_barplots.R)
-sampDat <- phyloseq::sample_data(ITS_postUbiquity_meta)
-ITS_postUbiquity.ps <- phyloseq(sampDat, tax_table(ITS_postUbiquity.ps), otu_table(ITS_postUbiquity.ps))
-# Combine taxa based on phylum
-postUbiq.phylum.glom <-  tax_glom(ITS_postUbiquity.ps, taxrank = "Phylum") 
-tax_table(postUbiq.phylum.glom) #8 phyla
-sample_data(postUbiq.phylum.glom)
+
+# Combine taxa based on family
+ITS_postUbiq.family.glom <-  tax_glom(ITS_postUbiquity.ps, taxrank = "Family") 
+sample_data(ITS_postUbiq.family.glom)
 
 # Transform sample counts based on just glommed samples
-relabun.phyla.0 <- transform_sample_counts(postUbiq.phylum.glom, function(x) x / sum(x) )
-rownames(otu_table(relabun.phyla.0)) 
-colSums(otu_table(relabun.phyla.0)) #right now these all sum to one, which shows that right now, it is relative
+ITS_relabun.family.0 <- transform_sample_counts(ITS_postUbiq.family.glom, function(x) x / sum(x) )
+rownames(otu_table(ITS_relabun.family.0)) 
+colSums(otu_table(ITS_relabun.family.0)) #right now these all sum to one, which shows that right now, it is relative
 # abundance by sample and that the code is working as expected.
 # ASVs are just representative from each phylum
 
-###### TOP PHYLA BY HABITAT #####
+###### TOP FAMILIES BY HABITAT #####
 
 # Merge samples so that we only have combined abundances for EU (i.e. experimental replicate)
-relabun.phyla.1 <- merge_samples(relabun.phyla.0, group = c("habitatEdge2"))
-sample_data(relabun.phyla.1) #this just confirms that samples were combined by EU, other variables are averaged but can be ignored
+ITS_relabun.family.1 <- merge_samples(ITS_relabun.family.0, group = c("habitatEdge2")) #this has correct habitat stuff
+sample_data(ITS_relabun.family.1) #this just confirms that samples were combined by EU, other variables are averaged but can be ignored
 
 # Convert to proportions again after merging samples by EU.
-relabun.phyla.2 <- transform_sample_counts(relabun.phyla.1, function(x) x / sum(x))
-rowSums(otu_table(relabun.phyla.2)) #these show that all of the ASVs now sum to one, which is exactly what we want!
+ITS_relabun.family.2 <- transform_sample_counts(ITS_relabun.family.1, function(x) x / sum(x))
+rowSums(otu_table(ITS_relabun.family.2)) #these show that all of the ASVs now sum to one, which is exactly what we want!
 
 # Get taxa that that are at least .5% of total abundance
-relabun.phyla.df <-psmelt(relabun.phyla.2)
-dim(relabun.phyla.df) #
-relabun.phylatop99.5  <- relabun.phyla.df
-relabun.phylatop99.5$Phylum[relabun.phylatop99.5$Abundance < 0.005] <- "< .5% abundance"
+ITS_relabun.family.df <-psmelt(ITS_relabun.family.2)
+dim(ITS_relabun.family.df) #321  37
+ITS_relabun.familytop99  <- ITS_relabun.family.df
+ITS_relabun.familytop99$Family[ITS_relabun.familytop99$Abundance < 0.01] <- "< 1% abundance"
 
-# Olpidiomycota and Rozellomycota were phyla as well, but comprised less than .5% of abundance
-unique(relabun.phylatop99.5$Phylum)
-# Phyla comprising at least 0.5% of total abundance
-# Get unique colors for these 7 groups
-colors31 <- Polychrome::glasbey.colors(32)
+unique(ITS_relabun.familytop99$Family) #need 26, plus the gray for the < 1 abundance 
+# Phyla comprising at least 1% of total abundance
+# Get unique colors for these 26 groups
 swatch(colors31)
-colorsForPhyla7 <- unname(colors31)[c(2:4,6:8)] #remove some unwanted colors
-colorsForPhyla7[7] <- "gray48" #make last one gray
+colorsForFams27 <- unname(colors31)[c(2:4,6:28)] #remove some unwanted colors
+colorsForFams27[27] <- "gray48" #make last one gray
 
-# Remove p_ in phylum names
-relabun.phylatop99.5$Phylum <- gsub("p__","",as.character(relabun.phylatop99.5$Phylum))
-uniquePhyla <- sort(unique(relabun.phylatop99.5$Phylum)) #7 unique phyla
+# Do a little clean up
+# Remove f_ in family names
+ITS_relabun.familytop99$Family <- gsub("f__","",as.character(ITS_relabun.familytop99$Family))
+# make NAs "unclassified"
+ITS_relabun.familytop99$Family[which(ITS_relabun.familytop99$Family== "NA")] <- "Unknown families"
+ITS_uniqueFamilies <- sort(unique(ITS_relabun.familytop99$Family)) #26 + 1 less than 1% abundance unique phyla
 
-# re-order phyla so that "< .5% abundance" is last
-relabun.phylatop99.5$Phylum <- factor(relabun.phylatop99.5$Phylum, levels=uniquePhyla[c(2:7,1)])
-
-# Phyla comprising at least 0.5% of total abundance
-phylumPlot99.5percent <- ggplot(data=relabun.phylatop99.5, aes(x=Sample, y=Abundance, fill=Phylum))
-phylumPlot99.5percent <- phylumPlot99.5percent + geom_bar(aes(), stat="identity", position="fill") +
+# re-order phyla so that "< 1% abundance" is last
+ITS_relabun.familytop99$Family <- factor(ITS_relabun.familytop99$Family, levels=ITS_uniqueFamilies[c(2:27,1)])
+habOrder <- c("savanna", "edge", "forest") #set correct order
+# Families comprising at least 1% of total abundance
+fungFamilyPlot99percent <- ggplot(data=ITS_relabun.familytop99, aes(x= factor(Sample, level = habOrder), y=Abundance, fill=Family))
+fungFamilyPlot99percent <- fungFamilyPlot99percent + geom_bar(aes(), stat="identity", position="fill") +
+  scale_y_continuous(expand = c(0, 0)) + #this line removes weird white horizontal lines between colors of same color
   theme_bw() +
   theme(legend.position="bottom") +
-  scale_fill_manual(values = colorsForPhyla7) +
+  scale_fill_manual(values = colorsForFams27) +
   theme(axis.title.y = element_text(size = 16)) +
   ylab("Relative abundance") +
   theme(axis.text.y= element_text(size=16)) +
   theme(axis.title.x = element_blank()) +
   theme(axis.text.x= element_text(size=16)) +
-  guides(fill=guide_legend(nrow=3)) + theme(legend.text = element_text(colour="black", size = 14)) +
+  guides(fill=guide_legend(nrow=14)) + theme(legend.text = element_text(colour="black", size = 10)) +
   theme(legend.title= element_blank()) #remove legend title
 
 # quartz()
-phylumPlot99.5percent
-# Get exact abundances of each phyla (top 99.5%):
-colnames(relabun.phylatop99.5)
-relabun.phylatop99.5[,2] #This is EU... now "Sample" because of the glomming!
+fungFamilyPlot99percent
 
+# Plot these together
+# quartz()
+grid.arrange(phylumPlot99.5percent,fungFamilyPlot99percent, nrow=1)
+
+# Plot the plots without legends so that they are same formatting/size for paper. Will add
+# back in legends from other versions in PowerPoint
+fungPhylumPlot99.5percent_noLeg <- phylumPlot99.5percent + theme(legend.position = "none")
+fungPhylumPlot99.5percent_noLeg
+fungFamilyPlot99percent_noLeg <- fungFamilyPlot99percent + theme(legend.position = "none")
+fungFamilyPlot99percent_noLeg
+# quartz()
+grid.arrange(phylumPlot99.5percent_noLeg, fungFamilyPlot99percent_noLeg, nrow=1)
+
+#saved Nov. 16, 2023
+# save(fungFamilyPlot99percent, file= "/Users/clairewinfrey/Desktop/CU_Research/SoilEdgeEffectsResearch/Figures/fungFamilyPlot99percent_plot")
